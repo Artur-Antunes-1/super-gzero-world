@@ -57,14 +57,15 @@ export function createLoop(
       // Errata E1: pass 1 (one frame), not FIXED_DT (seconds).
       // Physics constants are per-frame; dt=1 means "advance one frame".
       step(1)
-      accumulator -= FIXED_MS
+      accumulator = Math.max(0, accumulator - FIXED_MS)
       substeps++
     }
 
-    // If time budget was exceeded, discard the remaining accumulated backlog
-    // (prevent carried-over spiral after the clamp kicks in).
+    // Clamp hit (substeps === MAX_SUBSTEPS): discard the over-cap backlog so a
+    // long freeze/tab-switch cannot spiral. Only reached when the while-loop
+    // exited on the substep cap.
     if (accumulator >= FIXED_MS - EPSILON) {
-      accumulator = accumulator % FIXED_MS
+      accumulator = 0
     }
 
     // alpha is the interpolation fraction for the renderer: [0, 1)

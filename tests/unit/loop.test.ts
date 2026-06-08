@@ -88,6 +88,50 @@ describe('createLoop', () => {
     expect(lastAlpha).toBeCloseTo(0.5, 6)
   })
 
+  it('nao dispara passos extras no tick seguinte apos clamp', () => {
+    const step = vi.fn()
+    const render = vi.fn()
+    let t = 0
+    const loop = createLoop(step, render, () => t) as TestableLoop
+
+    // primeiro tick: inicializa o tempo base
+    loop.tick(0)
+
+    // salto enorme (60 passos em um tick) - deve ser clampeado em MAX_SUBSTEPS
+    t = 60 * FIXED_MS
+    loop.tick(t)
+    expect(step).toHaveBeenCalledTimes(MAX_SUBSTEPS)
+
+    // tick seguinte sem tempo adicional: backlog foi descartado, nao deve disparar mais passos
+    const stepCountAfterClamp = step.mock.calls.length
+    loop.tick(t) // mesmo timestamp, delta = 0
+    expect(step).toHaveBeenCalledTimes(stepCountAfterClamp)
+  })
+
+  it('start() duas vezes agenda apenas um frame', () => {
+    const step = vi.fn()
+    const render = vi.fn()
+
+    const rafSpy = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((_cb: FrameRequestCallback): number => {
+        return 1
+      })
+    const cancelSpy = vi
+      .spyOn(globalThis, 'cancelAnimationFrame')
+      .mockImplementation(() => {})
+
+    const loop = createLoop(step, render)
+    loop.start()
+    loop.start() // segunda chamada deve ser ignorada
+    expect(rafSpy).toHaveBeenCalledTimes(1)
+
+    loop.stop()
+
+    rafSpy.mockRestore()
+    cancelSpy.mockRestore()
+  })
+
   it('start agenda via requestAnimationFrame e stop cancela', () => {
     const step = vi.fn()
     const render = vi.fn()
