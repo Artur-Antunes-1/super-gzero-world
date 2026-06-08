@@ -128,7 +128,10 @@ describe('createInput', () => {
   })
 
   it('teclas não mapeadas são ignoradas', () => {
-    const actions: InputAction[] = ['left', 'right', 'jump', 'run', 'down']
+    const actions: InputAction[] = [
+      'left', 'right', 'jump', 'run', 'down',
+      'ability', 'humanware', 'pause', 'confirm',
+    ]
     key('keydown', 'KeyZ')
     for (const a of actions) {
       expect(input.isDown(a)).toBe(false)
@@ -183,5 +186,88 @@ describe('createInput', () => {
     input.update()
     // Após update o edge some — se houvesse duplicata ele poderia reaparecer.
     expect(input.pressed('right')).toBe(false)
+  })
+
+  // --- M1: novas acoes ability/humanware/pause/confirm ---
+
+  it('mapeia KeyJ para "ability"', () => {
+    key('keydown', 'KeyJ')
+    expect(input.isDown('ability')).toBe(true)
+    key('keyup', 'KeyJ')
+    expect(input.isDown('ability')).toBe(false)
+  })
+
+  it('mapeia KeyH para "humanware"', () => {
+    key('keydown', 'KeyH')
+    expect(input.isDown('humanware')).toBe(true)
+    key('keyup', 'KeyH')
+    expect(input.isDown('humanware')).toBe(false)
+  })
+
+  it('mapeia Escape para "pause"', () => {
+    key('keydown', 'Escape')
+    expect(input.isDown('pause')).toBe(true)
+    key('keyup', 'Escape')
+    expect(input.isDown('pause')).toBe(false)
+  })
+
+  it('mapeia Enter para "confirm"', () => {
+    key('keydown', 'Enter')
+    expect(input.isDown('confirm')).toBe(true)
+    key('keyup', 'Enter')
+    expect(input.isDown('confirm')).toBe(false)
+  })
+
+  it('pressed-edge das novas acoes: true so no frame ate o proximo update', () => {
+    // ability
+    key('keydown', 'KeyJ')
+    expect(input.pressed('ability')).toBe(true)
+    input.update()
+    expect(input.pressed('ability')).toBe(false)
+    expect(input.isDown('ability')).toBe(true) // ainda mantida
+    key('keyup', 'KeyJ')
+    input.update()
+
+    // humanware
+    key('keydown', 'KeyH')
+    expect(input.pressed('humanware')).toBe(true)
+    input.update()
+    expect(input.pressed('humanware')).toBe(false)
+    key('keyup', 'KeyH')
+    input.update()
+
+    // confirm
+    key('keydown', 'Enter')
+    expect(input.pressed('confirm')).toBe(true)
+    input.update()
+    expect(input.pressed('confirm')).toBe(false)
+    key('keyup', 'Enter')
+    input.update()
+
+    // pause
+    key('keydown', 'Escape')
+    expect(input.pressed('pause')).toBe(true)
+    input.update()
+    expect(input.pressed('pause')).toBe(false)
+  })
+
+  it('auto-repeat de KeyJ nao re-dispara pressed("ability") sem update', () => {
+    key('keydown', 'KeyJ')
+    expect(input.pressed('ability')).toBe(true)
+    key('keydown', 'KeyJ')
+    key('keydown', 'KeyJ')
+    input.update()
+    expect(input.pressed('ability')).toBe(false)
+  })
+
+  it('as novas teclas NAO chamam preventDefault (SCROLLING_KEYS inalterado)', () => {
+    // SCROLLING_KEYS so cobre Space/ArrowLeft/ArrowRight/ArrowUp/ArrowDown.
+    // KeyJ/KeyH/Escape/Enter nao devem ter defaultPrevented marcado.
+    for (const code of ['KeyJ', 'KeyH', 'Escape', 'Enter']) {
+      const ev = new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true })
+      window.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(false)
+      window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }))
+    }
   })
 })

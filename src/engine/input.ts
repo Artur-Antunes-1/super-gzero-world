@@ -1,5 +1,14 @@
 // src/engine/input.ts
-export type InputAction = 'left' | 'right' | 'jump' | 'run' | 'down'
+export type InputAction =
+  | 'left'
+  | 'right'
+  | 'jump'
+  | 'run'
+  | 'down'
+  | 'ability'
+  | 'humanware'
+  | 'pause'
+  | 'confirm'
 
 export interface Input {
   isDown(a: InputAction): boolean
@@ -21,9 +30,14 @@ const KEY_MAP: Record<string, InputAction> = {
   ShiftRight: 'run',
   ArrowDown: 'down',
   KeyS: 'down',
+  KeyJ: 'ability',
+  KeyH: 'humanware',
+  Escape: 'pause',
+  Enter: 'confirm',
 }
 
 // Teclas que causam scroll da página — só para estas chamamos preventDefault.
+// INALTERADO no M1: as novas teclas (KeyJ/KeyH/Escape/Enter) não fazem scroll.
 const SCROLLING_KEYS = new Set(['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 
 interface InputWithDetach extends Input {
