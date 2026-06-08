@@ -16,6 +16,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
+  // Intentionally runs a full build before e2e (build+preview on 4173); locally a server is reused when not in CI.
   webServer: {
     command: 'npm run build && npm run preview',
     url: 'http://localhost:4173',
