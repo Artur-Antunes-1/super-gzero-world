@@ -1,0 +1,1728 @@
+[
+  {
+    "url": "https://www.gravidadezero.space/",
+    "page_purpose": "Homepage of Gravidade Zero (GZero), a Brazilian (pt-BR) transformation/consultancy collective that integrates technology, consciousness and culture to prepare people and organizations for \"regenerative futures.\" The home is a Framer-built SPA hub that routes to six core \"Teses\" (theses) videos, plus Cases, Humanware, Sobre, Soluções and Contato sections. It positions the brand and funnels visitors toward its thesis content and a \"Bora juntos / Venha simbora\" contact CTA.",
+    "content_quality": "rich",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Integramos tecnologia, consciência e cultura para preparar pessoas e organizações para os futuros que redesenham, em tempo real, o nosso hoje.",
+      "Você também acredita que podemos mudar o mundo?",
+      "Não há atalhos para chegar onde ninguém nunca foi.",
+      "Usamos IA para ampliar, não substituir, o potencial humano.",
+      "Um tolo com uma ferramenta, continua sendo um tolo. É o estado de consciência que transforma tecnologia em potência.",
+      "Transformação Existencial + Transformação Cultural + Transformação Digital = Consciência Unificada",
+      "Soul in the game / Feelset + mindset para tomar decisões com intuição e visão"
+    ],
+    "company_facts": [
+      "Mission/positioning: integrar tecnologia, consciência e cultura para preparar pessoas e organizações para futuros regenerativos.",
+      "Operates through a model of three combinable transformations: Transformação Existencial + Cultural + Digital = Consciência Unificada.",
+      "Brand value pillars: Transformação com propósito, Velocidade com consistência, Alma e tecnologia integradas, Estratégia com profundidade, Escalável e sustentável, Ultra-personalização, Narrativa autoral, Soul in the game.",
+      "Stat: dezenas/milhares (k+) de estudantes em cursos e palestras.",
+      "Stat: clientes atendidos - 'muitos viraram amigos'; atende 'empresas mais importantes do país'.",
+      "Founded startups including Loomi and acaso as technology arms (braços de tecnologia).",
+      "Loomi described as an aceleradora digital combining strategy, design and technology; soluções digitais desenvolvidas em 3 continentes via Loomi.",
+      "Stated NPS near the top of a 0–100 scale for its talks/palestras.",
+      "Speaking track record at TEDx, IT Forum, Rock in Rio (Humanorama), Exponential/Expo Summit, Singularity University, Forbes, now!, Experience Club, Convenção VIVO, Quero.",
+      "Site is built on Framer; copyright line: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados'.",
+      "A book is in pre-sale: 'Mundo em Gravidade Zero' (pré-venda via /livro, by email or WhatsApp)."
+    ],
+    "products_solutions": [
+      "Palestra (talk, online/presencial, 1–3h)",
+      "Workshop (online/presencial, 2–4h)",
+      "Playbook (impresso ou digital; cadernos provocativos cocriados)",
+      "Vivência (presencial, 1–3 dias)",
+      "Consultoria Imersiva (online & presencial, 1 a 12 meses)",
+      "Jornada (combines at least three offerings — e.g. consultoria + vivência + ferramentas digitais)",
+      "Ferramenta Digital / Soluções Digitais (plataformas e aplicativos sob medida)",
+      "Human-Centric Ways of Working",
+      "Humanware® (autoral thesis/offering)",
+      "Investigação Organizacional / Mapa do campo / Mapa de Cultura (assessment + relatório da 'frequência' da organização)",
+      "SCI-FI Planning, Trends & Brengs, CocrIAGem (criação de soluções digitais em tempo real usando IAG), Awake",
+      "'Sua empresa na era IAG' (intro to Generative AI applied to client context)",
+      "Loomi — aceleradora digital de estratégia, design e tecnologia",
+      "acaso (aca.so) — skills-based assessment platform / Skill Based Organizations"
+    ],
+    "clients_cases": [
+      "Vivo / Telefônica Brasil (case tracks /vivo-ia ~102 participants and /vivo-lojas ~66 participants; 'Convenção VIVO')",
+      "Kion (/kion ~48 participants)",
+      "Ecorodovias (/ecorodovias ~37 participants)",
+      "Mubadala (/mubadala ~30 participants)",
+      "JPMorgan (/jpmorgan ~6 participants)",
+      "Loomi (GZero-founded startup / tech arm)",
+      "acaso (GZero-founded startup; powers the AI skills assessment Lifecards)",
+      "Referenced example case challenge: 'Atendimento CRM+' (Vivo IA track)"
+    ],
+    "humanware": "Humanware is presented as an authorial GZero concept, consistently shown as a registered trademark 'Humanware®'. Defined as: \"Um conceito autoral GZero que fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena\" (the brand's own thesis about innate human technologies / 'tecnologias nativas humanas'). It is one of the six core theses (linked as \"O que é Humanware®?\"), a navigation category, and an offering listed under Soluções. Tied to the idea that \"o estado de consciência que transforma tecnologia em potência\" and that IA should amplify, not replace, human potential.",
+    "voice_quotes": [
+      "Você também acredita que podemos mudar o mundo?",
+      "Não há atalhos para chegar onde ninguém nunca foi.",
+      "Um tolo com uma ferramenta, continua sendo um tolo. É o estado de consciência que transforma tecnologia em potência.",
+      "Estamos a um oi de distância."
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Co-founder / co-host of GZero theses (Instagram @renanhannouche); leads imersões e agenda do Vale do Silício",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Co-founder / co-host of GZero theses (Instagram @freitasdante)",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Thiago Vinicius Bueno",
+        "role": "Consultor de Planejamento Estratégico, Vivo (Telefônica Brasil) — assessed participant in /vivo-ia case track",
+        "affiliation": "client-participant"
+      }
+    ],
+    "visual_cues": [
+      "Built with Framer (meta generator 'Framer'); pt-BR server-rendered SPA.",
+      "og:image / twitter:image share card: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg (summary_large_image card).",
+      "Gamified / RPG motifs in client Lifecards: 'LVL MAX', 'Super Skills', 'MISSÃO IA', skill/level progression dots (⬤ ⬤ ⬤ ◯ ◯) used as intensity meters across Soluções.",
+      "Playful, mysterious section framing: 'ÁREA SECRETA — Decifra-me ou te devoro' (Cases), 'DEU MATCH?' (Contato), 'Imagine portais babado' (Sobre).",
+      "Cosmic/zero-gravity brand metaphor (Gravidade Zero, 'portais', 'frequência', 'campo unificado').",
+      "Casual Brazilian-Portuguese CTA voice: 'Bora juntos', 'Venha simbora', 'Bora!', 'Fala mais aí!'.",
+      "Wordplay capitalization motif: 'louCURA', 'CocrIAGem', 'IAG'."
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/sobre",
+    "page_purpose": "\"Sobre\" (About) page of Gravidade Zero (Gzero), presenting the company's identity, mission, guiding principles, transformation philosophy, impact statistics, service offerings, and technology arms. It positions Gzero as a transformation consultancy integrating technology, consciousness and culture to prepare people and organizations for regenerative futures.",
+    "content_quality": "rich",
+    "key_messages": [
+      "Integramos tecnologia, consciencia e cultura para preparar pessoas e organizacoes para os futuros que redesenham, em tempo real, o nosso hoje.",
+      "Criar futuros regenerativos e responder a complexidade com reinvencao. Reparar o que feriu, criar o que ainda nao tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Nao ha atalhos para chegar onde ninguem nunca foi.",
+      "Um tolo com uma ferramenta, continua sendo um tolo. Por isso precisamos olhar para o todo.",
+      "Usamos IA para ampliar, nao substituir, o potencial humano.",
+      "Estamos a servico da evolucao onde formos convidados."
+    ],
+    "company_facts": [
+      "Mission/positioning: integrate technology, consciousness and culture to prepare people and organizations for regenerative futures.",
+      "Operates across three pillars of transformation: Transformacao Existencial (existential), Transformacao Cultural (cultural), and Transformacao Digital (digital), which combine into 'Consciencia Unificada' (unified consciousness).",
+      "Founded technology startups including Loomi and Acaso as its technology arms.",
+      "Claims digital solutions delivered across 3 continents via Loomi.",
+      "Reports an NPS for its talks/palestras on a scale up to 100 (exact figure rendered via animated counter, not present as a static number).",
+      "Impact statistics shown as scroll-animated counters: number of students in courses/talks, people mentored in their businesses, clients served, major companies of the country served, startups founded, digital solutions developed, and talks given (the SSR HTML renders these as '0' placeholders before client-side animation, so exact targets are not in the page source).",
+      "Site is built on Framer.",
+      "Methodology language combines 'feelset + mindset' for intuition- and vision-based decision making."
+    ],
+    "products_solutions": [
+      "Palestra (talk/keynote)",
+      "Workshop",
+      "Playbook",
+      "Vivencia (immersive experience)",
+      "Consultoria Imersiva (immersive consulting)",
+      "Ferramenta Digital (digital tool)",
+      "Jornada (a journey combining three solutions)",
+      "Loomi - Human-Centric Ways of Working: digital solutions to advance people toward the future of Skill Based Organizations (technology arm/startup)",
+      "Acaso - digital accelerator combining strategy, design and technology to boost businesses in the digital era (technology arm/startup)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Appears in site nav/footer as a linked profile (Instagram @renanhannouche); presented as part of the Gzero team/voice",
+        "affiliation": "gzero-team"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Appears in site nav/footer as a linked profile (Instagram @freitasdante); presented as part of the Gzero team/voice",
+        "affiliation": "gzero-team"
+      }
+    ],
+    "clients_cases": [
+      "IT Forum",
+      "TEDx",
+      "Forbes",
+      "Rock in Rio (referenced as 'Rock in Rio Humano')",
+      "ramanow! Experience Club",
+      "Singularity University",
+      "Convencao VIVO (VIVO Convention)",
+      "Expo Summit / Exponential Summit",
+      "VIVO (via Convencao VIVO)"
+    ],
+    "humanware": "On this Sobre page, 'Humanware' appears only as a top-level site navigation/category label (a content category link, e.g. /categories/humanware) alongside Teses, Cases, IA & Tecnologia, Futuro do Trabalho, Lideranca and Cultura. No defining description of the Humanware concept and NO trademark symbol (no ® or ™) is present on this specific page; it is shown as plain text 'Humanware'.",
+    "voice_quotes": [
+      "Imagine portais babado que se abririam se a gente tivesse junto no role!",
+      "Nao ha atalhos para chegar onde ninguem nunca foi.",
+      "Soul in the game: envolvimento real para gerar mudancas que vao alem da superficie.",
+      "Sermos plenos em toda a nossa louCURA."
+    ],
+    "visual_cues": [
+      "Dark theme: predominant black/near-black backgrounds (#000000, #0f0f0f, #141414, #0e121b, #1a1a1a)",
+      "Vivid violet/purple accents (#7112ff, #612af1, #a420b2)",
+      "Magenta/hot-pink accent (rgb(244,61,179) / ~#f43db3)",
+      "Lime / chartreuse green accent (#cdf140, #daf66f)",
+      "Coral-red accent (#ff4e50)",
+      "Neutral grays for body text (#99a0ae, #96979c, #b0b1b5, #525866)",
+      "Built with Framer (meta generator 'Framer'); assets served from framerusercontent.com",
+      "Social/OG share image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Humanware category icon is an SVG (ktohccoi941dcpUecCiKfAkZc.svg)",
+      "Twitter card type: summary_large_image",
+      "Animated number counters for statistics (count-up on scroll)",
+      "Visual/conceptual motifs: cocriacao, visao sistemica, potencia humana, regeneration, 'portais' (portals)"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/livro",
+    "page_purpose": "Pre-sale and contact landing page for Gravidade Zero's book \"Mundo em Gravidade Zero.\" It invites visitors to get in touch about the book pre-order via an email form or WhatsApp, and includes a purchase/shipping form (name, company, email, phone, quantity, postal code for shipping cost, free-text message).",
+    "content_quality": "thin",
+    "key_messages": [
+      "Aqui é onde nós podemos conversar sobre a pré-venda do Mundo em Gravidade Zero :)",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA."
+    ],
+    "company_facts": [
+      "Gravidade Zero (Gzero) is publishing a book titled 'Mundo em Gravidade Zero', currently in pre-sale",
+      "Brand positioning: creating regenerative futures by responding to complexity with reinvention; repairing harm, naming the new, and redesigning collective living",
+      "Site sections indicate the brand operates across content themes: Teses (theses), Cases, Humanware, IA & Tecnologia (AI & Tech), Futuro do Trabalho (Future of Work), Liderança (Leadership), Cultura (Culture), Soluções (Solutions)",
+      "Built on Framer (generator b3492b4); domain gravidadezero.space",
+      "Contact: WhatsApp +55 22 99777-2107 (wa.me/5522997772107)"
+    ],
+    "products_solutions": [
+      "Mundo em Gravidade Zero (book, in pre-sale)",
+      "Soluções (Solutions section, linked but not detailed on this page)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Appears in site navigation/author links (likely founder/author of the book)",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Appears in site navigation/author links (likely founder/author of the book)",
+        "affiliation": "founder"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "\"'Humanware' appears as a top-level content category in the site navigation (linked to ./categories/humanware), alongside 'IA & Tecnologia', 'Futuro do Trabalho', 'Liderança', and 'Cultura'. On this /livro page it is only a navigation label with no descriptive text; no ® trademark symbol is shown here.",
+    "voice_quotes": [
+      "Oi!",
+      "Aqui é onde nós podemos conversar sobre a pré-venda do Mundo em Gravidade Zero :)",
+      "ou dar um alô pra gente por WhatsApp!",
+      "Fala mais aí!",
+      "Bora!"
+    ],
+    "visual_cues": [
+      "Dark theme: pure black background (rgb(0,0,0)) with near-black surfaces (rgb(13,13,13))",
+      "Vivid magenta/hot-pink accent color rgb(255,36,164)",
+      "Bright blue secondary accent rgb(0,153,255)",
+      "Muted gray body text (rgb(153,153,153), rgb(153,160,174))",
+      "Manrope font family",
+      "OG/Twitter share image: framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Built with Framer; SVG favicon",
+      "Playful, informal tone with emoji and exclamation-heavy CTAs ('Bora!', 'Fala mais aí!')"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/solu%C3%A7%C3%B5es",
+    "page_purpose": "Services/offerings page (\"Soluções\") of Gravidade Zero (GZero), a Brazilian (pt-BR) culture-and-future-of-work consultancy. It catalogs the formats through which they engage organizations — Consultoria Imersiva, Vivência, Workshop, Palestra, Playbook, and an integrated Jornada — each with a duration, format (online/presencial), a short description, and an \"Espectro de Atuação\" (scope intensity shown as filled/empty dots) listing sub-deliverables.",
+    "content_quality": "rich",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (page/site descriptor)",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA",
+      "Fortalecendo a simbiose entre humano e tecnologia",
+      "Mão na massa com propósito",
+      "Quando soluções se combinam, o impacto se aprofunda",
+      "É um caminho que expande a consciência, ativa novas formas de agir e cria o futuro em vez de esperar por ele",
+      "Convergência humano-máquina: como ser amplificado e não engolido pela evolução da IA"
+    ],
+    "company_facts": [
+      "Gravidade Zero (GZero) is a culture, future-of-work and AI/technology consultancy operating online and in-person (presencial), with engagements ranging from a few hours up to 1–12 months.",
+      "Methodology is systemic: they investigate organizational culture via interviews, observations and context analysis, looking at what sustains, blocks or drives culture, then co-create solutions aligned with the day-to-day reality of the people who live it.",
+      "Positioning centers on strengthening the symbiosis between human and technology and on human-machine convergence — being amplified, not swallowed, by the evolution of AI.",
+      "They build bespoke digital platforms/apps for internal teams or clients to sustain actions and keep culture in motion.",
+      "Offers facilitated international immersions, e.g. agenda-building and in-person accompaniment by Renan and Dante to Silicon Valley (Vale do Silício).",
+      "Footer: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared) — signaling an open/collaborative ethos.",
+      "Site navigation organizes content into Teses, Cases, Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura, Sobre, Soluções, Contato."
+    ],
+    "products_solutions": [
+      "Consultoria Imersiva (Online & Presencial | 1 a 12 meses) — scope: Investigação Organizacional, Mapa do campo, Playbook de Iniciativas, Ferramenta Digital",
+      "Vivência (Presencial | 1 a 3 dias) — scope: Imersão, Convidados, Viagem (e.g. Vale do Silício), Playbook",
+      "Workshop (Online ou Presencial | 2-4h) — scope: SCI-FI Planning, Trends & Brengs, CocrIAGem (real-time creation of digital solutions using IAG/generative AI)",
+      "Palestra (Online ou Presencial | 1-3h) — scope: Awake, Humanware®, Liderança, IA & Tecnologia, Ways of working",
+      "Playbook (Impresso ou digital) — scope: Playbook de Iniciativas, Mapa de Cultura, 'Sua empresa na era IAG'",
+      "Jornada (Online & Presencial | 1 a 12 meses) — integrates at least three fronts (e.g. consultoria, vivência, ferramentas digitais): Palestra, Playbook, Workshop, Vivência, Consultoria Imersiva, Ferramenta digital",
+      "Sub-offerings named: Investigação Organizacional, Mapa do campo, Mapa de Cultura (assessment + interviews producing a report of the organization's 'frequency'), Ferramenta Digital (custom platforms/apps), SCI-FI Planning, Trends & Brengs, CocrIAGem",
+      "Leadership topics (Liderança): Leading the Future, Liderança Ambidestra, Liderança de Propósito, Liderando no Caos, Future Leaders",
+      "Ways of working topic: Skill-based Organization (cargos give way to flexible, skill-based structures)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Principal / facilitator (named contact; co-leads in-person engagements such as the Silicon Valley immersion)",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Principal / facilitator (named contact; co-leads in-person engagements such as the Silicon Valley immersion)",
+        "affiliation": "founder"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "Humanware appears as a registered trademark — written \"Humanware®\" — and is presented as GZero's own (authorial) theory: described on this page under Palestra as \"Nossa teoria autoral sobre tecnologias nativas humanas\" (our authorial theory about native human technologies). It is also a top-level site navigation section.",
+    "voice_quotes": [
+      "Escutamos, perguntamos e escutamos.",
+      "Mão na massa com propósito.",
+      "Planejar o futuro de trás pra frente.",
+      "Deixar o velho e abraçar o que faz sentido.",
+      "cria o futuro em vez de esperar por ele."
+    ],
+    "visual_cues": [
+      "Built on Framer (meta generator: Framer); pt-BR server-rendered.",
+      "Dark theme palette: near-blacks and dark grays — #000 / rgb(0,0,0), #141414, #1a1a1a / rgb(26,26,26), #1e1e1e, with white rgb(255,255,255) text and gray #666.",
+      "Two vivid accent colors: electric blue rgb(0,153,255) and magenta/pink rgb(244,61,179).",
+      "Signature motif: 'Espectro de Atuação' depicted as a 5-dot intensity meter using filled (⬤) and empty (◯) circles to grade how deep/comprehensive each offering is (e.g. Jornada = ⬤⬤⬤⬤⬤, Palestra/Playbook = ⬤◯◯◯◯).",
+      "OG/Twitter share image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg (summary_large_image card).",
+      "Playful wordmark/typographic motifs blending Portuguese with capitalized fragments: 'louCURA' (loucura/cura — madness/cure), 'CocrIAGem' and 'era IAG' embedding IA/IAG (generative AI), 'Trends & Brengs'."
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/contato",
+    "page_purpose": "Contact (\"Contato\") page of Gravidade Zero. Its purpose is lead capture: a contact form inviting prospects to reach out. Headline \"DEU MATCH?\" (\"Did we match?\") with the invitation \"Estamos a um oi de distância\" (\"We're just a hello away\"). The form collects Nome (name), Email, Telefone (phone), a multi-select of desired offerings, and a free-text field \"Fala mais aí!\" (\"Tell us more!\").",
+    "content_quality": "thin",
+    "key_messages": [
+      "DEU MATCH? (Did we match?) — the page's central call to action",
+      "Estamos a um oi de distância (We're just a 'hello' away) — low-barrier invitation to contact",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (To create regenerative futures is to answer complexity with reinvention) — site-wide tagline from meta description",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA (Repair what was hurt, create what has no name yet, redesign collective living so we can be whole in all our 'louCURA') — mission statement / brand poem",
+      "Fala mais aí! (Tell us more!) — playful, informal form prompt setting the brand's casual Brazilian tone"
+    ],
+    "company_facts": [
+      "Positioning: Gravidade Zero (Gravity Zero / 'Zero Gravity') frames itself around creating 'regenerative futures' (futuros regenerativos) by answering complexity with reinvention",
+      "Mission language (meta description, site-wide): repair what was hurt, create what does not yet have a name, and redesign collective living",
+      "The brand uses the wordplay 'louCURA' (combining 'loucura' = madness and 'cura' = cure/healing) as a signature motif",
+      "Footer copyright reads '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (Some rights reserved, others shared) — signaling a sharing/open ethos",
+      "Thematic pillars surfaced in navigation: Humanware, IA & Tecnologia (AI & Technology), Futuro do Trabalho (Future of Work), Liderança (Leadership), Cultura (Culture)"
+    ],
+    "products_solutions": [
+      "Workshop",
+      "Consultoria Imersiva (Immersive Consulting)",
+      "Playbook",
+      "Vivência (Experience / lived immersion)",
+      "Palestra (Talk / keynote)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Linked from the site navigation/footer with personal Instagram (instagram.com/renanhannouche); presented as a face of the brand",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Linked from the site navigation/footer with personal Instagram (instagram.com/freitasdante); presented as a face of the brand",
+        "affiliation": "founder"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "\"'Humanware' appears as a top-level navigation/content category (linked to /categories/humanware), positioned alongside 'IA & Tecnologia', 'Futuro do Trabalho', 'Liderança' and 'Cultura'. On this contact page it is presented as a thematic pillar/content category. No registered-trademark (Humanware®) symbol is shown on this page.",
+    "voice_quotes": [
+      "DEU MATCH?",
+      "Estamos a um oi de distância.",
+      "Fala mais aí!",
+      "Selecione quantos quiser... (Select as many as you like...)",
+      "2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados"
+    ],
+    "visual_cues": [
+      "Dark theme: dominant backgrounds #0d0d0d and #272727 (near-black)",
+      "Neon/acid green accent #9cff33 (signature highlight color)",
+      "Vivid purple accent #7112ff (secondary accent)",
+      "Neutral UI grays for form fields (#e1e4ea, #f5f7fa, #525866, #99a0ae)",
+      "Built on Framer (framerusercontent.com assets); uses Google Fonts (fonts.gstatic.com)",
+      "Open Graph / Twitter share image: framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Multiple SVG brand/logo assets referenced (vector iconography)",
+      "Informal, playful Brazilian-Portuguese voice paired with a sleek dark-tech aesthetic"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/temas",
+    "page_purpose": "A thematic hub / index page (\"Temas\" = Topics) for the Gravidade Zero (GZero) site. It presents the brand's five core content pillars as entry points (Humanware, AI/Technology, Leadership, Organizational Culture, Future of Work), with site-wide navigation and footer. It is a directory/landing page that routes visitors to deeper thesis content, not a long-form article.",
+    "content_quality": "thin",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (meta tagline / brand promise)",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA",
+      "O que é Humanware®? (lead topic, presented with a registered-trademark mark)",
+      "O paradigma da IA na era complexa",
+      "Uma visão GZero sobre Liderança",
+      "O que temos a dizer sobre Cultura Organizacional",
+      "O que esperar do Futuro do Trabalho",
+      "2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados (footer rights statement signalling open/shared-knowledge stance)"
+    ],
+    "company_facts": [
+      "Brand name: Gravidade Zero, abbreviated GZero",
+      "Positioning centers on creating 'futuros regenerativos' (regenerative futures) by responding to complexity with reinvention",
+      "Frames its mission around 'a era complexa' (the complex era) and collective/human-centered transformation",
+      "Operates around five thematic pillars: Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, and Cultura",
+      "Footer rights line 'Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared) signals a knowledge-sharing / partly-open positioning",
+      "Copyright year shown as 2026",
+      "The 'louCURA' wordplay (loucura = madness, with CURA = cure highlighted) is a recurring brand motif tying 'madness' to 'healing/cure'"
+    ],
+    "products_solutions": [
+      "Humanware® (named, trademarked concept/offering — lead theme)",
+      "Thematic content tracks: Humanware, IA & Tecnologia (AI & Technology), Futuro do Trabalho (Future of Work), Liderança (Leadership), Cultura (Organizational Culture)",
+      "Site sections referenced in nav: Teses (Theses), Cases, Soluções (Solutions), Sobre (About), Contato (Contact)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Listed in site navigation/footer (no explicit title shown on this page); appears to be a GZero principal/founder",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Listed in site navigation/footer (no explicit title shown on this page); appears to be a GZero principal/founder",
+        "affiliation": "founder"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "Humanware is the lead/first theme on the page, displayed as a navigation item ('Humanware') and as the topic question 'O que é Humanware®?' ('What is Humanware?'). It is shown with the registered-trademark symbol (Humanware®), indicating GZero treats it as a proprietary, trademarked concept/framework. On this page it is presented only as a topic gateway (no definition text is rendered); the actual explanation lives behind the linked thesis page. It headlines the topic list ahead of AI, Leadership, Culture, and Future of Work, signalling it is the brand's signature concept.",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Uma visão GZero sobre Liderança",
+      "Alguns direitos reservados, outros compartilhados"
+    ],
+    "visual_cues": [
+      "Dark theme: pure black background (#000 / rgb(0,0,0))",
+      "Muted slate-gray accent color rgb(82,88,102) used for text/headings",
+      "White and transparent-white layers (rgba(255,255,255,0))",
+      "Built on Framer (framerusercontent.com assets)",
+      "Font stack mixes geometric/techno display faces with humanist sans: Michroma, Bruno Ace, Chivo Mono, Fragment Mono (mono/techno display) plus Manrope and Rethink Sans (body) — a tech-meets-human typographic pairing",
+      "Open Graph / Twitter share image: framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Numerous SVG icon/logo assets and several JPEG/PNG imagery hosted on framerusercontent.com",
+      "louCURA typographic emphasis motif (highlighting CURA within loucura)"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/cases",
+    "page_purpose": "A password-gated \"secret area\" splash page. The /cases route does NOT render a public case-study listing — instead it shows a locked gate (\"ÁREA SECRETA\" / Secret Area) with a riddle (\"Decifra-me ou te devoro\" / \"Decipher me or I devour you\"), a password input field, an \"ENTRAR\" (Enter) submit button, and a link back to the main site. No client cases, people, products, or narrative content are exposed on this URL.",
+    "content_quality": "thin",
+    "key_messages": [
+      "ÁREA SECRETA (Secret Area) — the page is intentionally gated/locked",
+      "Decifra-me ou te devoro (Decipher me or I devour you) — riddle/Sphinx-style challenge guarding entry",
+      "ENTRAR (Enter) — single call-to-action behind a password field",
+      "Site-wide tagline (from meta): Criar futuros regenerativos é responder a complexidade com reinvenção (Creating regenerative futures is responding to complexity with reinvention)",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA (Repair what was hurt, create what has no name yet, redesign collective living so we can be whole in all our madness/cure)"
+    ],
+    "company_facts": [
+      "Company name: Gravidade Zero (Gravity Zero); site at gravidadezero.space",
+      "Positioning (from site meta description): creating 'regenerative futures' by responding to complexity with reinvention",
+      "Built on Framer (framerusercontent.com assets, Framer page markup and analytics present)",
+      "Integrates a Loomi chatbot embed (loomi-chatbot.vercel.app) on the page",
+      "Wordplay 'louCURA' fuses 'loucura' (madness) and 'CURA' (cure/healing), signaling the brand's regenerative/healing positioning"
+    ],
+    "products_solutions": [],
+    "people": [],
+    "clients_cases": [],
+    "humanware": "No mention of \"Humanware\" or \"Humanware®\" anywhere in the page's HTML (keyword scan returned zero hits). This gated /cases page does not reference the Humanware concept.",
+    "voice_quotes": [
+      "ÁREA SECRETA",
+      "Decifra-me ou te devoro",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA."
+    ],
+    "visual_cues": [
+      "Dark background with white text — gate heading and body explicitly use color:#FFFFFF; link/secondary text #CCCCCC",
+      "Heading 'ÁREA SECRETA' set in Syncopate (geometric all-caps tech display font), font-weight 800, line-height 125%",
+      "Body 'Decifra-me ou te devoro' set in General Sans, weight 500, 18px",
+      "Password input form (max-width 400px) with an absolutely-positioned icon button containing an SVG (lock/arrow, rounded stroke linejoin) and 'ENTRAR' label",
+      "Framer-built site; site-wide brand fonts referenced include Syncopate, General Sans, Michroma, Bruno Ace, Chivo Mono, Fragment Mono, Manrope, Rethink Sans (futuristic/mono/space-tech typographic palette)",
+      "Site-wide brand color tokens present in CSS include neon/electric accents: violet #7112ff and #612af1, lime-green #cdf140 and #daf66f, magenta #a420b2 / #e802cf, plus reds/teals #ff4e50 #00bf8f and near-black greys (#0f0f0f, #141414, #1a1a1a) — dark-mode futuristic palette",
+      "og:image / twitter:image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg (social share card)",
+      "Riddle/Sphinx motif ('decipher me or I devour you') framing the page as a puzzle/secret-vault gate — strong game/quest vibe"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/old-rh",
+    "page_purpose": "Institutional/corporate overview page for Gravidade Zero (Gzero), a Brazilian transformation/innovation consultancy. It presents the company's mission (\"creating regenerative futures\"), its holistic transformation approach, service offerings, metrics, sister companies, company history timeline, and contact information. The page is a partly-finished Framer template (some sections still carry placeholder English boilerplate text).",
+    "content_quality": "rich",
+    "key_messages": [
+      "Somos sonhadores em ação. (We are dreamers in action.)",
+      "Criamos futuros sem referência. Não há atalhos para chegar onde ninguém nunca foi. (We create futures without reference. There are no shortcuts to get where no one has ever been.)",
+      "Nossa abordagem é holística. (Our approach is holistic.)",
+      "Nossas soluções se adaptam a você. (Our solutions adapt to you.)",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Tecnologia integrada com a alma: Usamos IA para ampliar, não substituir, o potencial humano.",
+      "Soul in the game: Envolvimento real para gerar mudanças que vão além da superfície."
+    ],
+    "company_facts": [
+      "Mission framed as creating regenerative futures, responding to complexity with reinvention, repairing harm, and redesigning collective living.",
+      "Holistic / consciousness-driven approach summarized as an equation: Transformacao Existencial + Transformacao Cultural + Transformacao Digital = Consciencia Unificada (Existential + Cultural + Digital transformation = Unified Consciousness).",
+      "Cultural transformation pillars: originalidade, intimidade e pluralidade (originality, intimacy, plurality).",
+      "Positions IA (AI) as a tool to amplify rather than replace human potential ('Um tolo com uma ferramenta, continua sendo um tolo' - a fool with a tool is still a fool).",
+      "Founded startups including Loomi and acaso as technology arms.",
+      "Developed an internal AI named Renante (a blend of Renan + Dante).",
+      "In 2023 developed 108 digital platforms in a single year, operating across 3 continents.",
+      "Stated NPS approaching 100 on talks; metric counters on the live page render as 0/0k placeholders (k+ estudantes, pessoas mentoradas, clientes, empresas, startups, solucoes digitais, palestras).",
+      "Worked with major Brazilian companies; lists Magalu, Ambev and Vale as early clients.",
+      "Renan Hannouche named to a Forbes Under 30 list (2020)."
+    ],
+    "products_solutions": [
+      "Palestra (Keynote/Talk)",
+      "Workshop",
+      "Imersao (Immersion)",
+      "Playbook",
+      "Jornada: a experiencia completa (Journey: the complete experience)",
+      "Consultoria (Consulting)",
+      "Solucoes Digitais (Digital Solutions)",
+      "Touching the Culture (unified corporate solution combining existential + cultural transformation and digital platform development, with deep organizational culture mapping)",
+      "AWAKE (named offering listed among specialized capabilities)",
+      "Renante - internal AI (Renan + Dante)",
+      "Superapp aimed at the salesperson/seller rather than the customer (launched 2024)"
+    ],
+    "people": [
+      {
+        "name": "Dante Freitas",
+        "role": "Co-founder of Gravidade Zero; met Renan at a NASA campus program (2019); namesake (with Renan) of the Renante AI",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Renan Hannouche",
+        "role": "Co-founder of Gravidade Zero; Forbes Under 30 honoree; namesake (with Dante) of the Renante AI",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Murilo Gun",
+        "role": "Collaborator on the 'Criatividade' (Creativity) course that surpassed 500k organic students",
+        "affiliation": "partner"
+      },
+      {
+        "name": "Tânia Mujica",
+        "role": "Collaborator on the 'Criatividade' (Creativity) course",
+        "affiliation": "partner"
+      }
+    ],
+    "clients_cases": [
+      "Magalu",
+      "Ambev",
+      "Vale",
+      "HSM (partnership; HSM Expo)",
+      "Loomi (sister company / digital solutions atelier)",
+      "acaso (sister company / platform)",
+      "TEDx",
+      "IT Forum (Trancoso)",
+      "Rock in Rio (Humanorama)",
+      "Exponential Summit",
+      "Singularity University Brazil",
+      "Experience Club",
+      "nOW!",
+      "Touching the Culture (corporate case/solution)"
+    ],
+    "humanware": "No mention of the Humanware concept on this page. The raw HTML contains no occurrence of 'Humanware' or a Humanware® trademark. The closest related theme is the 'Transformacao Existencial / Cultural / Digital = Consciencia Unificada' framing and the idea that technology must be integrated 'com a alma' (with the soul) to amplify human potential, but the Humanware term itself is absent.",
+    "voice_quotes": [
+      "Somos sonhadores em ação.",
+      "Não há atalhos para chegar onde ninguém nunca foi.",
+      "Um tolo com uma ferramenta, continua sendo um tolo.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA."
+    ],
+    "visual_cues": [
+      "Built with Framer (meta generator: Framer b3492b4)",
+      "Dark theme base: backgrounds #000, #090909, #0d0d0d, #141414, #1a1a1a (near-black)",
+      "Neon/vivid accent palette in CSS: green #00bf8f and lime #cdf140 / #daf66f, magenta/pink #e802cf, #a420b2 and rgb(244,61,179), purple #612af1 / #7112ff, red-orange #ff4e50",
+      "Light text/utility grays: #e1e4ea, #f5f7fa, #fcfcfc",
+      "og:image and twitter:image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "twitter:card = summary_large_image",
+      "Motifs: space/zero-gravity ('Gravidade Zero', NASA origin), regeneration, consciousness, soul-meets-technology; counter/stat blocks and a week-by-week (Week 01-06) process timeline"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/jpmorgan",
+    "page_purpose": "A client-specific \"MISSÃO IA\" roster page for JPMorgan, part of Gravidade Zero (GZero). It presents a grid of six JPMorgan finance professionals as assessed individuals; each name links to an AI-generated \"Lifecard\" profile (skills, bio, career, recommended assets/connections). The skill inference is produced by GZero's proprietary tech (acaso) via AI using public LinkedIn data. It functions as a skills-based talent/assessment showcase for the JPMorgan engagement.",
+    "content_quality": "rich",
+    "key_messages": [
+      "MISSÃO IA (AI Mission) - framing banner for the JPMorgan participant roster",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (site tagline / meta description)",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA",
+      "Each participant has a 'Lifecard' showing 'Super Skills', level 'LVL MAX', company and role",
+      "Skill inference performed by acaso's proprietary AI technology using public LinkedIn profile data",
+      "Acesse aca.so e descubra como uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times (skill-based organization pitch)",
+      "'Skills para desenvolver' = skills needed for the work context that couldn't be inferred from the person's profile (not a claim the person lacks them, just insufficient data-points)"
+    ],
+    "company_facts": [
+      "Gravidade Zero (GZero) integrates technology, consciousness and culture to prepare people and organizations for the futures they redesign in real time",
+      "Mission/positioning: 'Integramos tecnologia, consciência e cultura para preparar pessoas e organizações para os futuros que redesenham, em tempo real, o nosso hoje'",
+      "Founded/led by Renan Hannouche and Dante Freitas (recurring named figures across all pages)",
+      "Stat: '+k' students in their courses and lectures",
+      "Stat: people mentored in their businesses",
+      "Stat: clients served - 'muitos viraram amigos' (many became friends)",
+      "Stat: works with 'empresas mais importantes do país' (most important companies in the country)",
+      "Founded startups including Loomi and acaso as technology arms",
+      "Digital solutions developed across 3 continents via Loomi",
+      "Lectures at TEDx, IT Forum, Rock in Rio, Exponential Summit, Singularity, Forbes, Experience Club, Convenção VIVO, Expo Summit",
+      "High NPS score (on a scale to 100) for their lectures",
+      "Skill inference for participant pages uses 'tecnologia proprietária da acaso, via Inteligência Artificial, com dados públicos disponíveis nos perfis do LinkedIn'",
+      "Copyright footer: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados'",
+      "Built on Framer; site is server-rendered Portuguese (pt-BR)"
+    ],
+    "products_solutions": [
+      "Lifecard - AI-generated individual profile card (per participant: empresa, cargo, Super Skills, Bio, Interesses, Traços de Personalidade, Carreira, Highlights, Assets Recomendados, Conexões Recomendadas, Skills, IAs Recomendadas)",
+      "MISSÃO IA - AI mission/assessment program framing for client rosters",
+      "LVL MAX - gamified level label shown on each Lifecard",
+      "Super Skills - top highlighted skills per person",
+      "Humanware® - GZero's proprietary concept on human-native technologies (trademarked)",
+      "Consultoria Imersiva (Immersive Consulting, online & presencial, 1-12 months)",
+      "Vivência (in-person immersion, 1-3 days)",
+      "Workshop (online or in-person, 2-4h)",
+      "Palestra (lecture, online or in-person, 1-3h)",
+      "Playbook (printed or digital)",
+      "Jornada (Journey - combines 3+ solution fronts)",
+      "Ferramenta Digital / Soluções Digitais (custom platforms and apps)",
+      "acaso - digital solutions for Skill Based Organizations / skills-based talent",
+      "Loomi - digital accelerator combining strategy, design and technology",
+      "SCI-FI Planning, Trends & Brengs, CocrIAGem, Awake (named methods/offerings under solutions)",
+      "Mapa de Cultura, Ways of working, 'Sua empresa na era IAG' (offerings)",
+      "Book / pre-sale: 'Mundo em Gravidade Zero'"
+    ],
+    "people": [
+      {
+        "name": "Carlos Lima",
+        "role": "Executive Director, JPMorgan Chase & Co. - Latam Equity Sales Leadership; Client-Centric Deal Origination; Data-Driven Relationship Management",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Laercio Gandra Filho",
+        "role": "J.P. Morgan - Electronic Futures & Options Trading; Derivatives Market Analytics; Global Client Communication",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Adriano Lunsqui",
+        "role": "J.P. Morgan - Electronic Trading Platform Management; Technology-Business Translation; Operational Reliability & Efficiency",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Eduardo Cordeiro",
+        "role": "Banco JP Morgan SA - Delta One Trading & Structuring Leadership; Capital & Balance Sheet Optimization; Risk-Neutral Product Governance",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Manoel Menezes",
+        "role": "JPMorgan Chase & Co. - Statistical Arbitrage & Volatility Trading; Quantitative Research & Data Analytics; Portfolio & Balance Sheet Risk Management",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Marcelo Alvarez Gaiani",
+        "role": "J.P. Morgan, CEO Brazil / Managing Director - Head of M&A Advisory Latin America - Strategic Vision; Corporate Finance Excellence; Relationship-Driven Stakeholder Leadership",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Renan Hannouche",
+        "role": "GZero founder/host (named across all site pages)",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "GZero founder/host (named across all site pages)",
+        "affiliation": "founder"
+      }
+    ],
+    "clients_cases": [
+      "JPMorgan Chase & Co. / J.P. Morgan / Banco JP Morgan SA (this page's client)",
+      "Vivo (vivo-ia and vivo-lojas participant rosters on the same site)",
+      "Kion",
+      "Ecorodovias",
+      "Mubadala (mubadala participant roster on the same site)",
+      "Convenção VIVO (event/case)",
+      "Rock in Rio Humanorama (case/event)"
+    ],
+    "humanware": "Humanware is presented as a proprietary, trademarked GZero concept (shown explicitly as \"Humanware®\" and \"O que é Humanware®?\"). Defined as: \"Um conceito autoral GZero que fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena.\" (an authorial GZero concept about human-native technologies, where the path of the heart is the only possible way to live a full life). It appears as a top-level navigation item and a solution offering (\"Humanware®\" under Soluções), and as a thesis topic (\"Nossa teoria autoral sobre tecnologias nativas humanas\"). The mark is consistently shown with the ® symbol.",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Um tolo com uma ferramenta, continua sendo um tolo. É o estado de consciência que transforma tecnologia em potência.",
+      "Usamos IA para ampliar, não substituir, o potencial humano.",
+      "Não há atalhos para chegar onde ninguém nunca foi."
+    ],
+    "visual_cues": [
+      "Framer-built site; OG/Twitter share image: framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Gamified RPG/card aesthetic: 'Lifecard', 'LVL MAX', 'Super Skills', 'Assets Recomendados', 'IAs Recomendadas' (game-like profile cards)",
+      "'MISSÃO IA' (AI Mission) banner motif on participant pages",
+      "Solution intensity shown via filled/empty circle ratings (filled and empty dots)",
+      "Logo asset: framerusercontent.com/images/bn1YLqdGg3f1sCUuSkdyBaOcVEk.svg",
+      "Playful Portuguese tone with stylized capitalization ('louCURA', 'IAG', 'Venha simbora', 'Bora juntos', 'DEU MATCH?')",
+      "Section motif 'Imagine portais babado' on the Sobre page suggesting portal/space imagery",
+      "Brand name 'Gravidade Zero' (Zero Gravity) implies space / weightlessness / futuristic theme"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/o-que-%C3%A9-gravidade-zero",
+    "page_purpose": "A video/post page titled \"O que é Gravidade Zero?\" where founders Dante Freitas and Renan Hannouche explain, on video, what Gravidade Zero (GZero) is. It serves as an introductory/manifesto page on the company's Framer-built site, framing GZero's purpose (creating regenerative futures) and linking to a series of related explainer videos (Humanware, AI, Leadership, Organizational Culture, Future of Work).",
+    "content_quality": "thin",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Você também acredita que podemos mudar o mundo?",
+      "Bora juntos (call to action / invitation to join)"
+    ],
+    "company_facts": [
+      "GZero (Gravidade Zero) positions itself around creating 'futuros regenerativos' (regenerative futures) by responding to complexity with reinvention.",
+      "Mission framing: repair what was harmed ('reparar o que feriu'), create what does not yet have a name, and redesign collective living ('redesenhar o viver em coletivo').",
+      "Thematic pillars surfaced in navigation and video series: Humanware, IA & Tecnologia (AI & Technology), Futuro do Trabalho (Future of Work), Liderança (Leadership), Cultura (Culture).",
+      "Content is organized into 'Teses' (theses) and 'Cases' sections, plus 'Soluções' (Solutions), 'Sobre' (About) and 'Contato' (Contact).",
+      "Site is built on Framer; this specific page's text is minimal because the core content is a video explainer.",
+      "Footer: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared) — signaling an open/sharing-oriented stance."
+    ],
+    "products_solutions": [
+      "Humanware® (registered trademark concept; also a navigation/content pillar)",
+      "Site navigation references a 'Soluções' (Solutions) section, but no individually named offerings are listed on this page."
+    ],
+    "people": [
+      {
+        "name": "Dante Freitas",
+        "role": "Appears in the explainer video explaining what GZero is; listed as a featured/author figure on the site",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Renan Hannouche",
+        "role": "Appears in the explainer video explaining what GZero is; listed as a featured/author figure on the site",
+        "affiliation": "founder"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "Humanware appears explicitly as a registered trademark, written as 'Humanware®'. It is both a top-level navigation/content pillar ('Humanware') and the subject of a dedicated video in the series titled 'O que é Humanware®?' ('What is Humanware?'). No definition text is present on this page itself — the explanation lives in the linked video. The ® mark indicates GZero treats Humanware as a proprietary/branded concept.",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Você também acredita que podemos mudar o mundo?",
+      "Bora juntos"
+    ],
+    "visual_cues": [
+      "Social share / OG image: https://framerusercontent.com/assets/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg (used for both Open Graph and Twitter large-image card)",
+      "Primary typeface: Manrope (loaded via Framer font CSS), plus a serif font family used for emphasis",
+      "SVG favicon: https://framerusercontent.com/images/bn1YLqdGg3f1sCUuSkdyBaOcVEk.svg (same icon for light and dark color schemes, implying a monochrome/adaptive mark)",
+      "Video-centric layout: a featured video with a 'Videos recentes' (recent videos) rail",
+      "Wordplay motif in branding: 'louCURA' capitalizes CURA (cure/healing) inside 'loucura' (madness), reinforcing a healing/regenerative theme",
+      "Built with Framer (generator meta tag); content rendered client-side"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/humanware",
+    "page_purpose": "Video/content page on the GZero (Gravidade Zero) site presenting their authorial concept \"Humanware®\". The page is built around a featured video titled \"O que é Humanware®?\" (\"What is Humanware?\") with a short descriptive blurb, a list of related recent videos, site navigation, and a contact call-to-action. It sits under the \"Humanware\" content category and is hosted by GZero's two figures, Renan Hannouche and Dante Freitas.",
+    "content_quality": "thin",
+    "key_messages": [
+      "O que é Humanware®? (What is Humanware?) — the page's central question/title",
+      "Um conceito autoral GZero que fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena. (An original GZero concept about native human technologies, where the path of the heart is presented as the only possible way to live a full life.)",
+      "Site-wide tagline / meta: 'Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.'",
+      "Você também acredita que podemos mudar o mundo? (Do you also believe we can change the world?) — CTA heading",
+      "Bora juntos (Let's go together) — closing CTA"
+    ],
+    "company_facts": [
+      "GZero / Gravidade Zero is a Brazilian (pt-BR) organization focused on regenerative futures, organizational culture, leadership, AI & technology, and the future of work.",
+      "Mission framing (site-wide): creating regenerative futures by responding to complexity with reinvention — 'repairing what was wounded, creating what does not yet have a name, redesigning collective living so we can be whole in all our louCURA' (a wordplay fusing 'loucura'/madness with 'CURA'/cure).",
+      "Humanware® is described as a GZero authorial/proprietary concept (conceito autoral GZero), positioning the company as an original thought-leadership brand.",
+      "Content is organized into thematic categories: Humanware, IA & Tecnologia (AI & Technology), Futuro do Trabalho (Future of Work), Liderança (Leadership), Cultura (Culture).",
+      "Operates a content/video library ('Videos recentes') plus sections for Teses (Theses), Cases, Sobre (About), Soluções (Solutions) and Contato (Contact).",
+      "Footer/legal: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared) — signaling an open/sharing ethos.",
+      "Site is built on Framer; content is server-rendered in Portuguese (pt-BR).",
+      "A book ('livro') is in pre-sale: 'Mundo em Gravidade Zero' (World in Gravity Zero), sold via contact/WhatsApp with shipping calculated by CEP."
+    ],
+    "products_solutions": [
+      "Humanware® (registered/trademarked authorial concept about native human technologies and 'the path of the heart')",
+      "Video series / thought-content library including: 'O que é Gravidade Zero?', 'O que é Humanware®?', 'O paradigma da IA na era complexa', 'Uma visão GZero sobre Liderança', 'O que temos a dizer sobre Cultura Organizacional', 'O que esperar do Futuro do Trabalho'",
+      "Soluções (Solutions) section — offerings exist but are not detailed on this page",
+      "Book in pre-sale: 'Mundo em Gravidade Zero' (referenced site-wide via /livro)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "GZero host/figure; appears across the site as co-presenter of the video content (e.g. co-explains GZero, leadership, and the AI paradigm with Dante Freitas)",
+        "affiliation": "gzero-team"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "GZero host/figure; appears across the site as co-presenter of the video content alongside Renan Hannouche",
+        "affiliation": "gzero-team"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "Humanware is GZero's central authorial concept and is consistently shown as a registered trademark: 'Humanware®' (with the ® symbol) in the page title 'O que é Humanware®?', the H1 heading, and throughout navigation/video lists. The page's own definition: 'Um conceito autoral GZero que fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena.' — i.e., an original GZero concept about humans' native technologies, positioning 'the path of the heart' (caminho do coração) as the only possible route to a full/whole life (vida plena). It is also a top-level site content category (/categories/humanware). The concept contrasts/complements 'tecnologias artificiais' — a related video, 'O paradigma da IA na era complexa', frames human technologies and artificial technologies coexisting in harmony.",
+    "voice_quotes": [
+      "Um conceito autoral GZero que fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Você também acredita que podemos mudar o mundo?",
+      "Bora juntos"
+    ],
+    "visual_cues": [
+      "Dark / near-black theme base: rgb(14, 18, 27) and rgb(15, 15, 15) backgrounds",
+      "Primary white text rgb(255, 255, 255) with muted grays for secondary text: rgb(153, 160, 174) and rgb(82, 88, 102) (most-used color, slate gray)",
+      "Bright blue accent: rgb(0, 153, 255) (vivid azure) used for highlights/links",
+      "Magenta/pink accent: rgb(244, 61, 179) (hot pink) — a secondary accent pop",
+      "Overall palette = dark-tech / cinematic dark UI with blue + pink neon-ish accents, conveying a futuristic, regenerative, heart-and-tech tone",
+      "Open Graph / Twitter share image: https://framerusercontent.com/assets/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg (summary_large_image card)",
+      "SVG favicon (light & dark mode variants), implying a vector/minimalist logo mark",
+      "Heart/'coração' motif central to the Humanware concept; 'louCURA' wordplay (loucura + cura) suggests playful, humanistic, healing branding",
+      "Built in Framer (modern animated web aesthetic)"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/o-paradigma-da-ia-na-era-complexa",
+    "page_purpose": "A video page in Gzero's \"Teses\" / \"IA & Tecnologia\" content section. It hosts an embedded YouTube video (id BaF6VqNP0fA) titled \"O paradigma da IA na era complexa,\" in which Gzero's founders Dante Freitas and Renan Hannouche discuss how human and artificial technologies can coexist in harmony in a complex era. The page frames Gzero's view on AI, surrounded by site navigation, a recent-videos list, and a contact/CTA block.",
+    "content_quality": "thin",
+    "key_messages": [
+      "O paradigma da IA na era complexa (page/video title)",
+      "Dante Freitas e Renan Hannouche esboçam caminhos onde tecnologias humanas e artificiais coexistem em harmonia.",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Você também acredita que podemos mudar o mundo? Bora juntos"
+    ],
+    "company_facts": [
+      "Brand/company: Gravidade Zero (a.k.a. GZero).",
+      "Positioning expressed in the site-wide tagline: creating regenerative futures by responding to complexity with reinvention — repairing what was harmed, creating what has no name yet, and redesigning collective living.",
+      "Content/thesis stance on AI: human (\"tecnologias humanas\") and artificial technologies should coexist in harmony, framed within the \"era complexa\" (complex era).",
+      "Copyright/footer line: \"2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados\" — a deliberate twist on standard rights reservation (some rights reserved, others shared).",
+      "Site built on Framer; published May 12, 2026.",
+      "Site is in Portuguese (pt-BR)."
+    ],
+    "products_solutions": [
+      "Humanware® (registered-trademark concept featured in site navigation and as a dedicated video/page)",
+      "Teses (thesis/content series)",
+      "Cases",
+      "Soluções (Solutions — navigation section, contents not detailed on this page)",
+      "Mundo em Gravidade Zero (book / 'livro' — referenced elsewhere on the site as being in pre-sale)"
+    ],
+    "people": [
+      {
+        "name": "Dante Freitas",
+        "role": "Host/author of the video; presents Gzero's view on AI in the complex era",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Renan Hannouche",
+        "role": "Host/author of the video; presents Gzero's view on AI in the complex era",
+        "affiliation": "founder"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "Humanware appears as a core Gzero concept and is consistently shown with the registered-trademark symbol as \"Humanware®\" (rendered \"HumanwareÂ®\" due to encoding). It is a top-level navigation item and has its own dedicated video/page (\"O que é Humanware®?\"). On the sibling /humanware page it is described as: \"Um conceito autoral GZero que fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena.\" (An original GZero concept about native human technologies and how the path of the heart presents itself as the only possible way to live a full life.) This AI page positions AI alongside this human-technology concept (\"tecnologias humanas e artificiais coexistem em harmonia\").",
+    "voice_quotes": [
+      "Dante Freitas e Renan Hannouche esboçam caminhos onde tecnologias humanas e artificiais coexistem em harmonia.",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Você também acredita que podemos mudar o mundo? Bora juntos"
+    ],
+    "visual_cues": [
+      "Embedded YouTube video player (youtube.com/embed/BaF6VqNP0fA) as the page's central element",
+      "Embedded chatbot widget 'Loomi' (iframe to loomi-chatbot.vercel.app) — a conversational AI assistant on the page",
+      "Open Graph / Twitter share image: framerusercontent.com/assets/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Typography: Google font 'Manrope' (weights incl. 800) plus 'Satoshi' (referenced via a Satoshi Placeholder fallback)",
+      "Favicon is an SVG (same icon for light and dark color schemes), implying dark-mode-aware branding",
+      "Built with Framer; layout includes top nav (Início, Teses, Cases, Navegue, Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura, Sobre, Soluções, Contato), a 'Descrição' block, a 'Videos recentes' list, and a CTA section",
+      "Playful/wordplay tone in copy (e.g., 'louCURA' capitalizing CURA = 'cure', and informal Brazilian CTA 'Bora juntos')"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/lideran%C3%A7a",
+    "page_purpose": "A content/editorial video page in GZero's \"Navegue\" (browse) section presenting a GZero perspective on Leadership (\"Uma visão GZero sobre Liderança\"). It frames a featured video where Renan Hannouche and Dante Freitas invite new perspectives on what it means to lead in a complex era where rationality alone is no longer enough. It sits alongside sibling thematic video pages (Gravidade Zero, Humanware, AI, Culture, Future of Work).",
+    "content_quality": "thin",
+    "key_messages": [
+      "Uma visão GZero sobre Liderança (A GZero view on Leadership)",
+      "Renan Hannouche e Dante Freitas convidam novos olhares sobre o que significa ser líder numa era onde a racionalidade não é mais o suficiente para enfrentar desafios",
+      "Você também acredita que podemos mudar o mundo? — Bora juntos (Do you also believe we can change the world? — Let's go together)",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção"
+    ],
+    "company_facts": [
+      "Positioning: leadership in a 'complex era' (era complexa) requires more than rationality to face challenges — GZero advocates new ways of seeing/being a leader",
+      "Brand mission framing (from meta description): 'Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA' — creating regenerative futures, responding to complexity with reinvention",
+      "Operates a thematic content/'Teses' (theses) library spanning Leadership, Culture, AI & Technology, Future of Work, and Humanware",
+      "Footer: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared) — signaling an open/collaborative ethos"
+    ],
+    "products_solutions": [
+      "Humanware® (registered trademark, listed as a navigation/topic area and a featured video 'O que é Humanware®?')",
+      "Site sections indicating offerings: Soluções (Solutions), Cases, Teses (Theses)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Presenter/voice of the GZero leadership perspective in the featured video",
+        "affiliation": "gzero-team"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Presenter/voice of the GZero leadership perspective in the featured video",
+        "affiliation": "gzero-team"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "Humanware appears as a core GZero concept and is consistently rendered as a registered trademark — \"Humanware®\". It is both a primary navigation/topic item (\"Humanware\") and a featured explainer video titled \"O que é Humanware?\" (What is Humanware?). On this Leadership page it is referenced as part of the brand's thematic universe rather than explained in detail; the substantive explanation lives on the dedicated Humanware video/page.",
+    "voice_quotes": [
+      "Renan Hannouche e Dante Freitas convidam novos olhares sobre o que significa ser líder numa era onde a racionalidade não é mais o suficiente para enfrentar desafios.",
+      "Você também acredita que podemos mudar o mundo?",
+      "Bora juntos",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA."
+    ],
+    "visual_cues": [
+      "Dark / near-black theme dominant: #000, #141414, #191919, #111",
+      "Primary blue accent: rgb(0,153,255) / #09f / #08f (bright azure)",
+      "Pink/magenta accent: rgb(244,61,179)",
+      "Muted grey text tones: rgb(153,160,174), #666, #999, rgb(202,203,205)",
+      "Open Graph / Twitter share image (JPEG hero): framerusercontent.com/assets/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Built on Framer (framerusercontent.com assets); heavy use of SVG icon set",
+      "Video-centric layout: a featured video plus a 'Videos recentes' (recent videos) rail",
+      "Motif: space/zero-gravity branding ('Gravidade Zero' = Zero Gravity), playful wordplay 'louCURA' (madness/cure)"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/cultura-organizacional",
+    "page_purpose": "A video/editorial page in Gzero's \"Cultura\" (Culture) thematic category, presenting a video titled \"O que temos a dizer sobre Cultura Organizacional\" (What we have to say about Organizational Culture). It frames Gzero's worldview on organizational culture and links to a recent-videos series. Built on Framer; the page is a short video-content page rather than a long-form article.",
+    "content_quality": "thin",
+    "key_messages": [
+      "Cultura como organismo vivo, onde cada indivíduo impacta o todo — e o todo, cada indivíduo.",
+      "Pessoas, organizações, frequências e campo unificado.",
+      "Você também acredita que podemos mudar o mundo? Bora juntos",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (site/og positioning tone)."
+    ],
+    "company_facts": [
+      "Brand: Gravidade Zero (GZero), domain gravidadezero.space.",
+      "Content is organized into thematic editorial categories: Humanware, IA & Tecnologia (AI & Technology), Futuro do Trabalho (Future of Work), Liderança (Leadership), and Cultura (Culture).",
+      "Site sections include Teses (Theses), Cases, Humanware, Sobre (About), Soluções (Solutions), and Contato (Contact) — indicating a consultancy/content brand around organizational transformation.",
+      "Footer: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared) — signals an open/regenerative ethos.",
+      "Page published May 12, 2026 (Framer-generated site)."
+    ],
+    "products_solutions": [
+      "Humanware® (registered trademark concept; appears as a dedicated category and video 'O que é Humanware®?')",
+      "Soluções (Solutions) — a site section with a 'Para o RH' (For HR) offering referenced in markup",
+      "Editorial video series across themes: Gravidade Zero, Humanware®, IA na era complexa, Liderança, Cultura Organizacional, Futuro do Trabalho"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Host/voice of Gzero content; personal Instagram linked (instagram.com/renanhannouche)",
+        "affiliation": "gzero-team"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Host/voice of Gzero content; personal Instagram linked (instagram.com/freitasdante)",
+        "affiliation": "gzero-team"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "Humanware appears as a core Gzero concept and is shown as a registered trademark: \"Humanware®\". It is both a top-level navigation category and a thematic content category, and it has its own explainer video titled \"O que é Humanware®?\" (What is Humanware®?). On this page it is referenced via the recent-videos list and the Humanware category link (/categories/humanware); no long-form definition text is present on this specific page.",
+    "voice_quotes": [
+      "Cultura como organismo vivo, onde cada indivíduo impacta o todo — e o todo, cada indivíduo.",
+      "Pessoas, organizações, frequências e campo unificado.",
+      "Você também acredita que podemos mudar o mundo? Bora juntos",
+      "Alguns direitos reservados, outros compartilhados"
+    ],
+    "visual_cues": [
+      "Framer-built site (meta generator: Framer); dark sidebar UI ('Desktop Sidebar', 'Closed Sidebar', 'Mobile Menu' components).",
+      "Video-centric layout: YouTube embed (video id 9edrSeSxT-8), 'Video Cart', 'Video Duration', 'Last Videos' card grid with 'Shine' hover effect.",
+      "OG/Twitter share image: framerusercontent.com/assets/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg.",
+      "Logo and icon assets referenced (PNG/SVG on framerusercontent.com); Instagram social buttons.",
+      "Imagery/motif language is metaphysical/regenerative: 'frequências', 'campo unificado' (unified field), 'organismo vivo' (living organism), 'louCURA' wordplay (loucura/cura = madness/cure)."
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/o-que-esperar-do-futuro-do-trabalho",
+    "page_purpose": "A video content / blog-style page on the GZero (Gravidade Zero) site under the \"Futuro do Trabalho\" (Future of Work) category. It frames and hosts a YouTube video (youtu.be/0QR0e-J_tDM) titled \"O que esperar do Futuro do Trabalho\", presents GZero's poetic point of view on the future of work, lists related GZero thought-leadership videos, and credits two authors/team members. The substantive content lives in the embedded video; the on-page text is a short poetic framing plus navigation and a recommended-videos rail.",
+    "content_quality": "thin",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (Creating regenerative futures means answering complexity with reinvention).",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA (Repair what was harmed, create what has no name yet, redesign collective living so we can be whole in all our 'louCURA' — a wordplay fusing loucura/madness with cura/healing).",
+      "O que esperar do Futuro do Trabalho — GZero's perspective on what to expect from the future of work.",
+      "Você também acredita que podemos mudar o mundo? Bora juntos (Do you also believe we can change the world? Let's go together) — closing call to action.",
+      "Positions GZero around regenerative futures, navigating complexity, and human-centered reinvention of work."
+    ],
+    "company_facts": [
+      "Brand name: Gravidade Zero, abbreviated GZero.",
+      "Site footer: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (Some rights reserved, others shared) — a deliberately open/collaborative twist on a copyright notice.",
+      "Positions itself as a thought-leadership / consultancy brand focused on the future of work, leadership, organizational culture, AI & technology, and regenerative/human-centered transformation.",
+      "Site is organized into sections: Teses (theses), Cases, Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura, Sobre, Soluções, Contato.",
+      "Built on Framer; uses a dark visual theme and an embedded AI chatbot ('Renante' / Loomi)."
+    ],
+    "products_solutions": [
+      "Humanware® (registered-trademark concept, has its own video 'O que é Humanware®?' and a dedicated nav section)",
+      "Site has a 'Soluções' (Solutions) section in navigation (offerings not detailed on this page)",
+      "Embedded AI chatbot assistant ('Renante', powered by Loomi — loomi-chatbot.vercel.app)",
+      "Content/thesis video series including: 'O que é Gravidade Zero?', 'O que é Humanware®?', 'O paradigma da IA na era complexa', 'Uma visão GZero sobre Liderança', 'O que temos a dizer sobre Cultura Organizacional', 'O que esperar do Futuro do Trabalho'"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Credited author/contributor on the page; Instagram instagram.com/renanhannouche",
+        "affiliation": "gzero-team"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Credited author/contributor on the page; Instagram instagram.com/freitasdante",
+        "affiliation": "gzero-team"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "Humanware is presented as a core GZero concept, consistently shown as a registered trademark 'Humanware®'. It has a dedicated nav section and its own explainer video 'O que é Humanware®?'. Not defined in body text on this page; appears in navigation and the related-videos rail. The ® symbol confirms it is treated as a proprietary branded concept.",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Você também acredita que podemos mudar o mundo? Bora juntos",
+      "2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados"
+    ],
+    "visual_cues": [
+      "Dark theme dominant: background tokens #000, #090909, #0d0d0d, #141414, #1a1a1a, #1f1f1f, #262626 (near-black layered surfaces).",
+      "Vivid accent palette: lime/acid green #cdf140, purple/violet #612af1, magenta/purple #a420b2, coral-red #ff4e50 / #d83c7649 (likely category or highlight accents).",
+      "Light/neutral text tokens: #fff, #fcfcfc, #e4e5e6, #e1e4ea, #ccc, #b0b1b5, #99a0ae, #525866 (grays for body/secondary text on dark bg).",
+      "Open Graph share image: framerusercontent.com/assets/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg.",
+      "Hero/section imagery assets: framerusercontent.com/images/rHZubzS9rgVTFWK6yiVI8hQGKbA.png (2620x1474) and L3Pbh6MmfM6QhDzw2affaXFzG4.jpeg (3840x2160, large cinematic).",
+      "Embedded YouTube video player (youtu.be/0QR0e-J_tDM) with minimal/modest branding chrome.",
+      "Floating rounded AI chatbot widget fixed bottom-right (24px radius).",
+      "Motifs: regeneration, complexity, collective/coletivo, reinvention, and the 'louCURA' (madness-as-healing) wordplay; 'Gravidade Zero' (zero gravity) name evokes weightlessness/breaking free."
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/categories/humanware",
+    "page_purpose": "A content category/topic landing page on the GZero (Gravidade Zero) site, titled \"O que é Humanware®?\", that defines the proprietary \"Humanware®\" concept and aggregates GZero's recent thought-leadership videos (Teses) organized by theme. It functions as a hub linking to related topics such as IA & Tecnologia, Futuro do Trabalho, Liderança, and Cultura.",
+    "content_quality": "thin",
+    "key_messages": [
+      "O que é Humanware®? (page headline / framing question)",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Você também acredita que podemos mudar o mundo? Bora juntos",
+      "O caminho do coração se apresenta como o único possível para vivermos uma vida plena."
+    ],
+    "company_facts": [
+      "GZero (Gravidade Zero) positions itself around creating regenerative futures by responding to complexity with reinvention.",
+      "Mission framing centers on repairing harm, creating what has no name yet, and redesigning collective living so people can be whole (a wordplay on 'louCURA' — madness/cure).",
+      "Humanware® is described as an authorial/proprietary GZero concept (registered trademark, shown with ®).",
+      "Organizes its content/expertise into themes: Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura.",
+      "Site sections include Início, Teses, Cases, Sobre, Soluções, Contato.",
+      "Footer: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared)."
+    ],
+    "products_solutions": [
+      "Humanware® (proprietary GZero concept/framework)",
+      "Teses (thought-leadership / thesis content series)",
+      "Cases",
+      "Soluções (Solutions — section, no specific named offerings listed on this page)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "affiliation": "gzero-team",
+        "role": "GZero contributor / video author (linked to personal Instagram @renanhannouche); likely founder/team — not specified on page"
+      },
+      {
+        "name": "Dante Freitas",
+        "affiliation": "gzero-team",
+        "role": "GZero contributor / video author (linked to personal Instagram @freitasdante); likely founder/team — not specified on page"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "\"Humanware is presented explicitly as a registered trademark — 'Humanware®' — and described as 'Um conceito autoral GZero' (a proprietary/authorial GZero concept). Definition on page: it 'fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena' — i.e., it concerns native human technologies and frames the 'path of the heart' as the only possible way to live a full/whole life. The page title is literally the framing question 'O que é Humanware®?' ('What is Humanware®?'), and a dedicated video of the same name is featured.\"",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Você também acredita que podemos mudar o mundo? Bora juntos",
+      "Um conceito autoral GZero que fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena."
+    ],
+    "visual_cues": [
+      "Dark theme: primary background near-black navy rgb(14,18,27) / #141414 / #0F0F0F",
+      "White primary text rgb(255,255,255); muted gray secondary text rgb(82,88,102) and rgb(153,160,174)",
+      "Bright blue accent / link color rgb(0,153,255) (#0099FF) used for links and highlights",
+      "Subtle translucent surfaces (rgba(82,88,102,0.1)) and rounded corners (border-radius ~10-23px) on cards/buttons",
+      "Typography: Rethink Sans (primary), Manrope, plus monospace accents Fragment Mono and Chivo Mono",
+      "Circular SVG author avatars/badges for team members (85x85)",
+      "Built on Framer; OG share image is a JPEG (N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg); favicon is an SVG",
+      "Video-card grid layout listing recent videos (Teses)"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/categories/ia-tech",
+    "page_purpose": "A category/blog index page on the Gravidade Zero (GZero) site filtering content tagged \"IA & Tecnologia\" (AI & Technology). It is one of five content categories (Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura) under the site's \"Teses\" (theses/insights) editorial section. Built on Framer; most body content is hydrated client-side, so the server-rendered HTML shows only the category shell plus the single article currently listed.",
+    "content_quality": "thin",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (site-wide meta tagline)",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA",
+      "Category framing: 'IA & Tecnologia' — AI and technology as an editorial theme alongside Humanware, Future of Work, Leadership and Culture",
+      "Featured article in this category: 'O paradigma da IA na era complexa' (The paradigm of AI in the complex era)"
+    ],
+    "company_facts": [
+      "Brand name: Gravidade Zero, shortened to GZero (page title 'IA & Tecnologia - GZero')",
+      "Positions itself around 'futuros regenerativos' (regenerative futures), responding to complexity with reinvention",
+      "Editorial / thought-leadership content is organized into 'Teses' with five categories: Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura",
+      "Site sections: Início, Teses, Cases, Sobre, Soluções, Contato — indicating a consultancy/agency model with a body of work (Cases) and named offerings (Soluções)",
+      "Copyright line: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared) — a deliberate open/collaborative licensing stance",
+      "Site built on Framer (generator meta: Framer b3492b4)"
+    ],
+    "products_solutions": [
+      "Soluções (named top-level offerings section, content not rendered server-side on this page)",
+      "Cases (portfolio of client work, linked in nav)",
+      "Teses (editorial/thought-leadership content stream organized by the five categories)"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Linked via Instagram (@renanhannouche) in the site nav/footer area; no title shown in server-rendered markup",
+        "affiliation": "gzero-team"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Linked via Instagram (@freitasdante) in the site nav/footer area; no title shown in server-rendered markup",
+        "affiliation": "gzero-team"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "\"'Humanware' is one of the five editorial categories and a primary nav link (/humanware). On this page it renders as plain text 'Humanware' with no ® or ™ symbol in the server-rendered HTML. The concept itself is not defined on this category page.\"",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "O paradigma da IA na era complexa",
+      "2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados"
+    ],
+    "visual_cues": [
+      "Dark theme with a vivid electric-blue accent color rgb(0, 153, 255)",
+      "Muted grey nav/secondary text around rgb(153, 160, 174); blacks rgb(0,0,0) and greys #666 / #000",
+      "Futuristic / tech typography stack: Michroma, Bruno Ace, Chivo Mono, Fragment Mono (display/mono) paired with Manrope and Rethink Sans for body",
+      "Social share / OG image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Large hero/background JPEG at 3840x2160 (4K, 16:9): pNVkvt4E0Tj5gbpDVXCJmzxjEeU.jpeg",
+      "Set of small 85x85 SVG icons (category/badge glyphs) plus an SVG logo asset (SpyprvSdQQGCfXKSFKcSyLrAE.svg)",
+      "Wordplay motif 'louCURA' (capitalizing CURA = 'cure' inside 'loucura' = madness), reinforcing the regenerative/healing brand tone"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/categories/futuro-do-trabalho",
+    "page_purpose": "Category hub / content-pillar landing page on the GZero (Gravidade Zero) Framer-built site, grouping editorial content under the \"Futuro do Trabalho\" (Future of Work) theme. It serves as a navigation page introducing the topic and linking to articles within it (e.g., \"O que esperar do Futuro do Trabalho\").",
+    "content_quality": "thin",
+    "key_messages": [
+      "Futuro do Trabalho (Future of Work) — one of GZero's content pillars alongside Humanware, IA & Tecnologia, Liderança, and Cultura",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (Creating regenerative futures means responding to complexity with reinvention)",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo (Repair what was harmed, create what has no name yet, redesign collective living)",
+      "...para sermos plenos em toda a nossa louCURA (so we can be whole in all our 'louCURA' — a wordplay fusing loucura/madness with CURA/cure)",
+      "O que esperar do Futuro do Trabalho (What to expect from the Future of Work) — featured article teaser"
+    ],
+    "company_facts": [
+      "Brand operates as GZero / Gravidade Zero (gravidadezero.space)",
+      "Footer: 2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados (Some rights reserved, others shared) — signals an open/shared-knowledge, collaborative ethos",
+      "Positions content around five thematic pillars: Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura",
+      "Site sections include Início, Teses, Cases, Sobre, Soluções, Contato — indicating a consultancy/thought-leadership model offering theses, cases, and solutions",
+      "Framing centers on regenerative futures, reinvention, complexity, and collective/human-centered transformation of work"
+    ],
+    "products_solutions": [
+      "Soluções (Solutions) — referenced as a site section/offering, but no specific named products are listed on this category page"
+    ],
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Content author/contributor (byline linked to instagram.com/renanhannouche)",
+        "affiliation": "gzero-team"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Content author/contributor (byline linked to instagram.com/freitasdante)",
+        "affiliation": "gzero-team"
+      }
+    ],
+    "clients_cases": [],
+    "humanware": "\"'Humanware' appears as one of the site's primary content pillars / navigation categories (alongside IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura) and has its own page (./humanware). On THIS page it is shown only as a plain category label — it is NOT displayed with a registered-trademark ® symbol here (no ® character present in the markup). The concept itself is not described in detail on this category page.\"",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "O que esperar do Futuro do Trabalho",
+      "2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados"
+    ],
+    "visual_cues": [
+      "Vivid electric purple accent: #7112ff (brand highlight color)",
+      "Predominantly dark/near-black theme surfaces: #0f0f0f, #141414, #1f1f1f, #262626, #272727 (dark-mode editorial aesthetic)",
+      "Light neutrals for contrast panels/text: #f5f7fa, #f2f2f3, #e1e4ea, #e4e5e6",
+      "Muted grey typographic tones: #525866, #99a0ae, #96979c, #b0b1b5 (used for secondary text like author names and teasers)",
+      "Deep navy/ink text color: #0e121b",
+      "Built on Framer (framerusercontent.com assets); 18 distinct images including ~14 SVG icons/logos and a JPEG social/OG hero image (N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg)",
+      "OG/Twitter share image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "twitter:card = summary_large_image (large visual social cards)"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/categories/lideran%C3%A7a",
+    "page_purpose": "Category/topic listing page on the Gravidade Zero (GZero) site that groups content tagged under \"Liderança\" (Leadership). It is one of GZero's five editorial pillars (Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura) and surfaces a single featured article card titled \"Uma visão GZero sobre Liderança\" (A GZero view on Leadership). Built on Framer; server-rendered pt-BR.",
+    "content_quality": "thin",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (Creating regenerative futures means responding to complexity with reinvention)",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA (Repair what hurt, create what has no name yet, redesign collective living so we can be whole in all our 'louCURA')",
+      "Uma visão GZero sobre Liderança (A GZero view on Leadership) — the featured/only article in this category",
+      "Liderança is positioned as one of GZero's core editorial themes alongside Humanware, IA & Tecnologia, Futuro do Trabalho, and Cultura"
+    ],
+    "company_facts": [
+      "Brand name: Gravidade Zero, abbreviated GZero",
+      "Positioning/mission (from meta description, repeated site-wide): building 'futuros regenerativos' (regenerative futures) by responding to complexity with reinvention — repairing harm, naming the new, and redesigning collective/community living",
+      "Wordplay motif 'louCURA' (madness + cura/cure) used as a signature brand expression of wholeness",
+      "Five editorial pillars / content categories: Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura",
+      "Owns a trademarked concept 'Humanware®' (page title elsewhere on site: 'O que é Humanware®?')",
+      "Runs named client assessment/program tracks evidenced by per-participant pages: Vivo (vivo-ia and vivo-lojas), Kion, Ecorodovias, Mubadala, J.P. Morgan — collectively hundreds of individual participant profiles",
+      "Site footer copyright: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared) — signals an open/commons-leaning ethos",
+      "Site built on Framer (generator meta tag)"
+    ],
+    "products_solutions": [
+      "Humanware® (flagship trademarked concept/offering — has dedicated /humanware page 'O que é Humanware®?')",
+      "Editorial content pillars used as navigable categories: Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura",
+      "Teses (theses / thought-leadership content section)",
+      "Cases (case studies section)",
+      "Soluções (Solutions — dedicated nav section, contents not exposed on this page)",
+      "Client assessment/journey program tracks (per-person profile pages under client slugs: vivo-ia, vivo-lojas, kion, ecorodovias, mubadala, jpmorgan)"
+    ],
+    "clients_cases": [
+      "Vivo (two tracks: 'vivo-ia' and 'vivo-lojas')",
+      "Kion",
+      "Ecorodovias",
+      "Mubadala",
+      "J.P. Morgan (jpmorgan)"
+    ],
+    "humanware": "\"Humanware is a central GZero concept and is shown as a registered trademark — Humanware®. It is both one of the five navigation/content pillars (appears in the top nav and 'Navegue' menu) and a standalone explainer page titled 'O que é Humanware®?' (What is Humanware®?). On this specific Liderança category page only the nav label 'Humanware' is visible (no body explanation); the ® trademark form is confirmed from the site's /humanware page title in the Framer search index.\"",
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "affiliation": "gzero-team",
+        "role": "GZero figure linked via official social handle in the site footer (Instagram @renanhannouche); appears site-wide, not as author of a specific Liderança article"
+      },
+      {
+        "name": "Dante Freitas",
+        "affiliation": "gzero-team",
+        "role": "GZero figure linked via official social handle in the site footer (Instagram @freitasdante); appears site-wide"
+      }
+    ],
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Uma visão GZero sobre Liderança",
+      "Alguns direitos reservados, outros compartilhados"
+    ],
+    "visual_cues": [
+      "Dominant palette: white rgb(255,255,255) on a near-black/dark base — black rgb(0,0,0) and deep navy-charcoal rgb(14,18,27)",
+      "Greys for body/secondary text: rgb(153,160,174) (light blue-grey) and rgb(82,88,102) (slate, used for the article-card title text)",
+      "Signature accent color: vivid blue rgb(0,153,255) (#0099FF) — likely the GZero brand/link/highlight color",
+      "Social/footer icons for Instagram (Renan Hannouche, Dante Freitas) and a YouTube-named link",
+      "OG/Twitter share image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg (summary_large_image card)",
+      "Framer-built layout with card-style article tiles; clean editorial dark-tech aesthetic",
+      "Motif/wordplay: 'louCURA' (capitalized CURA) as a recurring brand typographic device"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/categories/cultura",
+    "page_purpose": "A category hub page on the Gravidade Zero (GZero) site that groups the brand's content on organizational culture (\"Cultura\"). It serves as a navigation/landing page: it states the category's theme and links to the article \"O que temos a dizer sobre Cultura Organizacional\", with the brand's global nav (Teses, Cases, Humanware, IA & Tecnologia, Futuro do Trabalho, Liderança, Cultura, Sobre, Soluções, Contato).",
+    "content_quality": "thin",
+    "key_messages": [
+      "Cultura (category framing): site-wide tagline — 'Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.'",
+      "Category prompt: 'O que temos a dizer sobre Cultura Organizacional' (What we have to say about Organizational Culture)",
+      "Culture as a living organism (from the linked Cultura Organizacional page): 'Pessoas, organizações, frequências e campo unificado. Cultura como organismo vivo, onde cada indivíduo impacta o todo — e o todo, cada indivíduo.'",
+      "Closing/CTA motif: 'Você também acredita que podemos mudar o mundo?' and 'Bora juntos'"
+    ],
+    "company_facts": [
+      "GZero (Gravidade Zero) integrates technology, consciousness and culture to prepare people and organizations for the futures that redesign the present in real time ('Integramos tecnologia, consciência e cultura para preparar pessoas e organizações para os futuros que redesenham, em tempo real, o nosso hoje.')",
+      "Positioning: creating regenerative futures by responding to complexity with reinvention",
+      "Self-described traits: transformation with purpose, speed with consistency, soul and technology integrated, depth, scalable & sustainable, ultra-personalization, authorial narrative, 'soul in the game'",
+      "Operating model spans Transformação Existencial + Transformação Cultural + Transformação Digital = Consciência Unificada (Unified Consciousness)",
+      "Founded/co-founded startups including Loomi and acaso (described as their technology arms); Loomi has developed digital solutions across 3 continents",
+      "Stated reach (from /sobre, exact figures shown as templated metrics): thousands of students in courses/lectures, people mentored in their businesses, clients served ('many became friends'), works with some of the most important companies in the country; high NPS for lectures (scale to 100)",
+      "Speaking footprint: TEDx, IT Forum, Rock in Rio (Humanorama), Exponential/Expo Summit, Singularity University, Forbes, Experience Club, now!, Convenção VIVO",
+      "Brand line: 'Não há atalhos para chegar onde ninguém nunca foi.' (There are no shortcuts to get where no one has ever been.)",
+      "Uses AI to amplify, not replace, human potential ('Usamos IA para ampliar, não substituir, o potencial humano.')",
+      "Copyright/values line: '2026 Gravidade Zero / Alguns direitos reservados, outros compartilhados' (some rights reserved, others shared)"
+    ],
+    "products_solutions": [
+      "Consultoria Imersiva (Immersive Consulting) — Online & in-person, 1 to 12 months",
+      "Vivência (Experience/Immersion) — in-person, 1 to 3 days",
+      "Workshop — online or in-person, 2-4h",
+      "Palestra (Lecture/Keynote) — online or in-person, 1-3h",
+      "Playbook — printed or digital, provocative co-created notebooks",
+      "Jornada (Journey) — combines at least three solutions (e.g., consulting + vivência + digital tools) for deeper impact",
+      "Ferramenta Digital / Soluções Digitais — custom platforms and apps to sustain culture and actions",
+      "Human-Centric Ways of Working",
+      "Named offering modules/themes: Humanware®, Liderança, IA & Tecnologia, Ways of Working, Mapa de Cultura (Culture Map), 'Sua empresa na era IAG' (intro to Generative AI for the client's context), SCI-FI Planning, Trends & Brengs, CocrIAGem (real-time GenAI solution creation), Awake, Investigação Organizacional, Mapa do Campo, Playbook de Iniciativas",
+      "Loomi — digital accelerator combining strategy, design and technology to drive businesses in the digital era",
+      "acaso — technology arm/startup"
+    ],
+    "clients_cases": [
+      "VIVO (referenced via 'Convenção VIVO' and the Vivo IA / Vivo Lojas assessment programs)",
+      "KION",
+      "Ecorodovias",
+      "Mubadala",
+      "J.P. Morgan (JPMorgan)",
+      "Note: these client names appear across the broader site (event mentions and client-participant assessment directories such as /vivo-ia/, /kion/, /ecorodovias/, /mubadala/, /jpmorgan/); the Cultura category page itself does not name specific client cases."
+    ],
+    "humanware": "Humanware is presented as an authorial GZero concept and is shown as a registered trademark: 'Humanware®'. Defined (on the linked /humanware page) as 'Um conceito autoral GZero que fala sobre as tecnologias nativas humanas e como o caminho do coração se apresenta como o único possível para vivermos uma vida plena.' (An authorial GZero concept about humanity's native technologies and how the path of the heart presents itself as the only possible way to live a full life.) On /soluções it is described as 'Nossa teoria autoral sobre tecnologias nativas humanas.' It also appears as a top-level navigation category and content pillar alongside IA & Tecnologia, Futuro do Trabalho, Liderança and Cultura. Related framing: 'Um tolo com uma ferramenta, continua sendo um tolo. É o estado de consciência que transforma tecnologia em potência.'",
+    "people": [
+      {
+        "name": "Renan Hannouche",
+        "role": "Co-founder / partner (named lead who guides journeys, e.g., Silicon Valley agenda; explains what GZero is); Instagram linked in footer",
+        "affiliation": "founder"
+      },
+      {
+        "name": "Dante Freitas",
+        "role": "Co-founder / partner (named lead who guides journeys, e.g., Silicon Valley agenda; explains what GZero is); Instagram linked in footer",
+        "affiliation": "founder"
+      }
+    ],
+    "voice_quotes": [
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Um tolo com uma ferramenta, continua sendo um tolo. É o estado de consciência que transforma tecnologia em potência.",
+      "Não há atalhos para chegar onde ninguém nunca foi.",
+      "Você também acredita que podemos mudar o mundo?"
+    ],
+    "visual_cues": [
+      "Dark theme: near-black background rgb(14,18,27) and pure black rgb(0,0,0)",
+      "White primary text rgb(255,255,255)",
+      "Muted grey accents rgb(153,160,174) and rgb(82,88,102)",
+      "Bright blue link/accent color rgb(0,153,255)",
+      "Video-forward layout: 'Videos recentes' section and 'Video Title / Category Stack' components in the markup (category pages surface video content cards)",
+      "Open Graph / Twitter share image: JPEG at framerusercontent.com (N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg); favicon is an SVG",
+      "Built on Framer (meta generator: Framer); SVG logo/favicon (bn1YLqdGg3f1sCUuSkdyBaOcVEk.svg)",
+      "Motif of dotted progress/intensity indicators (⬤ ⬤ ⬤ ◯ ◯) used to show solution depth on related pages",
+      "Wordplay/typographic motif capitalizing 'CURA' (cure) inside 'louCURA' (madness) and 'IAG' inside 'CocrIAGem'"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/ecorodovias/andrea-fernandes",
+    "page_purpose": "A gamified \"Lifecard\" profile page for Andrea Fernandes, an individual assessed as a client-participant under EcoRodovias in a Gzero (Gravidade Zero) program. The page presents her as a game character at \"LVL MAX\" with company, role, Super Skills, bio, interests, personality traits, career history, highlights, recommended assets/connections, a current skills inventory vs. a \"skills gap\" for an AI challenge (\"Grupo desafio Release Trimestral\"), and recommended AIs. It frames professional/AI-skill assessment in an RPG-style video-game UI.",
+    "content_quality": "rich",
+    "key_messages": [
+      "Lifecard framing: Andrea Fernandes presented as a game character at 'LVL MAX'",
+      "Skills-based approach to building teams: 'descubra como uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times'",
+      "Brand tagline (meta): 'Criar futuros regenerativos é responder a complexidade com reinvenção'",
+      "Challenge framing: 'Grupo desafio Release Trimestral' with an explicit 'Skills gap para o desafio'",
+      "Skill inference powered by proprietary AI from public LinkedIn data"
+    ],
+    "company_facts": [
+      "Site is Gravidade Zero (Gzero), domain gravidadezero.space",
+      "Brand mission/positioning (meta description): 'Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.'",
+      "Skill inference performed via acaso's proprietary AI technology ('tecnologia proprietária da acaso, via Inteligência Artificial') using public LinkedIn profile data of participants",
+      "Call to action to visit aca.so to learn about a skills-based approach for building teams",
+      "Page built on Framer (framerusercontent.com assets)"
+    ],
+    "products_solutions": [
+      "Lifecard (the gamified participant profile format)",
+      "Super Skills (highlighted top skills section)",
+      "Suas skills (current skill inventory)",
+      "Skills gap para o desafio (gap analysis vs. a challenge)",
+      "Grupo desafio: Release Trimestral (quarterly-release challenge track)",
+      "IAs Recomendadas / MISSÃO IA (recommended AIs section)",
+      "Assets Recomendados (recommended learning articles)",
+      "Conexões Recomendadas (recommended connections)",
+      "acaso / aca.so skills-inference platform (partner technology)"
+    ],
+    "people": [
+      {
+        "name": "Andrea Fernandes",
+        "role": "Diretora de Finanças Corporativas / Corporate Finance Officer, Investor Relations & ESG lead, Grupo EcoRodovias; board member of Ecopistas",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "André Junqueira Ferreira",
+        "role": "Gerente de Relações com Investidores (recommended connection)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Suelen Hames",
+        "role": "Investor Relations Coordinator, Portobello Grupo (recommended connection)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Lucas Trevisan",
+        "role": "Conselho de Administração, REVEE (recommended connection)",
+        "affiliation": "other"
+      }
+    ],
+    "clients_cases": [
+      "EcoRodovias (Grupo EcoRodovias) - the client under which this participant is assessed",
+      "Ecopistas (Andrea is a board member)",
+      "Suzano Papel e Celulose (career history)",
+      "AES Eletropaulo (career history)",
+      "CEMIG (career history)",
+      "Portobello Grupo (recommended connection's employer)",
+      "REVEE (recommended connection's employer)",
+      "acaso / aca.so (technology partner)"
+    ],
+    "humanware": "The Humanware concept does NOT appear anywhere on this page. No 'Humanware' text or Humanware® trademark is present in the rendered text or HTML markup. The page's analogous concept is a skills-based, AI-augmented human profile ('Lifecard') combining human Super Skills with AI skill-gap analysis, but it is not labeled Humanware.",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "A inferência de habilidades nesta página foi realizada por meio da tecnologia proprietária da acaso, via Inteligência Artificial, com dados públicos disponíveis nos perfis do LinkedIn dos participantes.",
+      "Acesse aca.so e descubra como uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times."
+    ],
+    "visual_cues": [
+      "Dark theme: near-black backgrounds rgb(5,5,5) and rgb(0,0,0)",
+      "Off-white primary text rgb(252,252,252) / #fcfcfc",
+      "Magenta/pink accent color #e802cf (brand highlight)",
+      "Greyscale UI tones: #858585, #a8a8a8, #999999, #b5b5b5",
+      "Dark green accent #152913 and muted gold/olive #766744",
+      "Deep plum tone rgb(40,26,38)",
+      "RPG/video-game UI motifs: 'Lifecard', 'LVL MAX', 'Super Skills', 'Diamond' shape element",
+      "OG/social share image: framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Built on Framer; 'Acaso logo' SVG present near 'powered by'"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/kion/adriana-firmo",
+    "page_purpose": "A gamified professional \"Lifecard\" (RPG-style character sheet) for Adriana Firmo, an executive assessed under the KION South America client engagement. The page profiles her career, AI-inferred skills, personality traits, interests, and the skill gaps relative to a defined business \"challenge\" (desafio: Growth Intelligence), recommending learning assets, connections, and AIs. It demonstrates Gzero's skills-based talent intelligence offering, with skill inference powered by acaso (aca.so) using public LinkedIn data.",
+    "content_quality": "rich",
+    "key_messages": [
+      "Lifecard framing with 'LVL MAX' and 'Super Skills' — gamified RPG character-sheet metaphor for a professional profile",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (site-wide brand tagline)",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA",
+      "Skill Gap corresponde às skills necessárias para o desafio, mas que não conseguimos identificar a partir do profile da pessoa",
+      "Uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times",
+      "Grupo / desafio: Growth Intelligence"
+    ],
+    "company_facts": [
+      "Gzero (Gravidade Zero) positions itself around creating regenerative futures: 'Criar futuros regenerativos é responder a complexidade com reinvenção'",
+      "Core offering shown here: a skills-based talent intelligence assessment that maps a person's skills, personality, interests, and career against a defined business challenge",
+      "Skill inference is performed via acaso's proprietary AI technology using public data from participants' LinkedIn profiles (acaso = aca.so)",
+      "Each profile is delivered as a 'Lifecard' with levels (LVL MAX), Super Skills, Interests, Personality Traits, Career timeline, Highlights, recommended Assets, recommended Connections, and recommended AIs",
+      "Identifies both the person's existing skills and the 'Skills gap para o desafio' (skills needed for the challenge that could not be inferred from the profile)"
+    ],
+    "products_solutions": [
+      "Lifecard (gamified RPG-style professional/skills profile)",
+      "Growth Intelligence (the named 'desafio'/challenge group this person is assessed against)",
+      "Skills inference engine powered by acaso (aca.so)",
+      "Skills gap analysis ('Skills gap para o desafio')",
+      "Recommended Assets, Recommended Connections, and Recommended AIs (MISSÃO IA) modules"
+    ],
+    "people": [
+      {
+        "name": "Adriana Firmo",
+        "role": "Vice President Sales & Service, KION South America (assessed individual / Lifecard subject)",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Lucas Azevedo",
+        "role": "Diretor de Customer Success, Doctoralia Brasil (AI-recommended connection)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Gaston Caramuro",
+        "role": "Director of Customer Success, Salesforce (AI-recommended connection)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Layza Milena Machado Biffi",
+        "role": "Head of Customer Success, Logcomex (AI-recommended connection)",
+        "affiliation": "other"
+      }
+    ],
+    "clients_cases": [
+      "KION South America (client; Adriana Firmo's employer and the engagement context)",
+      "KION Group (global parent referenced in bio)",
+      "STILL (employer in her career history)",
+      "Linde Still Brasil - Members of KION South America (employer in career history)",
+      "Ameise (former employer)",
+      "acaso / aca.so (technology partner powering skill inference)",
+      "Companies named in recommended assets/connections: Google Cloud, McKinsey & Company, TSIA, Doctoralia Brasil, Salesforce, Logcomex"
+    ],
+    "humanware": "Not present on this page. The term \"Humanware\" does not appear anywhere in the page content or markup; no Humanware® trademark is shown. The relevant concept here is instead a skills-based / human-talent intelligence framing (\"abordagem baseada em skills\"), with skill inference attributed to acaso (aca.so).",
+    "voice_quotes": [
+      "Você é uma executiva experiente que atualmente atua como Vice President Sales & Service na KION South America, onde lidera operações comerciais e de pós-venda em todo o Brasil.",
+      "Skill Gap corresponde às skills necessárias para o desafio, mas que não conseguimos identificar a partir do profile da pessoa.",
+      "A inferência de habilidades nesta página foi realizada por meio da tecnologia proprietária da acaso, via Inteligência Artificial, com dados públicos disponíveis nos perfis do LinkedIn dos participantes.",
+      "Acesse aca.so e descubra como uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times."
+    ],
+    "visual_cues": [
+      "Built on Framer (meta generator: Framer b3492b4)",
+      "Dark theme: near-black backgrounds (#090909, #0d0d0d, #1a1a1a, #000)",
+      "Dominant accent color: vivid magenta/pink #e802cf (also #f030ca, #a420b2) — primary brand accent",
+      "Secondary accent colors: lime/chartreuse green (#cdf140, #daf66f), coral-red (#ff4e50), violet/purple (#612af1, #7112ff), teal-green (#00bf8f)",
+      "Fonts: Satoshi (primary body, ~72 uses), Michroma (display/tech headings, ~28 uses), Fragment Mono (monospace accents)",
+      "Gaming/RPG visual motifs: 'LVL MAX', 'Super Skills', character-card / Lifecard layout",
+      "OG/social share image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Section icons/badges for empresa, cargo, Interesses, Carreira, Skills, IAs Recomendadas ('MISSÃO IA', 'powered by')"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/vivo-ia/alessandra-honda",
+    "page_purpose": "A gamified individual \"Lifecard\" profile page for Alessandra Sanae Honda, a Vivo (Telefônica Brasil) employee assessed as a client-participant in the Gravidade Zero \"Vivo IA / MISSÃO IA\" program. It presents an AI-inferred, RPG-style skills/career card (level, super skills, bio, personality traits, career history, recommended assets/connections, skills inventory and skill-gap analysis) for a specific business challenge (\"Desafio Expansão PAP\").",
+    "content_quality": "rich",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Lifecard / LVL MAX — a person's professional profile rendered as a gamified RPG-style character card",
+      "Skill Gap corresponde às skills necessárias para o desafio, mas que não conseguimos identificar a partir do profile da pessoa — não significa que a pessoa não as possui, mas que não há data-points suficientes para inferir",
+      "Uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times",
+      "A inferência de habilidades foi realizada por meio de tecnologia proprietária via Inteligência Artificial, com dados públicos dos perfis do LinkedIn dos participantes"
+    ],
+    "company_facts": [
+      "Gravidade Zero positions itself around creating regenerative futures, answering complexity with reinvention",
+      "The program is branded MISSÃO IA (\"Powered by: MISSÃO IA\") and delivered for the client Vivo (Telefônica Brasil) under the /vivo-ia path",
+      "Methodology: skill inference performed via proprietary AI technology from acaso (aca.so), using public LinkedIn profile data of participants",
+      "Core proposition: a skills-based approach enables more agility and intelligence in building teams",
+      "Page is server-rendered on Framer (framerusercontent.com assets)"
+    ],
+    "products_solutions": [
+      "Lifecard (gamified professional profile / character card with LVL MAX, Super Skills)",
+      "Skill Gap analysis (skills required for a challenge vs. skills inferable from profile)",
+      "MISSÃO IA (AI-driven program/platform branding)",
+      "acaso (aca.so) — proprietary AI skill-inference technology",
+      "Desafio Expansão PAP (the specific business challenge / group the profile is assessed against)"
+    ],
+    "people": [
+      {
+        "name": "Alessandra Sanae Honda",
+        "role": "Especialista de Produtos (Digitais) na Vivo (Telefônica Brasil)",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Tatiana Ponce",
+        "role": "CMO na Natura (Conexão Recomendada)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Felipe P. Daltro",
+        "role": "Senior Director of Marketing na Corteva (Conexão Recomendada)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Eduardo Pires",
+        "role": "Head of Industry Food Delivery na Incognia (Conexão Recomendada)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Tomáš Rosputinský",
+        "role": "Palestrante TEDxKosice 2013 (Asset/Mídia Recomendada)",
+        "affiliation": "other"
+      }
+    ],
+    "clients_cases": [
+      "Vivo (Telefônica Brasil) — the client for this assessment program",
+      "Whirlpool Latin America (participant career history)",
+      "Setec Consulting Group (participant career history)",
+      "Manufatura de Brinquedos Estrela (participant career history)",
+      "Natura, Corteva, Incognia (named via recommended connections)",
+      "Desafio Expansão PAP (named challenge/case)"
+    ],
+    "humanware": "No mention of \"Humanware\" or a Humanware® trademark appears anywhere on this page (verified in both the rendered markdown text and the raw HTML source). The page instead centers on a gamified, human-skills-based \"Lifecard\" concept and AI skill inference, but does not use the Humanware term or brand.",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Acesse aca.so e descubra como uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times.",
+      "Skill Gap corresponde às skills necessárias para o desafio, mas que não conseguimos identificar a partir do profile da pessoa."
+    ],
+    "visual_cues": [
+      "Built on Framer (framerusercontent.com assets); favicon is an SVG",
+      "Dominant palette: near-white background rgb(252,252,252)/#fcfcfc, near-black text rgb(5,5,5)/#050505, white #ffffff",
+      "Vivid magenta/fuchsia accent #e802cf (Vivo-aligned brand color)",
+      "Secondary accents: dark green #152913, coral red #ff4e50, deep indigo/purple #250279, muted gold/khaki #766744",
+      "Grays #858585, #a8a8a8, #999999, #b5b5b5 for secondary text/borders",
+      "OG/Twitter share image: https://framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg (summary_large_image card)",
+      "Gamified RPG / trading-card motif: 'Lifecard', 'LVL MAX', 'Super Skills', 'Skill Gap', 'Assets Recomendados', 'IAs Recomendadas'"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/vivo-lojas/samira-gontijo-bolson",
+    "page_purpose": "A gamified \"Lifecard\" profile page for Samira Gontijo Bolson, an individual participant assessed under the Vivo Lojas (Vivo / Telefonica Brasil) client engagement. Presented as an RPG-style character sheet (Lifecard, LVL MAX, Super Skills, skill gap, recommended connections/AIs) that maps the person's career, skills, personality traits, and a \"Desafio Operacoes\" (Operations Challenge) group assignment. Skills were inferred by AI from public LinkedIn data via the \"acaso\" (aca.so) proprietary technology.",
+    "content_quality": "rich",
+    "key_messages": [
+      "Criar futuros regenerativos e responder a complexidade com reinvencao.",
+      "Reparar o que feriu, criar o que ainda nao tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Uma abordagem baseada em skills pode garantir mais agilidade e inteligencia na construcao de times.",
+      "Skill Gap nao significa que a pessoa nao possui as habilidades, mas sim que nao ha data-points suficientes para inferir."
+    ],
+    "company_facts": [
+      "Gravidade Zero positions itself around creating 'regenerative futures' and responding to complexity with reinvention.",
+      "The profile/assessment methodology is powered by 'acaso' (aca.so) proprietary AI technology that infers skills from public LinkedIn profile data.",
+      "The product frames professional profiles as a game: Lifecard, LVL MAX, Super Skills, skills, skill gaps, recommended assets/connections/AIs, and group challenges.",
+      "Skill Gap is explicitly defined as skills needed for a challenge that could not be inferred from the person's profile due to insufficient data-points, not a claim the person lacks them."
+    ],
+    "products_solutions": [
+      "Lifecard (gamified professional profile / character sheet)",
+      "Super Skills",
+      "Skills gap analysis for a challenge",
+      "Grupo - Desafio Operacoes (Operations Challenge group assignment)",
+      "Assets Recomendados (recommended articles/learning assets)",
+      "Conexoes Recomendadas (recommended connections)",
+      "IAs Recomendadas / Missao IA (recommended AIs / AI mission)",
+      "acaso (aca.so) skills-based AI inference technology"
+    ],
+    "clients_cases": [
+      "Vivo (Telefonica Brasil) - client engagement context (vivo-lojas)",
+      "Dengo Chocolates - participant's prior employer",
+      "Pandora - participant's prior employer",
+      "Nestle Nespresso - participant's prior employer",
+      "BCG - source of a recommended article",
+      "World Economic Forum - source of a recommended article",
+      "Risely - source of a recommended article",
+      "IGA Coca-Cola Institute - affiliation of recommended connection",
+      "IBEVAR - affiliation of recommended connection",
+      "acaso / aca.so - technology provider"
+    ],
+    "humanware": "Not present. This page makes no mention of the Humanware concept or a Humanware trademark. The skill-inference methodology here is attributed to the \"acaso\" (aca.so) proprietary AI technology applied to public LinkedIn data, not to Humanware.",
+    "voice_quotes": [
+      "Criar futuros regenerativos e responder a complexidade com reinvencao.",
+      "redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Acesse aca.so e descubra como uma abordagem baseada em skills pode garantir mais agilidade e inteligencia na construcao de times.",
+      "Nao significa que a pessoa nao possui as habilidades, mas sim que nao ha data-points suficientes para inferir."
+    ],
+    "visual_cues": [
+      "Built on Framer (framerusercontent.com assets)",
+      "Dark/near-black backgrounds (#000000, #090909, #0d0d0d, #141414)",
+      "Neon green accent palette (#cdf140, #daf66f, #00bf8f)",
+      "Vivid purple/violet accents (#612af1, #7112ff, #250279)",
+      "Magenta accent (#a420b2)",
+      "RPG/video-game character-sheet motif: Lifecard, LVL MAX, Super Skills, skill gaps",
+      "OG/Twitter share image: framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "twitter:card summary_large_image"
+    ],
+    "people": [
+      {
+        "name": "Samira Gontijo Bolson",
+        "role": "Diretora Lojas Nacional, Vivo (Telefonica Brasil); previously Head Brazil and Head of Retail at Dengo Chocolates; career at Pandora and Nestle Nespresso",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Caio Camargo",
+        "role": "Futurista de varejo (retail futurist) - recommended connection",
+        "affiliation": "other"
+      },
+      {
+        "name": "Paulo Goelzer, Ph.D.",
+        "role": "Presidente Emerito do IGA Coca-Cola Institute - recommended connection",
+        "affiliation": "other"
+      },
+      {
+        "name": "Patricia Cotti",
+        "role": "Diretora do IBEVAR - recommended connection",
+        "affiliation": "other"
+      }
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/mubadala/alexandre-laskowsky",
+    "page_purpose": "A gamified \"Lifecard\" profile page for Alexandre Laskowsky, an individual assessed as a participant under the Mubadala client engagement. Presented in RPG-style format (LVL MAX, Super Skills, Skills, Skill Gap) it profiles his career, skills, personality traits, and recommended learning assets/connections, with skill inference powered by acaso's proprietary AI using public LinkedIn data. It links into a broader Gzero \"MISSÃO IA\" challenge for Mubadala.",
+    "content_quality": "rich",
+    "key_messages": [
+      "Lifecard / LVL MAX - profile gamified as a character card",
+      "Criar futuros regenerativos é responder a complexidade com reinvenção (site tagline)",
+      "Uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times",
+      "Skill Gap corresponde às skills necessárias para o desafio, mas que não conseguimos identificar a partir do profile da pessoa",
+      "Inferência de habilidades realizada por tecnologia proprietária da acaso, via Inteligência Artificial, com dados públicos do LinkedIn"
+    ],
+    "company_facts": [
+      "acaso (aca.so) provides skills-based talent assessment using proprietary AI technology",
+      "Skill inference is performed via AI using publicly available LinkedIn profile data of participants",
+      "Positions a skills-based approach as enabling more agility and intelligence in building teams",
+      "Gravidade Zero (Gzero) site mission framed around creating regenerative futures, reinvention, and collective redesign of living",
+      "The page is part of a 'MISSÃO IA' (AI Mission) challenge program for the client Mubadala",
+      "Profiled individual: Alexandre Laskowsky - Investment Professional at Mubadala Capital, Rio de Janeiro; 7+ years experience; prior roles at H.I.G. Capital (5.5 yrs), AGGIR Ventures (7 months); co-founded Consulting Club at PUC-Rio; played key role in Kora Saúde IPO; MBA from INSEAD; worked in Brazil and France"
+    ],
+    "products_solutions": [
+      "Lifecard (gamified skill/career profile card)",
+      "MISSÃO IA (AI Mission challenge)",
+      "IC Decks (desafio - linked challenge group)",
+      "Super Skills / Skills / Skill Gap assessment framework",
+      "acaso AI-powered skills inference technology",
+      "Assets Recomendados (recommended learning assets)",
+      "Conexões Recomendadas (recommended connections)",
+      "IAs Recomendadas (recommended AIs)"
+    ],
+    "people": [
+      {
+        "name": "Alexandre Laskowsky",
+        "role": "Investment Professional at Mubadala Capital (Rio de Janeiro); prior: Associate at AGGIR Ventures, Private Equity at H.I.G. Capital; co-founder of Consulting Club at PUC-Rio; MBA INSEAD; key role in Kora Saúde IPO",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Michael Mac-Vicar",
+        "role": "Chief Technology Officer at Enter (recommended connection)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Morten Bruun",
+        "role": "Co-Founder @FlashDocs (recommended connection)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Mateus Costa-Ribeiro",
+        "role": "Co-founder and CEO @ Enter (recommended connection)",
+        "affiliation": "other"
+      }
+    ],
+    "clients_cases": [
+      "Mubadala Capital (client / employer of profiled participant)",
+      "H.I.G. Capital (career history)",
+      "AGGIR Ventures (career history)",
+      "Kora Saúde (Brazilian healthcare IPO he helped lead)",
+      "PUC-Rio (co-founded Consulting Club)",
+      "INSEAD (MBA)",
+      "Enter (recommended connection's company)",
+      "FlashDocs (recommended connection's company)"
+    ],
+    "humanware": "No Humanware concept or Humanware® trademark appears anywhere on this page or in its markup. The methodology branding present is acaso's AI-driven, skills-based inference (Super Skills / Skill Gap), not Humanware.",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção. Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "Skill Gap corresponde às skills necessárias para o desafio, mas que não conseguimos identificar a partir do profile da pessoa. Não significa que a pessoa não possui as habilidades, mas sim que não há data-points suficientes para inferir que a pessoa tem aquela habilidade.",
+      "Acesse aca.so e descubra como uma abordagem baseada em skills pode garantir mais agilidade e inteligência na construção de times.",
+      "Define metas ambiciosas e celebra grandes marcos, como IPOs e conquistas acadêmicas."
+    ],
+    "visual_cues": [
+      "Built on Framer (generator: Framer b3492b4)",
+      "Fonts: Manrope (weight 800, bold sans) and Michroma (futuristic/techno geometric display font)",
+      "Vivid magenta/fuchsia accent: #e802cf (and #f030ca, #f5...) used as primary highlight color",
+      "Near-white background base #fcfcfc with translucent overlays (#fcfcfc1a, #ffffff26)",
+      "Greys for secondary text: #858585, #a8a8a8",
+      "Dark green tone #152913 and earthy brown #766744 accents",
+      "Additional accents: coral/red #ff4e50, deep indigo/purple #250279, lime green #daf66f",
+      "SVG favicon from framerusercontent",
+      "OG/Twitter share image (jpeg) at framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg",
+      "Gamified RPG/character-sheet motif: 'Lifecard', 'LVL MAX', 'Super Skills', 'Grupo desafio', leveling/skill-tree layout",
+      "summary_large_image Twitter card"
+    ]
+  },
+  {
+    "url": "https://www.gravidadezero.space/jpmorgan/jpmorgan/carlos-lima",
+    "page_purpose": "A gamified RPG-style \"Lifecard\" profile page for an individual (Carlos Lima) assessed under the JPMorgan client engagement. It presents an AI-generated professional/skills profile — bio, career, skills, skills-to-develop, personality traits, interests, recommended assets, connections, and AI tools — inferred from public LinkedIn data by acaso's proprietary AI, presented inside the Gravidade Zero (Gzero) branded experience.",
+    "content_quality": "rich",
+    "key_messages": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA",
+      "Lifecard / LVL MAX (gamified, RPG-style professional card framing)",
+      "Skill inference performed via acaso's proprietary AI using public LinkedIn data",
+      "Skills para desenvolver = skills needed in daily work context that could not be inferred from the profile (lack of data-points), not an assertion the person lacks them"
+    ],
+    "company_facts": [
+      "Gravidade Zero (Gzero) site, built on Framer",
+      "The profile/skill inference is powered by 'acaso' — described as proprietary AI technology (tecnologia proprietária da acaso, via Inteligência Artificial)",
+      "Inference uses publicly available data from participants' LinkedIn profiles",
+      "Brand positioning centers on creating regenerative futures and reinvention in response to complexity",
+      "Page published May 12, 2026"
+    ],
+    "products_solutions": [
+      "Lifecard (gamified professional profile card, RPG-style with LVL MAX, Super Skills, Traços de Personalidade)",
+      "acaso - Inteligência Artificial (AI engine that infers skills/profile)",
+      "Assets Recomendados (recommended content/asset feed)",
+      "Conexões Recomendadas (recommended connections)",
+      "IAs Recomendadas (recommended AI tools)"
+    ],
+    "people": [
+      {
+        "name": "Carlos Lima",
+        "role": "Executive Director, JPMorgan Chase & Co. (former Trader); leads Global Equity Sales and Latam local cash equities distribution",
+        "affiliation": "client-participant"
+      },
+      {
+        "name": "Ricardo Humberto Rocha",
+        "role": "Professor de Finanças na Insper (listed as a Recommended Connection)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Marcos Piellusch",
+        "role": "Valuation Consultant (listed as a Recommended Connection)",
+        "affiliation": "other"
+      },
+      {
+        "name": "Filipe Ferreira",
+        "role": "Professor de Finanças na Insper (listed as a Recommended Connection)",
+        "affiliation": "other"
+      }
+    ],
+    "clients_cases": [
+      "JPMorgan Chase & Co. (client engagement; URL path /jpmorgan/jpmorgan/carlos-lima)",
+      "Insper (named via recommended connections' affiliations)",
+      "Expert XP (cited as source of a recommended asset/article)"
+    ],
+    "humanware": "Not present on this page. No mention of the Humanware concept or a Humanware® trademark was found in the visible content or page metadata.",
+    "voice_quotes": [
+      "Criar futuros regenerativos é responder a complexidade com reinvenção.",
+      "Reparar o que feriu, criar o que ainda não tem nome, redesenhar o viver em coletivo para sermos plenos em toda a nossa louCURA.",
+      "A inferência de habilidades nesta página foi realizada por meio da tecnologia proprietária da acaso, via Inteligência Artificial, com dados públicos disponíveis nos perfis do LinkedIn dos participantes.",
+      "Acaso - Inteligência Artificial"
+    ],
+    "visual_cues": [
+      "Built with Framer (meta generator: Framer)",
+      "Typography: Manrope font family (Google Fonts) used in CSS",
+      "Open Graph / Twitter share image: framerusercontent.com/images/N7gPmM4uTZh9Po0IKbC5kC2hIjg.jpeg (summary_large_image card)",
+      "Gamification motifs: 'Lifecard', 'LVL MAX', 'Super Skills' — RPG/video-game card aesthetic",
+      "Sectioned card layout: Bio, Carreira, Highlights, Suas skills, Skills para desenvolver, Assets/Conexões/IAs Recomendadas",
+      "SVG favicon + PNG apple-touch-icon hosted on framerusercontent.com"
+    ]
+  }
+]
