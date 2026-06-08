@@ -104,5 +104,6 @@ export function updatePlayer(
 
   // Integrate physics (gravity up to MAX_FALL) and resolve tile collisions.
   // stepBody handles gravity, position integration, and per-axis collision resolution.
+  // M1 TODO: scale gravity by player.char.weightMul (currently stepBody uses fixed GRAVITY)
   stepBody(player, level, dt)
 }

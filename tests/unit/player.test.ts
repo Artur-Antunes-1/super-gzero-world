@@ -137,6 +137,8 @@ describe('updatePlayer — corrida horizontal', () => {
     steps(p, input, level, 30)
     expect(p.facing).toBe(-1)
     expect(p.vx).toBeLessThan(0)
+    const cap = WALK_MAX * CHARACTERS['renan'].walkMul
+    expect(p.vx).toBeGreaterThanOrEqual(-cap - 1e-6)
   })
 })
 

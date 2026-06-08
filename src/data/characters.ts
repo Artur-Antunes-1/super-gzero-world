@@ -15,6 +15,6 @@ export const CHARACTERS: Record<string, CharacterDef> = {
     jumpVelMul: 1.06,
     walkMul: 1.0,
     runMul: 1.0,
-    weightMul: 0.96,
+    weightMul: 0.96, // weightMul: reserved for M1 (per-character gravity scaling); not applied in M0
   },
 }
