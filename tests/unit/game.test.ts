@@ -195,7 +195,6 @@ describe('createGame — playing', () => {
     p.vy = 0
     p.x = 2 * TILE
     p.y = 8 * TILE + (TILE - 34)
-    const xBefore = p.x
     game.update(1)
     expect(game.state.get()).toBe('playing')
     // Hearts reduced but no respawn (player position unchanged from where it was, NOT spawn)
@@ -203,7 +202,6 @@ describe('createGame — playing', () => {
     expect(p.hearts).toBe(2)
     // lives unchanged
     expect(p.lives).toBe(3)
-    void xBefore
   })
 })
 
@@ -281,6 +279,102 @@ describe('createGame — reset', () => {
     input.set('confirm', true)
     game.update(1)
     expect(game.state.get()).toBe('select')
+  })
+})
+
+// Builder: bloco temporario aparece em level.tiles e e restaurado apos o TTL.
+describe('createGame — builder tile restore', () => {
+  // Calculo da celula-alvo:
+  //   spawn: x=2*TILE(96), y=8*TILE(384); PLAYER_W=34, PLAYER_H=42, facing=1 (direita)
+  //   col = floor((96+34)/48) = floor(130/48) = 2
+  //   row = floor((384+42-1)/48) = floor(425/48) = 8
+  // Row 8 e 'empty' em makeLevel (chao comeca na row 9) — apto para receber o bloco.
+  const BUILDER_COL = 2
+  const BUILDER_ROW = 8
+
+  // Navega para 'artur' (index 3 em SELECT_ORDER) e confirma.
+  function selectArtur(game: ReturnType<typeof createGame>, input: FakeInput): void {
+    // Pressiona 'right' tres vezes para chegar ao index 3 (artur).
+    for (let i = 0; i < 3; i++) {
+      input.set('right', true)
+      game.update(1)
+      input.set('right', false)
+      game.update(1)
+    }
+    // Confirma a selecao.
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    game.update(1)
+  }
+
+  it('builder: bloco temporario aparece e e restaurado', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    // Usamos makeLevel sem inimigos: row 8 col 2 e 'empty', chao em rows 9-10.
+    const level = makeLevel()
+    const game = createGame(renderer, input, level)
+
+    // Confirma-select 'artur' (habilidade builder).
+    selectArtur(game, input)
+    expect(game.state.get()).toBe('playing')
+    expect(game.player!.char.id).toBe('artur')
+
+    // Garante que a celula-alvo esta vazia antes de ativar.
+    expect(level.tiles[BUILDER_ROW][BUILDER_COL]).toBe('empty')
+
+    // Ativa a habilidade: pressiona 'ability' por um frame.
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    game.update(1)
+
+    // Celula deve agora ser 'block'.
+    expect(level.tiles[BUILDER_ROW][BUILDER_COL]).toBe('block')
+
+    // Avanca builderTtl (240) + alguns frames extras sem pressionar ability.
+    for (let i = 0; i < 245; i++) game.update(1)
+
+    // Celula deve ter sido restaurada para 'empty'.
+    expect(level.tiles[BUILDER_ROW][BUILDER_COL]).toBe('empty')
+  })
+
+  it('builder: resetToSelect restaura celula e nao deixa bloco vazado', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel()
+    const game = createGame(renderer, input, level)
+
+    selectArtur(game, input)
+    expect(game.player!.char.id).toBe('artur')
+
+    // Ativa o builder.
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    game.update(1)
+    expect(level.tiles[BUILDER_ROW][BUILDER_COL]).toBe('block')
+
+    // Forca transicao para 'over' zerando o player.
+    game.player!.lives = 1
+    game.player!.hearts = 1
+    game.player!.iframes = 0
+    // Teleporta para fora de qualquer inimigo; usa timeout para chegar ao 'over'.
+    game.player!.x = 999 * TILE
+    // Esgota o timer para chegar ao 'over'.
+    const exhaust = Math.ceil(TIME_START / FIXED_DT) + 10
+    for (let i = 0; i < exhaust; i++) game.update(1)
+    expect(game.state.get()).toBe('over')
+
+    // Confirma volta ao select: resetToSelect deve ter restaurado o bloco.
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    game.update(1)
+    expect(game.state.get()).toBe('select')
+
+    // Nenhum vazamento de bloco no level.
+    expect(level.tiles[BUILDER_ROW][BUILDER_COL]).toBe('empty')
   })
 })
 

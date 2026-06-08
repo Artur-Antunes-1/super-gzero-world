@@ -181,6 +181,8 @@ export function createGame(
     time = TIME_START
     coins = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
     coinCount = 0
+    // Reseta o cursor do select para o primeiro personagem em uma nova rodada.
+    sel.index = 0
     state.set('select')
   }
 
@@ -240,7 +242,8 @@ export function createGame(
           const livesBefore = p.lives
           const result = damagePlayer(p, e.x)
           if (result === 'death') {
-            state.set('over')
+            // Sai limpo no frame da morte: input consumido uma vez, sem continuar o frame.
+            state.set('over'); input.update(); return
           } else if (result === 'hit' && p.lives < livesBefore) {
             respawnPlayer(p, level.playerSpawn)
           }
