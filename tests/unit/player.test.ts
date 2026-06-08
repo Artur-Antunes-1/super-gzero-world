@@ -1,7 +1,7 @@
 // tests/unit/player.test.ts
 // dt=1 throughout (frames convention, E1). E2: jump assertion = JUMP_VEL*jumpVelMul + GRAVITY.
 import { describe, it, expect, beforeEach } from 'vitest'
-import { createPlayer, updatePlayer, type Player } from '../../src/game/player'
+import { createPlayer, updatePlayer, damagePlayer, respawnPlayer, tickPlayerTimers, type Player } from '../../src/game/player'
 import { CHARACTERS } from '../../src/data/characters'
 import type { Input, InputAction } from '../../src/engine/input'
 import type { ParsedLevel, TileType, SpawnPoint } from '../../src/data/schema'
@@ -16,6 +16,9 @@ import {
   START_LIVES,
   COYOTE_FRAMES,
   JUMP_BUFFER_FRAMES,
+  IFRAME_FRAMES,
+  KNOCKBACK_VX,
+  KNOCKBACK_VY,
 } from '../../src/engine/constants'
 
 // FakeInput: implements exactly the Input interface from the CONTRATO.
@@ -238,5 +241,146 @@ describe('updatePlayer — pulo', () => {
       if (p.vy < 0) jumped = true // upward impulse = buffered jump fired
     }
     expect(jumped).toBe(true)
+  })
+})
+
+// --- M1 Task 6: damage/hearts/i-frames/death ---
+
+describe('createPlayer — M1 fields', () => {
+  it('initializes iframes=0 and ability state', () => {
+    const level = makeFlatLevel()
+    const p = createPlayer(CHARACTERS['renan'], level.playerSpawn)
+    expect(p.iframes).toBe(0)
+    expect(p.ability).toBeDefined()
+    expect(p.ability.id).toBe(CHARACTERS['renan'].abilityId)
+  })
+})
+
+describe('damagePlayer', () => {
+  let level: ParsedLevel
+  let p: Player
+
+  beforeEach(() => {
+    level = makeFlatLevel()
+    p = createPlayer(CHARACTERS['renan'], level.playerSpawn)
+    // Settle on ground
+    const input = new FakeInput()
+    steps(p, input, level, 10)
+    // Ensure hearts and lives are clean
+    p.hearts = p.char.hearts // 3 for renan
+    p.lives = START_LIVES    // 3
+    p.iframes = 0
+  })
+
+  it('reduces hearts by 1, sets iframes=IFRAME_FRAMES, applies knockback, returns "hit"', () => {
+    const fromX = p.x + 100 // enemy is to the right => player knocked left
+    const result = damagePlayer(p, fromX)
+    expect(result).toBe('hit')
+    expect(p.hearts).toBe(p.char.hearts - 1)
+    expect(p.iframes).toBe(IFRAME_FRAMES)
+    expect(p.vy).toBe(KNOCKBACK_VY)
+    // player.x < fromX => knocked left (negative vx)
+    expect(p.vx).toBe(-KNOCKBACK_VX)
+  })
+
+  it('knockback away from fromX: enemy to the left => player knocked right', () => {
+    const fromX = p.x - 100 // enemy is to the left
+    damagePlayer(p, fromX)
+    // player.x > fromX => knocked right (positive vx)
+    expect(p.vx).toBe(KNOCKBACK_VX)
+  })
+
+  it('iframes > 0 blocks damage and returns "blocked"', () => {
+    p.iframes = IFRAME_FRAMES
+    const heartsBefore = p.hearts
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('blocked')
+    expect(p.hearts).toBe(heartsBefore)
+  })
+
+  it('shield blocks damage, consumes shield, sets iframes, returns "blocked"', () => {
+    p.iframes = 0
+    p.ability.shield = true
+    p.ability.shieldTimer = 180
+    const heartsBefore = p.hearts
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('blocked')
+    expect(p.hearts).toBe(heartsBefore)
+    expect(p.iframes).toBe(IFRAME_FRAMES)
+    expect(p.ability.shield).toBe(false)
+    expect(p.ability.shieldTimer).toBe(0)
+  })
+
+  it('hearts going to 0 with lives remaining resets hearts to char.hearts and returns "hit"', () => {
+    p.hearts = 1
+    p.lives = 2
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('hit')
+    expect(p.lives).toBe(1)
+    expect(p.hearts).toBe(p.char.hearts) // hearts reset
+  })
+
+  it('hearts going to 0 and lives going to 0 returns "death"', () => {
+    p.hearts = 1
+    p.lives = 1
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('death')
+    expect(p.lives).toBe(0)
+  })
+
+  it('normal heart loss (hearts > 1) does not reset hearts', () => {
+    p.hearts = 3
+    p.lives = 3
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('hit')
+    expect(p.hearts).toBe(2)
+    expect(p.lives).toBe(3) // lives unchanged
+  })
+})
+
+describe('respawnPlayer', () => {
+  it('resets position, velocity, hearts to char.hearts, iframes to IFRAME_FRAMES, resets ability', () => {
+    const level = makeFlatLevel()
+    const p = createPlayer(CHARACTERS['renan'], level.playerSpawn)
+    // Mess up state
+    p.x = 999
+    p.y = 999
+    p.vx = 5
+    p.vy = -10
+    p.hearts = 0
+    p.iframes = 0
+    p.ability.shield = true
+    p.ability.shieldTimer = 100
+    const spawn: SpawnPoint = { x: 100, y: 200 }
+    respawnPlayer(p, spawn)
+    expect(p.x).toBe(100)
+    expect(p.y).toBe(200)
+    expect(p.vx).toBe(0)
+    expect(p.vy).toBe(0)
+    expect(p.hearts).toBe(p.char.hearts)
+    expect(p.iframes).toBe(IFRAME_FRAMES)
+    // ability should be freshly initialized
+    expect(p.ability.shield).toBe(false)
+    expect(p.ability.shieldTimer).toBe(0)
+  })
+})
+
+describe('tickPlayerTimers', () => {
+  it('decrements iframes by dt, clamped to 0', () => {
+    const level = makeFlatLevel()
+    const p = createPlayer(CHARACTERS['renan'], level.playerSpawn)
+    p.iframes = IFRAME_FRAMES // 90
+    tickPlayerTimers(p, 1)
+    expect(p.iframes).toBe(IFRAME_FRAMES - 1)
+    tickPlayerTimers(p, 1000) // large dt clamps to 0
+    expect(p.iframes).toBe(0)
+  })
+
+  it('does not go below 0', () => {
+    const level = makeFlatLevel()
+    const p = createPlayer(CHARACTERS['renan'], level.playerSpawn)
+    p.iframes = 5
+    tickPlayerTimers(p, 10)
+    expect(p.iframes).toBe(0)
   })
 })

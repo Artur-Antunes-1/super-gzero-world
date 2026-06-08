@@ -16,7 +16,12 @@ import {
   COYOTE_FRAMES,
   JUMP_BUFFER_FRAMES,
   START_LIVES,
+  IFRAME_FRAMES,
+  KNOCKBACK_VX,
+  KNOCKBACK_VY,
 } from '../engine/constants'
+import type { AbilityState } from './ability'
+import { createAbilityState, abilityHasShield, abilityConsumeShield } from './ability'
 
 export interface Player extends Body {
   char: CharacterDef
@@ -25,6 +30,8 @@ export interface Player extends Body {
   jumpBuffer: number
   lives: number
   hearts: number
+  iframes: number
+  ability: AbilityState
 }
 
 export function createPlayer(char: CharacterDef, spawn: SpawnPoint): Player {
@@ -42,6 +49,8 @@ export function createPlayer(char: CharacterDef, spawn: SpawnPoint): Player {
     jumpBuffer: 0,
     lives: START_LIVES,
     hearts: char.hearts,
+    iframes: 0,
+    ability: createAbilityState(char),
   }
 }
 
@@ -106,4 +115,64 @@ export function updatePlayer(
   // stepBody handles gravity, position integration, and per-axis collision resolution.
   // M1 TODO: scale gravity by player.char.weightMul (currently stepBody uses fixed GRAVITY)
   stepBody(player, level, dt)
+}
+
+/**
+ * Apply damage to the player from an enemy at `fromX`.
+ * Returns:
+ *   'blocked' — no damage taken (iframes active or shield absorbed)
+ *   'hit'     — damage taken; hearts > 0 or life lost but lives > 0 (hearts reset)
+ *   'death'   — lives reached 0
+ */
+export function damagePlayer(player: Player, fromX: number): 'blocked' | 'hit' | 'death' {
+  // Already invulnerable: no-op
+  if (player.iframes > 0) return 'blocked'
+
+  // Shield absorbs the hit
+  if (abilityHasShield(player)) {
+    abilityConsumeShield(player)
+    player.iframes = IFRAME_FRAMES
+    return 'blocked'
+  }
+
+  // Take damage
+  player.hearts -= 1
+  player.iframes = IFRAME_FRAMES
+  // Knockback: away from the source
+  player.vx = player.x < fromX ? -KNOCKBACK_VX : KNOCKBACK_VX
+  player.vy = KNOCKBACK_VY
+
+  if (player.hearts <= 0) {
+    player.lives -= 1
+    if (player.lives <= 0) {
+      return 'death'
+    }
+    // Life lost but lives remain: reset hearts (game will call respawnPlayer to reposition)
+    player.hearts = player.char.hearts
+    return 'hit'
+  }
+
+  return 'hit'
+}
+
+/**
+ * Reposition the player at a spawn point, resetting velocity, hearts and ability state.
+ * Called by the game after a life is lost (per Errata E2).
+ */
+export function respawnPlayer(player: Player, spawn: SpawnPoint): void {
+  player.x = spawn.x
+  player.y = spawn.y
+  player.vx = 0
+  player.vy = 0
+  player.hearts = player.char.hearts
+  player.iframes = IFRAME_FRAMES
+  player.ability = createAbilityState(player.char)
+}
+
+/**
+ * Decrement per-frame timers on the player (iframes, etc.).
+ * Called once per update tick after all logic runs.
+ */
+export function tickPlayerTimers(player: Player, dt: number): void {
+  player.iframes = Math.max(0, player.iframes - dt)
 }

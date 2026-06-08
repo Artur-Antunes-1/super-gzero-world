@@ -23,6 +23,9 @@ export const JUMP_BUFFER_FRAMES = 8
 // Combate / movimento (alguns usados so a partir do M1)
 export const STOMP_BOUNCE = -11.5
 export const ENEMY_SPEED = 1.25
+export const IFRAME_FRAMES = 90
+export const KNOCKBACK_VX = 4.5
+export const KNOCKBACK_VY = -8
 
 // Dimensoes de entidades
 export const PLAYER_W = 34
