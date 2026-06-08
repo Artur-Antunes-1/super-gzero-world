@@ -2,30 +2,24 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createInput, type Input, type InputAction } from '../../src/engine/input'
 
+// Tipo estendido local para ter acesso a detach nos testes.
+type InputWithDetach = Input & { detach(target: Window | HTMLElement): void }
+
 function key(type: 'keydown' | 'keyup', code: string): void {
   window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }))
 }
 
 describe('createInput', () => {
-  let input: Input
+  let input: InputWithDetach
 
   beforeEach(() => {
-    input = createInput()
+    input = createInput() as InputWithDetach
     input.attach(window)
   })
 
   afterEach(() => {
-    // garante que nenhum estado vaze entre testes: solta tudo e zera edges
-    key('keyup', 'ArrowLeft')
-    key('keyup', 'ArrowRight')
-    key('keyup', 'ArrowUp')
-    key('keyup', 'ArrowDown')
-    key('keyup', 'Space')
-    key('keyup', 'ShiftLeft')
-    key('keyup', 'KeyA')
-    key('keyup', 'KeyD')
-    key('keyup', 'KeyW')
-    key('keyup', 'KeyS')
+    // Remove os listeners para não acumular entre testes.
+    input.detach(window)
     input.update()
   })
 
@@ -126,10 +120,11 @@ describe('createInput', () => {
 
   it('aceita HTMLElement como target em attach', () => {
     const el = document.createElement('div')
-    const local = createInput()
+    const local = createInput() as InputWithDetach
     local.attach(el)
     el.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyD', bubbles: true }))
     expect(local.isDown('right')).toBe(true)
+    local.detach(el)
   })
 
   it('teclas não mapeadas são ignoradas', () => {
@@ -138,5 +133,55 @@ describe('createInput', () => {
     for (const a of actions) {
       expect(input.isDown(a)).toBe(false)
     }
+  })
+
+  // --- Regressão: teclas alias compartilhadas ---
+
+  it('manter ArrowRight + KeyD: soltar um nao cancela right', () => {
+    key('keydown', 'ArrowRight')
+    key('keydown', 'KeyD')
+    // Soltar apenas uma das teclas não deve cancelar a ação.
+    key('keyup', 'ArrowRight')
+    expect(input.isDown('right')).toBe(true)
+    // Soltar a segunda tecla deve cancelar.
+    key('keyup', 'KeyD')
+    expect(input.isDown('right')).toBe(false)
+  })
+
+  it('manter ShiftLeft + ShiftRight: soltar um nao cancela run', () => {
+    key('keydown', 'ShiftLeft')
+    key('keydown', 'ShiftRight')
+    // Soltar apenas ShiftLeft não deve cancelar run.
+    key('keyup', 'ShiftLeft')
+    expect(input.isDown('run')).toBe(true)
+    // Soltar ShiftRight cancela.
+    key('keyup', 'ShiftRight')
+    expect(input.isDown('run')).toBe(false)
+  })
+
+  it('segunda tecla alias mantida não re-dispara pressed', () => {
+    key('keydown', 'ArrowRight')
+    expect(input.pressed('right')).toBe(true)
+    input.update()
+    // Apertar KeyD enquanto ArrowRight ainda está mantido não deve gerar novo edge.
+    key('keydown', 'KeyD')
+    expect(input.pressed('right')).toBe(false)
+  })
+
+  // --- Regressão: attach duplo ---
+
+  it('attach duas vezes nao duplica listeners', () => {
+    // input já está attached em beforeEach; um segundo attach deve ser ignorado.
+    input.attach(window)
+
+    key('keydown', 'ArrowRight')
+    // pressed deve ser true exatamente uma vez (edge simples), não duplicado.
+    expect(input.pressed('right')).toBe(true)
+    // isDown também deve ser true apenas uma vez (sem estado duplicado).
+    expect(input.isDown('right')).toBe(true)
+
+    input.update()
+    // Após update o edge some — se houvesse duplicata ele poderia reaparecer.
+    expect(input.pressed('right')).toBe(false)
   })
 })
