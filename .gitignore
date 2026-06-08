@@ -8,3 +8,7 @@ playwright-report/
 
 # brainstorm visual-companion scratch
 .superpowers/
+
+# run/demo scratch
+.playwright-mcp/
+gzero-*.png
