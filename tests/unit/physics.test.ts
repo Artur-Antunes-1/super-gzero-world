@@ -131,3 +131,106 @@ describe('collideTiles (resolve X depois Y contra tiles sólidos)', () => {
     expect(body.onGround).toBe(false)
   })
 })
+
+describe('novos testes de cobertura / endurecimento (TDD)', () => {
+  it('colisao a esquerda: corpo movendo para a esquerda para flush contra parede', () => {
+    // Brick na coluna 1 (x de TILE a 2*TILE). Corpo à direita, movendo para a esquerda,
+    // com a borda esquerda dentro do tile de brick (sobreposição real na borda leading).
+    // Layout (3 colunas): '.B.' — brick na coluna 1
+    const level = makeLevel(['.B.', '.B.', '.B.'])
+    // Corpo: w=16, posicionado com left DENTRO do brick (x=TILE+4 → left=52, dentro col 1)
+    const body = makeBody({ x: TILE + 4, y: TILE, w: 16, h: 16, vx: -3, vy: 0 })
+
+    collideTiles(body, level)
+
+    // A borda esquerda deve ficar em 2*TILE (borda direita do brick na coluna 1)
+    expect(body.x).toBeCloseTo(2 * TILE, 5)
+    expect(body.vx).toBe(0)
+    // Sem sobreposição: x >= 2*TILE
+    expect(body.x).toBeGreaterThanOrEqual(2 * TILE)
+  })
+
+  it('parede grossa: duas colunas solidas adjacentes, movendo a esquerda nao teleporta', () => {
+    // Duas colunas sólidas adjacentes (cols 1 e 2). Corpo começa à direita delas
+    // e move para a esquerda em vários passos. Deve parar contra a coluna 2 (mais à direita)
+    // e nunca saltar para a direita nem atravessar.
+    //
+    // Layout (5 colunas): '..BB.' — bricks nas colunas 2 e 3
+    const level = makeLevel(['..BB.', '..BB.', '..BB.'])
+    // Corpo começa com a borda esquerda em 4*TILE (coluna 4), movendo para a esquerda
+    const body = makeBody({ x: 4 * TILE, y: TILE, w: 16, h: 16, vx: -5, vy: 0 })
+    const startX = body.x
+
+    // Vários passos de integração
+    for (let i = 0; i < 20; i++) {
+      body.x += body.vx
+      collideTiles(body, level)
+    }
+
+    // Deve pousar flush contra a borda direita das colunas sólidas (col 3 = 4*TILE)
+    // e nunca ter passado para a esquerda disso nem voltado para além do ponto de partida
+    expect(body.x).toBeCloseTo(4 * TILE, 5)
+    expect(body.vx).toBe(0)
+    // Nunca deve ter ido além do ponto de partida para a direita
+    expect(body.x).toBeLessThanOrEqual(startX)
+    // Nunca deve ter atravessado a parede (borda esquerda >= borda direita da col 3)
+    expect(body.x).toBeGreaterThanOrEqual(4 * TILE)
+  })
+
+  it('colisao com teto: corpo subindo (vy<0) para contra tile solido acima', () => {
+    // Block na linha 0 (y de 0 a TILE). Corpo na linha 1 subindo com vy < 0.
+    // Layout (2 linhas): primeira linha com block, segunda vazia.
+    const level = makeLevel(['???', '...'])
+    // Corpo com topo sobreposto ao block acima
+    const body = makeBody({ x: TILE, y: TILE - 4, w: 16, h: 16, vx: 0, vy: -6 })
+
+    collideTiles(body, level)
+
+    // Após resolução, o topo do corpo deve estar em TILE (borda inferior do tile 0)
+    expect(body.y).toBeCloseTo(TILE, 5)
+    expect(body.vy).toBe(0)
+    // Sem sobreposição para cima
+    expect(body.y).toBeGreaterThanOrEqual(TILE)
+  })
+
+  it('cair para fora do mundo (borda inferior/direita) nao quebra', () => {
+    // Nível pequeno de 2x2 tiles. Corpo posicionado além da borda direita/inferior.
+    const level = makeLevel(['..', '..'])
+    // Corpo além da borda direita e inferior do nível — fora dos limites
+    const body = makeBody({
+      x: level.widthPx + 10,
+      y: level.heightPx + 10,
+      w: 16,
+      h: 16,
+      vx: 5,
+      vy: 10,
+    })
+    const xBefore = body.x
+    const yBefore = body.y
+
+    // Não deve lançar exceção; tiles fora dos limites são tratados como empty
+    expect(() => collideTiles(body, level)).not.toThrow()
+    expect(() => stepBody(body, level, 1)).not.toThrow()
+
+    // Corpo continua se movendo / caindo (sem snap para dentro do nível)
+    expect(body.x).toBeGreaterThanOrEqual(xBefore)
+  })
+
+  it('corpo parado (vx=0,vy=0) sobre o chao permanece em repouso', () => {
+    // Chão na linha 2. Corpo repousando exatamente sobre o chão.
+    // Após um stepBody: gravidade puxa, depois resolução encosta de volta — onGround=true, sem jitter.
+    const level = makeLevel(['....', '....', '####'])
+    // Topo do chão = 2*TILE. Corpo com pé exatamente no chão.
+    const body = makeBody({ x: TILE, y: 2 * TILE - 16, w: 16, h: 16, vx: 0, vy: 0 })
+
+    stepBody(body, level, 1)
+
+    // Após um passo: gravidade integra vy, depois pousa de volta no chão
+    expect(body.onGround).toBe(true)
+    expect(body.vy).toBe(0)
+    // Pé exatamente no topo do chão
+    expect(body.y + body.h).toBeCloseTo(2 * TILE, 5)
+    // Sem jitter: x não deve ter mudado
+    expect(body.x).toBeCloseTo(TILE, 5)
+  })
+})

@@ -12,6 +12,8 @@ export interface Body {
 }
 
 // Tiles sólidos por todos os lados.
+// Deliberadamente exclui 'spike' e 'goal': esses tipos disparam eventos de jogo
+// (dano / vitória), não paredes físicas, e são tratados pelo loop de lógica, não aqui.
 function isFullSolid(t: TileType): boolean {
   return t === 'ground' || t === 'brick' || t === 'block'
 }
@@ -37,6 +39,8 @@ export function stepBody(body: Body, level: ParsedLevel, dt: number): void {
 
 // Resolve colisão contra tiles sólidos: primeiro eixo X, depois eixo Y.
 // Para cada eixo, varre apenas as células sobrepostas pela AABB do corpo.
+// Nota: assume que `vy` reflete o deslocamento que produziu a sobreposição atual —
+// usado pelo teste de platform one-way (`prevBottom`) para distinguir descida de subida.
 export function collideTiles(body: Body, level: ParsedLevel): void {
   body.onGround = false
   resolveAxisX(body, level)
