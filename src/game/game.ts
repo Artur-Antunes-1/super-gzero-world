@@ -72,8 +72,8 @@ export function createGame(
       // b) Follow camera
       followCamera(cam, player, level)
 
-      // c) Decrement timer in seconds; clamp at 0, no state change (E7)
-      time = Math.max(0, time - FIXED_DT)
+      // timer in seconds; dt is frame-count, FIXED_DT seconds/frame. Clamp at 0, no 'over' in M0 (E7).
+      time = Math.max(0, time - dt * FIXED_DT)
 
       // d) Coin pickup: AABB overlap
       const pr = player.x + player.w
@@ -121,7 +121,7 @@ export function createGame(
       }
     }
 
-    // Draw goal cell (the G position in the level) as a magenta portal
+    // goal is tracked as a coordinate (parser maps 'G' to empty tile), so draw it explicitly here
     renderer.drawRect(level.goal.x, level.goal.y, TILE, TILE, COLOR_MAGENTA)
 
     // Draw coins (only active ones)

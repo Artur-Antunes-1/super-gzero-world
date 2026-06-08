@@ -9,6 +9,7 @@ test('World 1 Zona 1: walking right reaches the goal (win state)', async ({ page
   // Focus the canvas so keyboard events are captured
   const canvas = page.locator('canvas#game')
   await canvas.waitFor({ state: 'visible' })
+  // input is attached to window, so focus isn't strictly required; click is a defensive stabilisation step
   await canvas.click()
 
   // Ensure the game loop is running and state is exposed
