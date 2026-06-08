@@ -87,7 +87,6 @@ function tickTimers(s: AbilityState, dt: number): void {
 }
 
 export function updateAbility(player: Player, input: Input, dt: number, ctx: AbilityCtx): void {
-  void ctx // E3: satisfaz noUnusedParameters; ctx exposto para uso futuro pelo game
   const s = player.ability
 
   // Pulo duplo: airJumps zera ao tocar o chao.
@@ -123,6 +122,8 @@ export function updateAbility(player: Player, input: Input, dt: number, ctx: Abi
       s.active = true
       s.timer = params.dashFrames ?? 0
       player.vx = player.facing * (params.dashSpeed ?? 0)
+      const p = ABILITY_PARAMS.dash_criativo
+      player.iframes = Math.max(player.iframes ?? 0, p.dashIFrames ?? 0)
       break
     }
     case 'escudo_governanca': {
@@ -132,10 +133,11 @@ export function updateAbility(player: Player, input: Input, dt: number, ctx: Abi
       break
     }
     case 'builder': {
-      const col = player.facing === 1
+      const rawCol = player.facing === 1
         ? Math.floor((player.x + player.w) / TILE)
         : Math.floor(player.x / TILE) - 1
-      const row = Math.floor((player.y + player.h - 1) / TILE)
+      const col = Math.max(0, Math.min(rawCol, ctx.level.widthTiles - 1))
+      const row = Math.max(0, Math.min(Math.floor((player.y + player.h - 1) / TILE), ctx.level.heightTiles - 1))
       s.builder = { col, row, ttl: params.builderTtl ?? 0 }
       s.cooldown = params.cooldown
       break

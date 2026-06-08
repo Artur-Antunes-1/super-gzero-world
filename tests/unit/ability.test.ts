@@ -181,6 +181,19 @@ describe('updateAbility — dash_criativo', () => {
     updateAbility(p, input, 1, ctx)
     expect(p.vx).toBeCloseTo(ABILITY_PARAMS.dash_criativo.dashSpeed ?? 0, 5) // dash reescreve vx
   })
+
+  it('apos ativar dash, player.iframes >= dashIFrames(16)', () => {
+    const p = makePlayer('dash_criativo'); p.iframes = 0
+    input.set('ability', true); updateAbility(p, input, 1, ctx)
+    expect(p.iframes).toBeGreaterThanOrEqual(ABILITY_PARAMS.dash_criativo.dashIFrames ?? 0)
+    expect(p.iframes).toBe(16)
+  })
+
+  it('dashIFrames nao reduz iframes ja maiores que dashIFrames', () => {
+    const p = makePlayer('dash_criativo'); p.iframes = 100
+    input.set('ability', true); updateAbility(p, input, 1, ctx)
+    expect(p.iframes).toBe(100)
+  })
 })
 
 describe('updateAbility — escudo_governanca', () => {
@@ -239,6 +252,22 @@ describe('updateAbility — builder', () => {
     expect(tile.col).toBe(Math.floor(p.x / TILE) - 1)
   })
 
+  it('borda esquerda (x=0, facing=-1): col clampado para >=0', () => {
+    const p = makePlayer('builder'); p.facing = -1; p.x = 0; p.y = 7 * TILE
+    input.set('ability', true); updateAbility(p, input, 1, ctx)
+    const tile = abilityBuilderTile(p)!
+    expect(tile.col).toBeGreaterThanOrEqual(0)
+  })
+
+  it('borda direita (facing=1, x proximo ao limite): col clampado para <=widthTiles-1', () => {
+    const p = makePlayer('builder'); p.facing = 1
+    // posiciona o player perto da borda direita do level (40 tiles)
+    p.x = (level.widthTiles - 1) * TILE; p.y = 7 * TILE
+    input.set('ability', true); updateAbility(p, input, 1, ctx)
+    const tile = abilityBuilderTile(p)!
+    expect(tile.col).toBeLessThanOrEqual(level.widthTiles - 1)
+  })
+
   it('o bloco EXPIRA quando ttl<=0 (builder volta a null)', () => {
     const p = makePlayer('builder'); p.x = 5 * TILE; p.y = 7 * TILE
     input.set('ability', true); updateAbility(p, input, 1, ctx); input.update()
@@ -287,22 +316,31 @@ describe('updateAbility — amplificador (M3, desligado)', () => {
 })
 
 describe('drawAbilityFx', () => {
-  it('com escudo ativo, desenha pelo menos 1 retangulo (aura)', () => {
+  it('com escudo ativo, desenha exatamente 4 retangulos (aura de contorno)', () => {
     const p = makePlayer('escudo_governanca')
     const input = new FakeInput(); input.set('ability', true)
     updateAbility(p, input, 1, makeCtx(makeLevel(), []))
     const m = makeRenderer()
     drawAbilityFx(m.r, p)
-    expect(m.rects).toBeGreaterThan(0)
+    expect(m.rects).toBe(4)
   })
 
-  it('com bloco do builder ativo, desenha pelo menos 1 retangulo (bloco)', () => {
+  it('com bloco do builder ativo, desenha exatamente 1 retangulo (bloco)', () => {
     const p = makePlayer('builder'); p.x = 5 * TILE; p.y = 7 * TILE
     const input = new FakeInput(); input.set('ability', true)
     updateAbility(p, input, 1, makeCtx(makeLevel(), []))
     const m = makeRenderer()
     drawAbilityFx(m.r, p)
-    expect(m.rects).toBeGreaterThan(0)
+    expect(m.rects).toBe(1)
+  })
+
+  it('com emc2 ativo, desenha exatamente 1 retangulo (faixa topo)', () => {
+    const p = makePlayer('emc2')
+    const input = new FakeInput(); input.set('ability', true)
+    updateAbility(p, input, 1, makeCtx(makeLevel(), []))
+    const m = makeRenderer()
+    drawAbilityFx(m.r, p)
+    expect(m.rects).toBe(1)
   })
 
   it('sem FX ativo nao desenha nada', () => {
