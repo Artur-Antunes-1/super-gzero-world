@@ -7,6 +7,7 @@ import {
   type LevelDef,
   type SpawnPoint,
   type ParsedLevel,
+  type AbilityParams,
 } from '../../src/data/schema'
 
 describe('schema', () => {
@@ -79,5 +80,25 @@ describe('schema', () => {
     expect(parsed.widthTiles).toBe(2)
     expect(parsed.tiles[1][0]).toBe('ground')
     expect(parsed.playerSpawn).toEqual({ x: 0, y: 48 })
+  })
+
+  it('AbilityParams aceita os campos canonicos do CONTRATO', () => {
+    const dash: AbilityParams = {
+      kind: 'dash_criativo',
+      cooldown: 24,
+      m1Implemented: true,
+      dashSpeed: 12.0,
+      dashFrames: 12,
+      dashIFrames: 16,
+    }
+    expect(dash.kind).toBe('dash_criativo')
+    expect(dash.m1Implemented).toBe(true)
+    expect(dash.cooldown).toBe(24)
+    const amp: AbilityParams = {
+      kind: 'amplificador',
+      cooldown: 0,
+      m1Implemented: false,
+    }
+    expect(amp.m1Implemented).toBe(false)
   })
 })

@@ -17,6 +17,21 @@ export type AbilityId =
   | 'emc2'
   | 'amplificador'
 
+export interface AbilityParams {
+  kind: AbilityId
+  cooldown: number
+  m1Implemented: boolean
+  maxAirJumps?: number
+  airJumpMul?: number
+  dashSpeed?: number
+  dashFrames?: number
+  dashIFrames?: number
+  shieldStamina?: number
+  builderTtl?: number
+  einsteinScale?: number
+  einsteinDuration?: number
+}
+
 export interface CharacterDef {
   id: string
   name: string
