@@ -22,7 +22,7 @@ input.attach(window)
 // 4. Parse the level data
 const level = parseLevel(world1Zona1)
 
-// 5. Create the game object (state machine starts in 'playing')
+// 5. Cria o jogo (a maquina de estados comeca em 'select' — definido por createGame)
 const game = createGame(renderer, input, level)
 
 // 6. Expose game state for E2E probe

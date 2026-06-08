@@ -1,15 +1,21 @@
 import type { LevelDef } from '../schema'
 
-// World 1 - Zona 1 (greybox jogavel do M0).
+// World 1 - Zona 1 (greybox jogavel; M1 ganha 2 tolos 'F').
 // Errata E3+E4: 40 colunas x 11 linhas. Cada string tem EXATAMENTE 40 caracteres.
-// Legenda (CONTRATO): #=ground  =  =platform  o=coin  S=spawn  G=goal  .=empty
+// Legenda (CONTRATO): #=ground  ==platform  o=coin  F=fool  S=spawn  G=goal  .=empty
 //
 // Layout:
 //   rows 0-2:  espaco vazio
 //   row 3:     moedas nas colunas 10, 20, 30
-//   rows 4-7:  espaco vazio (row 5 tem plataformas decorativas)
+//   row 4:     2 tolos 'F' nas colunas 14 e 24 (acima das plataformas da row 5)
+//   row 5:     plataformas decorativas (cols 14-15 e 24-25)
+//   rows 6-7:  espaco vazio
 //   row 8:     spawn col 2, goal col 36
-//   rows 9-10: chao continuo (sem buracos -> nivel 100% caminhavel)
+//   rows 9-10: chao continuo (sem buracos -> nivel 100% caminhavel/vencivel a direita)
+//
+// Os tolos ficam na row 4 (acima das plataformas '==' da row 5), colunas 14 e 24.
+// Ao cair sobre as plataformas, patrulham ALI acima do caminho do chao (row 8),
+// sem bloquear a rota spawn->goal. Colunas longe do spawn (col 2) e do goal (col 36).
 export const world1Zona1: LevelDef = {
   id: 'world1-zona1',
   world: 1,
@@ -19,7 +25,7 @@ export const world1Zona1: LevelDef = {
     '........................................', // 1  (40 chars)
     '........................................', // 2  (40 chars)
     '..........o.........o.........o.........', // 3  (coins col 10,20,30 — 40 chars)
-    '........................................', // 4  (40 chars)
+    '..............F.........F...............', // 4  (tolos col 14, col 24 — 40 chars)
     '..............==........==..............', // 5  (plataformas decorativas — 40 chars)
     '........................................', // 6  (40 chars)
     '........................................', // 7  (40 chars)

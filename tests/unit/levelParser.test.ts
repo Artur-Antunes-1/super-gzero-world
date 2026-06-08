@@ -131,9 +131,19 @@ describe('world1-zona1 (fase greybox — Errata E3+E4)', () => {
     }
   })
 
-  it('sem inimigos na fase M0', () => {
+  it('tem exatamente 2 tolos (F -> kind "fool") posicionados acima das plataformas', () => {
     const lvl = parseLevel(world1Zona1)
-    expect(lvl.enemies).toEqual([])
+    const fools = lvl.enemies.filter((e) => e.kind === 'fool')
+    expect(fools.length).toBe(2)
+    // Nenhum inimigo 'enemy' (so 'fool' nesta fase).
+    expect(lvl.enemies.every((e) => e.kind === 'fool')).toBe(true)
+    // Os tolos estao na row 4 (acima das plataformas na row 5), sobre chao continuo.
+    for (const f of fools) {
+      expect(f.y).toBe(4 * TILE)
+      const col = Math.round(f.x / TILE)
+      // Chao solido abaixo do caminho principal (rows 9-10) segue intacto.
+      expect(lvl.tiles[9][col]).toBe('ground')
+    }
   })
 
   it('tem 3 moedas (cols 10, 20, 30 na row 3)', () => {

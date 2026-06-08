@@ -365,6 +365,7 @@ export function createGame(
       lives: player ? player.lives : 0,
       coins: coinCount,
       hwMeter: hw.meter,
+      hearts: player ? player.hearts : 0,
     })
 
     // Overlays win/over.
