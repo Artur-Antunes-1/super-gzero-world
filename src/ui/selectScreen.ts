@@ -1,10 +1,13 @@
 // src/ui/selectScreen.ts
 // Tela de SELECAO de personagem (M1, Task 7 — DONO).
 // Navega left/right com wrap; jump|confirm retorna o id do char no index; senao null.
-// drawSelect desenha cada char (drawPlaceholder + nome + habilidade) com cursor.
+// drawSelect desenha cada char (arte real do idle se houver; senao drawPlaceholder)
+// + nome + habilidade, com cursor.
 import type { Input } from '../engine/input'
 import type { CharacterDef } from '../data/schema'
 import type { Renderer } from '../engine/render'
+import type { AssetStore } from '../engine/assets'
+import { CHAR_ANIMS } from '../data/charAnims'
 import { drawPlaceholder } from '../game/sprites'
 import {
   VIEW_W,
@@ -53,8 +56,14 @@ export function updateSelect(
 }
 
 // Desenha em screen space (chamada SEM beginWorld). Mostra os personagens em
-// uma fileira horizontal: placeholder + nome + habilidade, com cursor no selecionado.
-export function drawSelect(r: Renderer, sel: SelectState, chars: CharacterDef[]): void {
+// uma fileira horizontal: arte real (ou placeholder) + nome + habilidade, com
+// cursor no selecionado. store opcional: sem ele, todo card usa placeholder.
+export function drawSelect(
+  r: Renderer,
+  sel: SelectState,
+  chars: CharacterDef[],
+  store?: AssetStore,
+): void {
   const ctx = r.ctx
 
   // Fundo da tela.
@@ -114,8 +123,29 @@ export function drawSelect(r: Renderer, sel: SelectState, chars: CharacterDef[])
       r.drawRect(panelX + panelW, panelY - border, border, panelH + border * 2, COLOR_MAGENTA)
     }
 
-    // Placeholder do personagem (M0 sprites.drawPlaceholder), virado para a direita.
-    drawPlaceholder(r, c, boxX, Math.round(boxTop), boxW, boxH, 1)
+    // Arte real do personagem: frame 0 do idle (M2b), altura = boxH, centrado no
+    // slot e com os PES (anchorY) na base da caixa, como os placeholders vizinhos.
+    const set = store ? CHAR_ANIMS[c.id] : undefined
+    const idle = set?.anims.idle
+    const sheet = store && idle ? store.get(idle.key) : null
+    if (set && sheet && set.cellW > 0 && set.cellH > 0) {
+      const scale = boxH / set.cellH
+      const dh = boxH
+      const dw = set.cellW * scale
+      ctx.drawImage(
+        sheet.src,
+        0,
+        0,
+        set.cellW,
+        set.cellH,
+        cx - dw / 2,
+        boxTop + boxH - set.anchorY * scale,
+        dw,
+        dh,
+      )
+    } else {
+      drawPlaceholder(r, c, boxX, Math.round(boxTop), boxW, boxH, 1)
+    }
 
     // Nome.
     ctx.textAlign = 'center'

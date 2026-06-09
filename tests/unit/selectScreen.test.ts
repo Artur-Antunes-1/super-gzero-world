@@ -1,5 +1,5 @@
 // tests/unit/selectScreen.test.ts
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   createSelect,
   updateSelect,
@@ -9,7 +9,16 @@ import {
 import type { Input, InputAction } from '../../src/engine/input'
 import type { CharacterDef, AbilityId } from '../../src/data/schema'
 import type { Renderer } from '../../src/engine/render'
-import { COLOR_MAGENTA, COLOR_BLUE } from '../../src/engine/constants'
+import type { AssetStore, ImageAsset } from '../../src/engine/assets'
+import { CHAR_ANIMS } from '../../src/data/charAnims'
+import { drawPlaceholder } from '../../src/game/sprites'
+import { COLOR_MAGENTA, COLOR_BLUE, VIEW_W, VIEW_H } from '../../src/engine/constants'
+
+// Espiona drawPlaceholder preservando o comportamento real (drawRect continua contando).
+vi.mock('../../src/game/sprites', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/game/sprites')>()
+  return { ...actual, drawPlaceholder: vi.fn(actual.drawPlaceholder) }
+})
 
 // FakeInput canonico (mesmo padrao do player.test.ts): edge = down agora e nao no frame anterior.
 class FakeInput implements Input {
@@ -70,9 +79,33 @@ const CHARS: CharacterDef[] = [
   makeChar('julio', 'escudo_governanca'),
 ]
 
-// Renderer stub: grava chamadas drawRect e captura ctx.fillText/font.
-function makeFakeRenderer(): { renderer: Renderer; rects: number; texts: string[] } {
+// Roster completo (ordem canonica) para os testes de arte real no card.
+const CHARS5: CharacterDef[] = [
+  makeChar('renan', 'salto_visionario'),
+  makeChar('dante', 'dash_criativo'),
+  makeChar('julio', 'escudo_governanca'),
+  makeChar('artur', 'builder'),
+  makeChar('einstein', 'emc2'),
+]
+
+// AssetStore fake: get() devolve um ImageAsset para as chaves listadas; null caso contrario.
+function makeStore(keys: string[]): AssetStore {
+  const asset: ImageAsset = { src: {} as unknown as CanvasImageSource, w: 288, h: 96 }
+  return {
+    get: (key: string) => (keys.includes(key) ? asset : null),
+    ready: true,
+  }
+}
+
+// Renderer stub: grava chamadas drawRect, drawImage e captura ctx.fillText/font.
+function makeFakeRenderer(): {
+  renderer: Renderer
+  rects: number
+  texts: string[]
+  images: unknown[][]
+} {
   const texts: string[] = []
+  const images: unknown[][] = []
   let rects = 0
   const ctx = {
     save() {},
@@ -80,6 +113,9 @@ function makeFakeRenderer(): { renderer: Renderer; rects: number; texts: string[
     fillRect() {},
     fillText(t: string) {
       texts.push(t)
+    },
+    drawImage(...args: unknown[]) {
+      images.push(args)
     },
     set fillStyle(_v: string) {},
     get fillStyle() {
@@ -114,6 +150,7 @@ function makeFakeRenderer(): { renderer: Renderer; rects: number; texts: string[
       return rects
     },
     texts,
+    images,
   }
 }
 
@@ -212,5 +249,65 @@ describe('drawSelect', () => {
     const fake = makeFakeRenderer()
     const sel = createSelect()
     expect(() => drawSelect(fake.renderer, sel, [CHARS[0]])).not.toThrow()
+  })
+})
+
+describe('drawSelect — arte real no card (M2b)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('com store + idle do artur: drawImage no card do artur; outros 4 via placeholder', () => {
+    const fake = makeFakeRenderer()
+    const store = makeStore([CHAR_ANIMS['artur'].anims.idle!.key])
+    drawSelect(fake.renderer, createSelect(), CHARS5, store)
+    expect(fake.images.length).toBe(1)
+    const ids = vi.mocked(drawPlaceholder).mock.calls.map((c) => c[1].id)
+    expect(ids).not.toContain('artur')
+    for (const id of ['renan', 'dante', 'julio', 'einstein']) {
+      expect(ids).toContain(id)
+    }
+  })
+
+  it('drawImage usa o frame 0 do sheet, altura boxH, centrado no slot e pes na base', () => {
+    const fake = makeFakeRenderer()
+    const store = makeStore([CHAR_ANIMS['artur'].anims.idle!.key])
+    drawSelect(fake.renderer, createSelect(), CHARS5, store)
+    const set = CHAR_ANIMS['artur']
+    const [, sx, sy, sw, sh, dx, dy, dw, dh] = fake.images[0] as [
+      unknown, number, number, number, number, number, number, number, number,
+    ]
+    // Source rect: frame 0 do sheet (celula inteira).
+    expect(sx).toBe(0)
+    expect(sy).toBe(0)
+    expect(sw).toBe(set.cellW)
+    expect(sh).toBe(set.cellH)
+    // Destino: artur no slot index 3 de 5; caixa 92px; pes (anchorY) na base da caixa.
+    const boxH = 92
+    const marginX = 80
+    const slotW = (VIEW_W - marginX * 2) / CHARS5.length
+    const cx = marginX + slotW * (3 + 0.5)
+    const boxTop = VIEW_H / 2 - boxH / 2
+    const scale = boxH / set.cellH
+    expect(dh).toBe(boxH)
+    expect(dw).toBeCloseTo(set.cellW * scale)
+    expect(dx + dw / 2).toBeCloseTo(cx)
+    expect(dy + set.anchorY * scale).toBeCloseTo(boxTop + boxH)
+  })
+
+  it('sem store: nenhum drawImage; todos os chars via placeholder', () => {
+    const fake = makeFakeRenderer()
+    drawSelect(fake.renderer, createSelect(), CHARS5)
+    expect(fake.images.length).toBe(0)
+    expect(vi.mocked(drawPlaceholder)).toHaveBeenCalledTimes(CHARS5.length)
+  })
+
+  it('store sem o sheet do idle: card do artur tambem cai no placeholder', () => {
+    const fake = makeFakeRenderer()
+    const store = makeStore([])
+    drawSelect(fake.renderer, createSelect(), CHARS5, store)
+    expect(fake.images.length).toBe(0)
+    const ids = vi.mocked(drawPlaceholder).mock.calls.map((c) => c[1].id)
+    expect(ids).toContain('artur')
   })
 })

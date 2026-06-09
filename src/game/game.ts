@@ -103,6 +103,10 @@ function selectableChars(): CharacterDef[] {
   return SELECT_ORDER.map((id) => CHARACTERS[id])
 }
 
+// Chave da arte-base procedural por personagem (pre-computada; sem concat por frame).
+const CHAR_ART_KEYS: Record<string, string> = {}
+for (const id of SELECT_ORDER) CHAR_ART_KEYS[id] = 'char.' + id
+
 export interface Game {
   update(dt: number): void
   render(alpha: number): void
@@ -340,7 +344,7 @@ export function createGame(
     renderer.clear(COLOR_BG)
 
     if (state.is('select')) {
-      drawSelect(renderer, sel, chars)
+      drawSelect(renderer, sel, chars, store)
       void _alpha
       return
     }
@@ -409,12 +413,14 @@ export function createGame(
             player.facing,
           )
         if (!drewFrame) {
-          // Fallback M2a: arte-base procedural; senao placeholder M1.
-          const artur = store ? store.get('char.artur') : null
-          if (artur) {
+          // Fallback M2a: arte procedural DO personagem; sem arte propria, placeholder M1.
+          const art = store
+            ? store.get(CHAR_ART_KEYS[player.char.id] ?? 'char.' + player.char.id)
+            : null
+          if (art) {
             drawAnimatedSprite(
               renderer,
-              artur,
+              art,
               playerAnim,
               player.x + player.w / 2,
               player.y + player.h,

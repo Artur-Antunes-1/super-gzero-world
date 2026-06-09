@@ -13,6 +13,7 @@ import type { AssetStore, ImageAsset } from '../../src/engine/assets'
 import * as spriteDraw from '../../src/engine/spriteDraw'
 import * as parallax from '../../src/engine/parallax'
 import * as particles from '../../src/engine/particles'
+import * as sprites from '../../src/game/sprites'
 
 // Mocka os modulos que tocam canvas real (jsdom nao tem 2d de verdade aqui).
 // As fns viram spies; preservamos as fns puras de `particles` que o game usa no update.
@@ -25,6 +26,11 @@ vi.mock('../../src/engine/parallax', () => ({
 vi.mock('../../src/engine/particles', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/engine/particles')>()
   return { ...actual, drawParticles: vi.fn() }
+})
+// drawPlaceholder vira spy com passthrough (comportamento real preservado).
+vi.mock('../../src/game/sprites', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/game/sprites')>()
+  return { ...actual, drawPlaceholder: vi.fn(actual.drawPlaceholder) }
 })
 
 // ---------- FakeInput canonico (igual ao de player.test.ts) ----------
@@ -56,6 +62,9 @@ function makeRenderer(): Renderer {
     restore: vi.fn(),
     fillRect: vi.fn(),
     fillText: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    drawImage: vi.fn(),
     imageSmoothingEnabled: false,
     font: '',
     textAlign: '',
@@ -97,6 +106,22 @@ function makeLevel(
 
 // Avanca o estado 'select' ate selecionar o personagem (index 0 = renan) com 'confirm'.
 function selectFirst(game: ReturnType<typeof createGame>, input: FakeInput): void {
+  input.set('confirm', true)
+  game.update(1)
+  input.set('confirm', false)
+  game.update(1)
+}
+
+// Navega para 'artur' (index 3 em SELECT_ORDER) e confirma.
+function selectArtur(game: ReturnType<typeof createGame>, input: FakeInput): void {
+  // Pressiona 'right' tres vezes para chegar ao index 3 (artur).
+  for (let i = 0; i < 3; i++) {
+    input.set('right', true)
+    game.update(1)
+    input.set('right', false)
+    game.update(1)
+  }
+  // Confirma a selecao.
   input.set('confirm', true)
   game.update(1)
   input.set('confirm', false)
@@ -383,22 +408,6 @@ describe('createGame — builder tile restore', () => {
   const BUILDER_COL = 2
   const BUILDER_ROW = 8
 
-  // Navega para 'artur' (index 3 em SELECT_ORDER) e confirma.
-  function selectArtur(game: ReturnType<typeof createGame>, input: FakeInput): void {
-    // Pressiona 'right' tres vezes para chegar ao index 3 (artur).
-    for (let i = 0; i < 3; i++) {
-      input.set('right', true)
-      game.update(1)
-      input.set('right', false)
-      game.update(1)
-    }
-    // Confirma a selecao.
-    input.set('confirm', true)
-    game.update(1)
-    input.set('confirm', false)
-    game.update(1)
-  }
-
   it('builder: bloco temporario aparece e e restaurado', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
@@ -484,15 +493,16 @@ describe('createGame — timer', () => {
 
 // (M2a Task 6) — integracao da animacao
 
-// Mock de AssetStore: get() devolve um ImageAsset falso para 'char.artur'.
-function makeStore(): AssetStore {
+// Mock de AssetStore: get() devolve um ImageAsset falso para as chaves listadas
+// (default: so a arte procedural 'char.artur').
+function makeStore(keys: string[] = ['char.artur']): AssetStore {
   const fakeAsset: ImageAsset = {
     src: {} as unknown as CanvasImageSource,
     w: 64,
     h: 96,
   }
   return {
-    get: (key: string) => (key === 'char.artur' ? fakeAsset : null),
+    get: (key: string) => (keys.includes(key) ? fakeAsset : null),
     ready: true,
   }
 }
@@ -515,7 +525,8 @@ describe('createGame — integracao M2a (animacao)', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     const game = createGame(renderer, input, makeLevel(), makeStore())
-    selectFirst(game, input)
+    // artur tem arte procedural ('char.artur') no store; sem sheets M2b -> cai no procedural.
+    selectArtur(game, input)
     game.render(0)
     expect(spriteDraw.drawAnimatedSprite).toHaveBeenCalledTimes(1)
     const call = (spriteDraw.drawAnimatedSprite as ReturnType<typeof vi.fn>).mock.calls[0]
@@ -544,7 +555,7 @@ describe('createGame — integracao M2a (animacao)', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     const game = createGame(renderer, input, makeLevel(), makeStore())
-    selectFirst(game, input)
+    selectArtur(game, input)
     const p = game.player!
     // iframes com bit (iframes>>2)&1 == 1 -> NAO desenha
     p.iframes = 4 // (4>>2)&1 = 1
@@ -563,5 +574,56 @@ describe('createGame — integracao M2a (animacao)', () => {
     const game = createGame(renderer, input, makeLevel(), makeStore())
     selectFirst(game, input)
     expect(() => game.update(1)).not.toThrow()
+  })
+})
+
+// (M2b) — arte por personagem: a cascata drawCharFrame -> procedural -> placeholder
+// nunca empresta a arte do artur para outro personagem.
+describe('createGame — arte por personagem (M2b)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renan + store so com arte do artur: cai no drawPlaceholder, nunca drawAnimatedSprite', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore(['char.artur']))
+    selectFirst(game, input) // renan (index 0)
+    expect(game.player!.char.id).toBe('renan')
+    game.render(0)
+    expect(spriteDraw.drawAnimatedSprite).not.toHaveBeenCalled()
+    expect(renderer.ctx.drawImage).not.toHaveBeenCalled()
+    expect(sprites.drawPlaceholder).toHaveBeenCalledTimes(1)
+    const charArg = vi.mocked(sprites.drawPlaceholder).mock.calls[0][1]
+    expect(charArg.id).toBe('renan')
+  })
+
+  it('artur + store com os sheets: desenha via drawCharFrame (ctx.drawImage), sem fallback', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const store = makeStore([
+      'char.artur',
+      'char.artur.idle',
+      'char.artur.corrida',
+      'char.artur.pulo',
+      'char.artur.queda',
+      'char.artur.danificado',
+    ])
+    const game = createGame(renderer, input, makeLevel(), store)
+    selectArtur(game, input)
+    expect(game.player!.char.id).toBe('artur')
+    game.render(0)
+    expect(renderer.ctx.drawImage).toHaveBeenCalledTimes(1)
+    expect(spriteDraw.drawAnimatedSprite).not.toHaveBeenCalled()
+    expect(sprites.drawPlaceholder).not.toHaveBeenCalled()
+  })
+
+  it('render no select com store: card do artur usa a arte real (ctx.drawImage)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore(['char.artur.idle']))
+    expect(game.state.get()).toBe('select')
+    game.render(0)
+    expect(renderer.ctx.drawImage).toHaveBeenCalledTimes(1)
   })
 })
