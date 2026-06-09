@@ -81,6 +81,47 @@ describe('stepBody (gravidade + integração)', () => {
   })
 })
 
+describe('stepBody — gravityScale (weightMul)', () => {
+  it('sem 4º argumento: comportamento idêntico a gravityScale=1', () => {
+    const level = makeLevel(['....', '....', '....'])
+    const a = makeBody({ x: 24, y: 0, vx: 0, vy: 0 })
+    const b = makeBody({ x: 24, y: 0, vx: 0, vy: 0 })
+
+    stepBody(a, level, 1)
+    stepBody(b, level, 1, 1)
+
+    expect(a.vy).toBeCloseTo(b.vy, 10)
+    expect(a.y).toBeCloseTo(b.y, 10)
+  })
+
+  it('gravityScale 1.08: vy cresce 8% mais por passo (antes do clamp)', () => {
+    const level = makeLevel(['....', '....', '....'])
+    const body = makeBody({ x: 24, y: 0, vx: 0, vy: 0 })
+
+    stepBody(body, level, 1, 1.08)
+
+    expect(body.vy).toBeCloseTo(GRAVITY * 1.08, 5)
+  })
+
+  it('gravityScale 0.96: vy cresce 4% menos por passo', () => {
+    const level = makeLevel(['....', '....', '....'])
+    const body = makeBody({ x: 24, y: 0, vx: 0, vy: 0 })
+
+    stepBody(body, level, 1, 0.96)
+
+    expect(body.vy).toBeCloseTo(GRAVITY * 0.96, 5)
+  })
+
+  it('MAX_FALL não escala: gravityScale 1.08 satura no mesmo teto', () => {
+    const level = makeLevel(['....', '....', '....', '....'])
+    const body = makeBody({ x: 24, y: 0, vx: 0, vy: 0 })
+
+    for (let i = 0; i < 1000; i++) stepBody(body, level, 1, 1.08)
+
+    expect(body.vy).toBeCloseTo(MAX_FALL, 5)
+  })
+})
+
 describe('collideTiles (resolve X depois Y contra tiles sólidos)', () => {
   it('(b) para o corpo sobre o chão e marca onGround sem afundar', () => {
     // Chão na linha 2 (y de 96 a 144). Corpo de 16px caindo, sobreposto ao chão.

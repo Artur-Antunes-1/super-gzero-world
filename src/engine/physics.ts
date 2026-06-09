@@ -28,8 +28,9 @@ function tileAt(level: ParsedLevel, tx: number, ty: number): TileType {
 
 // Aplica gravidade (até MAX_FALL) e integra posição pela velocidade.
 // dt está em frames (E1: convenção por-frame). Em runtime dt=1; testes usam dt=1.
-export function stepBody(body: Body, level: ParsedLevel, dt: number): void {
-  body.vy = Math.min(body.vy + GRAVITY * dt, MAX_FALL)
+// gravityScale escala só a aceleração (weightMul do personagem); MAX_FALL não escala.
+export function stepBody(body: Body, level: ParsedLevel, dt: number, gravityScale = 1): void {
+  body.vy = Math.min(body.vy + GRAVITY * gravityScale * dt, MAX_FALL)
   body.x += body.vx * dt
   resolveAxisX(body, level)
   body.onGround = false

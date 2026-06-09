@@ -1,5 +1,5 @@
 // tests/unit/player.test.ts
-// dt=1 throughout (frames convention, E1). E2: jump assertion = JUMP_VEL*jumpVelMul + GRAVITY.
+// dt=1 throughout (frames convention, E1). E2: jump assertion = JUMP_VEL*jumpVelMul + GRAVITY*weightMul.
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createPlayer, updatePlayer, damagePlayer, respawnPlayer, tickPlayerTimers, type Player } from '../../src/game/player'
 import { CHARACTERS } from '../../src/data/characters'
@@ -162,14 +162,14 @@ describe('updatePlayer — pulo', () => {
     expect(p.vy).toBe(0)
   })
 
-  it('jump em onGround: onGround===false e vy === JUMP_VEL*jumpVelMul + GRAVITY (E2)', () => {
+  it('jump em onGround: onGround===false e vy === JUMP_VEL*jumpVelMul + GRAVITY*weightMul (E2)', () => {
     steps(p, input, level, 10) // settle on ground
     expect(p.onGround).toBe(true)
     input.set('jump', true)
     updatePlayer(p, input, level, 1)
     input.update()
-    // E2: stepBody runs after the jump impulse, adding GRAVITY once
-    const expected = JUMP_VEL * CHARACTERS['renan'].jumpVelMul + GRAVITY
+    // E2: stepBody runs after the jump impulse, adding GRAVITY*weightMul once
+    const expected = JUMP_VEL * CHARACTERS['renan'].jumpVelMul + GRAVITY * CHARACTERS['renan'].weightMul
     expect(p.vy).toBeCloseTo(expected, 5)
     expect(p.onGround).toBe(false)
   })
@@ -189,8 +189,8 @@ describe('updatePlayer — pulo', () => {
     const vyBefore = p.vy
     updatePlayer(p, input, level, 1)
     input.update()
-    // E2: vy should reflect jump impulse + one GRAVITY step
-    const expected = JUMP_VEL * CHARACTERS['renan'].jumpVelMul + GRAVITY
+    // E2: vy should reflect jump impulse + one GRAVITY*weightMul step
+    const expected = JUMP_VEL * CHARACTERS['renan'].jumpVelMul + GRAVITY * CHARACTERS['renan'].weightMul
     expect(p.vy).toBeLessThan(vyBefore) // upward impulse (more negative)
     expect(p.vy).toBeCloseTo(expected, 5)
   })
@@ -241,6 +241,35 @@ describe('updatePlayer — pulo', () => {
       if (p.vy < 0) jumped = true // upward impulse = buffered jump fired
     }
     expect(jumped).toBe(true)
+  })
+})
+
+describe('updatePlayer — gravidade escalada por weightMul', () => {
+  it('no ar, sem input: julio (1.08) acumula vy maior que renan (0.96)', () => {
+    const level = makeFlatLevel()
+    const input = new FakeInput()
+    const julio = createPlayer(CHARACTERS['julio'], level.playerSpawn)
+    const renan = createPlayer(CHARACTERS['renan'], level.playerSpawn)
+
+    updatePlayer(julio, input, level, 1)
+    updatePlayer(renan, input, level, 1)
+
+    expect(julio.onGround).toBe(false)
+    expect(renan.onGround).toBe(false)
+    expect(julio.vy).toBeCloseTo(GRAVITY * CHARACTERS['julio'].weightMul, 5)
+    expect(renan.vy).toBeCloseTo(GRAVITY * CHARACTERS['renan'].weightMul, 5)
+    expect(julio.vy).toBeGreaterThan(renan.vy)
+  })
+
+  it('weightMul 1.0 (artur): vy idêntico ao comportamento pré-mudança', () => {
+    const level = makeFlatLevel()
+    const input = new FakeInput()
+    const p = createPlayer(CHARACTERS['artur'], level.playerSpawn)
+
+    updatePlayer(p, input, level, 1)
+
+    expect(p.onGround).toBe(false)
+    expect(p.vy).toBeCloseTo(GRAVITY, 5)
   })
 })
 
