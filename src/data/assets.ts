@@ -12,6 +12,12 @@ import type { ParallaxLayer } from '../engine/parallax'
  */
 export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   'char.artur': { url: '/assets/chars/artur.png', chromaKey: true },
+  // M2b: sprite-sheets de animacao do Artur (PNG ja transparente -> sem chromaKey).
+  'char.artur.idle': { url: '/assets/chars/artur/idle.png' },
+  'char.artur.corrida': { url: '/assets/chars/artur/corrida.png' },
+  'char.artur.pulo': { url: '/assets/chars/artur/pulo.png' },
+  'char.artur.queda': { url: '/assets/chars/artur/queda.png' },
+  'char.artur.danificado': { url: '/assets/chars/artur/danificado.png' },
   'bg.sky': { url: '/assets/bg/sky.png' },
   'bg.cosmic': { url: '/assets/bg/cosmic.png' },
 }

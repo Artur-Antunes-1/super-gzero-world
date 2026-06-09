@@ -1,0 +1,15 @@
+{
+ "cell": [
+  96,
+  96
+ ],
+ "anchorX": 48,
+ "anchorY": 92,
+ "anims": {
+  "idle": 3,
+  "corrida": 4,
+  "pulo": 3,
+  "queda": 4,
+  "danificado": 3
+ }
+}

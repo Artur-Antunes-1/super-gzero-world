@@ -75,7 +75,9 @@ import {
 } from '../engine/particles'
 import { drawParallax } from '../engine/parallax'
 import { drawAnimatedSprite } from '../engine/spriteDraw'
+import { drawCharFrame } from '../engine/spriteAnim'
 import { SKY_LAYERS } from '../data/assets'
+import { CHAR_ANIMS } from '../data/charAnims'
 
 // Cor por tipo de tile (world space).
 function tileColor(t: TileType): string {
@@ -391,31 +393,47 @@ export function createGame(
       // M2a: pisca de i-frames — pula o desenho do sprite em frames alternados.
       const blink = player.iframes > 0 && ((player.iframes >> 2) & 1) === 1
       if (!blink) {
-        const artur = store ? store.get('char.artur') : null
-        if (artur) {
-          // Ancora nos pes: centro horizontal + base do corpo.
-          drawAnimatedSprite(
+        // M2b: frame-a-frame com a arte ORIGINAL do personagem (Artur), se houver.
+        const set = CHAR_ANIMS[player.char.id]
+        const drewFrame =
+          store !== undefined &&
+          set !== undefined &&
+          drawCharFrame(
             renderer,
-            artur,
-            playerAnim,
+            store,
+            set,
+            playerAnim.state,
+            playerAnim.t,
             player.x + player.w / 2,
             player.y + player.h,
-            player.w,
-            player.h,
-            player.facing,
-            player,
-          )
-        } else {
-          // Fallback M1: placeholder (sem store ou asset ausente).
-          drawPlaceholder(
-            renderer,
-            player.char,
-            player.x,
-            player.y,
-            player.w,
-            player.h,
             player.facing,
           )
+        if (!drewFrame) {
+          // Fallback M2a: arte-base procedural; senao placeholder M1.
+          const artur = store ? store.get('char.artur') : null
+          if (artur) {
+            drawAnimatedSprite(
+              renderer,
+              artur,
+              playerAnim,
+              player.x + player.w / 2,
+              player.y + player.h,
+              player.w,
+              player.h,
+              player.facing,
+              player,
+            )
+          } else {
+            drawPlaceholder(
+              renderer,
+              player.char,
+              player.x,
+              player.y,
+              player.w,
+              player.h,
+              player.facing,
+            )
+          }
         }
       }
     }
