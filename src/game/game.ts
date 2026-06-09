@@ -63,6 +63,20 @@ import {
   VIEW_H,
 } from '../engine/constants'
 
+// --- M2a: motor de animacao (consumido, nao recriado) ---
+import type { AssetStore } from '../engine/assets'
+import { createAnimator, updateAnimator } from '../engine/animator'
+import {
+  createParticles,
+  emitAmbient,
+  emitBurst,
+  updateParticles,
+  drawParticles,
+} from '../engine/particles'
+import { drawParallax } from '../engine/parallax'
+import { drawAnimatedSprite } from '../engine/spriteDraw'
+import { SKY_LAYERS } from '../data/assets'
+
 // Cor por tipo de tile (world space).
 function tileColor(t: TileType): string {
   switch (t) {
@@ -105,11 +119,18 @@ export function createGame(
   renderer: Renderer,
   input: Input,
   level: ParsedLevel,
+  store?: AssetStore,
 ): Game {
   const state = createStateMachine('select')
   const cam = createCamera()
   const chars = selectableChars()
   const sel: SelectState = createSelect()
+
+  // --- M2a: animacao do player + sistema de particulas (persistem entre frames) ---
+  const playerAnim = createAnimator()
+  const ps = createParticles()
+  // Rastreia a borda de ativacao do Humanware para emitir 1 burst no frame que ativa.
+  let hwWasActive = false
 
   // Mutaveis: recriados no reset.
   let player: Player | null = null
@@ -214,6 +235,17 @@ export function createGame(
       // 2) Habilidade: tempo do player (dt, escala 1).
       updateAbility(p, input, dt, { level, enemies })
 
+      // 2b) M2a: animacao do player (logica pura, sem render) + particulas ambiente.
+      updateAnimator(playerAnim, p, p.iframes, dt)
+      emitAmbient(ps, VIEW_W, VIEW_H, dt)
+      // Burst no frame em que o Humanware ACABOU de ativar (borda de subida).
+      const hwActiveNow = isActive(hw)
+      if (hwActiveNow && !hwWasActive) {
+        emitBurst(ps, p.x, p.y - 30, 24, [COLOR_MAGENTA, COLOR_LIME])
+      }
+      hwWasActive = hwActiveNow
+      updateParticles(ps, dt)
+
       // 3) Bloco temporario do Builder -> level.tiles (sem 2o sistema de colisao).
       syncBuilderTile()
 
@@ -305,6 +337,10 @@ export function createGame(
       return
     }
 
+    // M2a: parallax do ceu em SCREEN SPACE, por cima do COLOR_BG, antes do mundo.
+    // store pode ser undefined (testes/loading) — drawParallax pula layers sem asset.
+    if (store) drawParallax(renderer, SKY_LAYERS, store, cam)
+
     renderer.beginWorld(cam.x, cam.y)
 
     // Tiles visiveis.
@@ -345,18 +381,43 @@ export function createGame(
     // FX da habilidade + player.
     if (player) {
       drawAbilityFx(renderer, player)
-      drawPlaceholder(
-        renderer,
-        player.char,
-        player.x,
-        player.y,
-        player.w,
-        player.h,
-        player.facing,
-      )
+
+      // M2a: pisca de i-frames — pula o desenho do sprite em frames alternados.
+      const blink = player.iframes > 0 && ((player.iframes >> 2) & 1) === 1
+      if (!blink) {
+        const artur = store ? store.get('char.artur') : null
+        if (artur) {
+          // Ancora nos pes: centro horizontal + base do corpo.
+          drawAnimatedSprite(
+            renderer,
+            artur,
+            playerAnim,
+            player.x + player.w / 2,
+            player.y + player.h,
+            player.w,
+            player.h,
+            player.facing,
+            player,
+          )
+        } else {
+          // Fallback M1: placeholder (sem store ou asset ausente).
+          drawPlaceholder(
+            renderer,
+            player.char,
+            player.x,
+            player.y,
+            player.w,
+            player.h,
+            player.facing,
+          )
+        }
+      }
     }
 
     renderer.endWorld()
+
+    // M2a: particulas em SCREEN SPACE, por cima do mundo, antes do HUD.
+    drawParticles(renderer, ps)
 
     // HUD em screen space (hwMeter do Humanware; hearts/lives do player).
     // Task 9 vai estender drawHud com hearts; por agora usa a assinatura M0 + hwMeter.

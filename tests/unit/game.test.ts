@@ -8,6 +8,25 @@ import type { Input, InputAction } from '../../src/engine/input'
 import type { ParsedLevel, TileType } from '../../src/data/schema'
 import { TILE, FIXED_DT, TIME_START, STOMP_BOUNCE } from '../../src/engine/constants'
 
+// (M2a Task 6) — imports adicionais
+import type { AssetStore, ImageAsset } from '../../src/engine/assets'
+import * as spriteDraw from '../../src/engine/spriteDraw'
+import * as parallax from '../../src/engine/parallax'
+import * as particles from '../../src/engine/particles'
+
+// Mocka os modulos que tocam canvas real (jsdom nao tem 2d de verdade aqui).
+// As fns viram spies; preservamos as fns puras de `particles` que o game usa no update.
+vi.mock('../../src/engine/spriteDraw', () => ({
+  drawAnimatedSprite: vi.fn(),
+}))
+vi.mock('../../src/engine/parallax', () => ({
+  drawParallax: vi.fn(),
+}))
+vi.mock('../../src/engine/particles', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/engine/particles')>()
+  return { ...actual, drawParticles: vi.fn() }
+})
+
 // ---------- FakeInput canonico (igual ao de player.test.ts) ----------
 class FakeInput implements Input {
   private down = new Set<InputAction>()
@@ -388,5 +407,89 @@ describe('createGame — timer', () => {
     const exhaust = Math.ceil(TIME_START / FIXED_DT) + 5
     for (let i = 0; i < exhaust; i++) game.update(1)
     expect(game.state.get()).toBe('over')
+  })
+})
+
+// (M2a Task 6) — integracao da animacao
+
+// Mock de AssetStore: get() devolve um ImageAsset falso para 'char.artur'.
+function makeStore(): AssetStore {
+  const fakeAsset: ImageAsset = {
+    src: {} as unknown as CanvasImageSource,
+    w: 64,
+    h: 96,
+  }
+  return {
+    get: (key: string) => (key === 'char.artur' ? fakeAsset : null),
+    ready: true,
+  }
+}
+
+describe('createGame — integracao M2a (animacao)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("SEM store: render usa drawPlaceholder (fallback), nunca drawAnimatedSprite", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel()) // 3 args = sem store
+    selectFirst(game, input)
+    game.render(0)
+    expect(spriteDraw.drawAnimatedSprite).not.toHaveBeenCalled()
+  })
+
+  it("COM store: render desenha o player via drawAnimatedSprite", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore())
+    selectFirst(game, input)
+    game.render(0)
+    expect(spriteDraw.drawAnimatedSprite).toHaveBeenCalledTimes(1)
+    const call = (spriteDraw.drawAnimatedSprite as ReturnType<typeof vi.fn>).mock.calls[0]
+    const p = game.player!
+    // drawAnimatedSprite(r, asset, an, x, y, w, h, facing, body)
+    // indices:            0  1      2   3  4  5  6  7       8
+    // ancora nos pes: x = centro horizontal, y = base do corpo
+    expect(call[3]).toBe(p.x + p.w / 2) // x
+    expect(call[4]).toBe(p.y + p.h)     // y
+    expect(call[7]).toBe(p.facing)      // facing
+  })
+
+  it("render no estado playing desenha o parallax e o sprite animado", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore())
+    selectFirst(game, input)
+    game.render(0)
+    expect(parallax.drawParallax).toHaveBeenCalledTimes(1)
+    // clear acontece antes do parallax (fundo coberto por cima do COLOR_BG)
+    expect(renderer.clear).toHaveBeenCalled()
+    expect(particles.drawParticles).toHaveBeenCalledTimes(1)
+  })
+
+  it("i-frames: piscar pula o desenho do sprite em frames alternados", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore())
+    selectFirst(game, input)
+    const p = game.player!
+    // iframes com bit (iframes>>2)&1 == 1 -> NAO desenha
+    p.iframes = 4 // (4>>2)&1 = 1
+    game.render(0)
+    expect(spriteDraw.drawAnimatedSprite).not.toHaveBeenCalled()
+    // iframes com bit 0 -> desenha
+    vi.clearAllMocks()
+    p.iframes = 8 // (8>>2)&1 = 0
+    game.render(0)
+    expect(spriteDraw.drawAnimatedSprite).toHaveBeenCalledTimes(1)
+  })
+
+  it("update no estado playing nao lanca com store presente", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore())
+    selectFirst(game, input)
+    expect(() => game.update(1)).not.toThrow()
   })
 })
