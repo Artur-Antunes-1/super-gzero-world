@@ -1,9 +1,11 @@
 // tests/e2e/world1.spec.ts
-// E2E M1 — fluxo completo: tela SELECT -> escolher 1o personagem (Renan) ->
+// E2E M2a — fluxo completo: tela SELECT -> escolher 1o personagem (Renan) ->
 // andar para a direita ate vencer a fase (estado 'win').
 //
-// Contexto M1 (CONTRATO):
-//  - O jogo agora INICIA em 'select' (antes era 'playing' no M0).
+// Contexto M2a (CONTRATO):
+//  - O jogo INICIA em 'select' apos precarregar os assets reais (public/assets).
+//  - main.ts faz await loadAssets(ASSET_MANIFEST) antes de createGame/loop.start().
+//  - O timeout do teste e estendido para 60s para acomodar o preload de assets.
 //  - Selecao: cursor comeca em index 0 (Renan). Enter (acao 'confirm') ou
 //    Space/ArrowUp (acao 'jump') confirmam o personagem -> estado 'playing'.
 //  - world1-zona1 continua 40x11 com chao continuo (sem buracos) e ganhou
@@ -16,6 +18,9 @@
 //    caminho ate o goal leva poucos segundos andando — sobra margem enorme.
 //  - window.__GAME_STATE() (exposto em src/main.ts) reporta o estado atual.
 import { test, expect } from '@playwright/test'
+
+// M2a: preload de assets (loadAssets) atrasa o boot; 60s cobre o carregamento + jogabilidade.
+test.setTimeout(60000)
 
 test('World 1 Zona 1 (M1): select -> escolher personagem -> andar ate vencer', async ({
   page,
