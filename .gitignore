@@ -12,3 +12,6 @@ playwright-report/
 # run/demo scratch
 .playwright-mcp/
 gzero-*.png
+
+# M2 art exploration scratch (raw gens; processed art goes to public/assets)
+.m2-samples/
