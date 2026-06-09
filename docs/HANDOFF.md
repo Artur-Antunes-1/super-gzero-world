@@ -128,10 +128,11 @@ Cada marco seguiu o mesmo fluxo, e ele **funciona muito bem**:
 
 ## 8. Próximos passos
 
-1. **Decidir o pipeline de arte dos outros 4** (Renan/Dante/Julio/Einstein) — eles **não têm sheet**; a geração via `gpt_image_2` (método chongdashu) foi **pausada** (âncoras reprovadas pelo Artur). Opções em aberto: **sheets manuais** (como o do Artur) / **nova tentativa IA** (estilo travado pelo style guide de 2026-06-09) / **PixelLab**. Até lá, eles jogam com o fallback procedural/placeholder.
-2. **M2b-FX** — FX por habilidade (trilha do dash, aura do escudo, bloco do builder, time-warp, modo Humanware) com partículas/overlays. Marco próprio, **independente do pipeline de arte**.
-3. **M2c** — inimigo "Tolo" com arte animada (patrulha/freeze/stomp/death) + elementos (moedas/portais/plataformas/coletáveis). **Re-validar a direção contra o estilo do sheet do Artur antes de executar.**
-4. **M2d** — backgrounds por mundo (parallax, ambos os climas) + cinematográfico (tela de título, retratos animados na seleção via vídeo `seedance`). **Idem: re-validar contra o estilo do sheet antes de executar.**
+> **⚠️ ATUALIZAÇÃO 2026-06-09 (fim do dia): o roadmap agora é a REVISÃO GERAL** — `docs/superpowers/specs/2026-06-09-revisao-geral.md` (6 revisores + síntese, 8 frentes priorizadas). Ordem decidida pelo Artur: **F1 destraves de engine → F2 Artur completo → F3 infra/deploy (paralelo) → F4 tileset & fase W1-1 → F5 elementos → F6 juice/áudio → F7 HUD/telas** — e SÓ DEPOIS a arte dos outros 4 personagens. A lista abaixo fica como contexto histórico do pós-pivô M2b.
+
+1. **Decidir o pipeline de arte dos outros 4** (Renan/Dante/Julio/Einstein) — eles **não têm sheet**; a geração via `gpt_image_2` (método chongdashu) foi **pausada** (âncoras reprovadas pelo Artur). Geração direta de pixel art via Higgsfield = **descartada estruturalmente** (modelos de imagem não têm grid de pixel nativo). Caminho favorito discutido em 2026-06-09: **kitbash do corpo-base do sheet do Artur** (troca de paleta + cabeça/cabelo por personagem; demo aprovada) com Higgsfield só para **referência de identidade** em alta resolução; **PixelLab** como plano B e para cenário/tilesets. Até lá, eles jogam com placeholder.
+2. **M2b-FX** — absorvido pelas frentes F5/F6 da revisão geral.
+3. **M2c / M2d** — absorvidos pelas frentes F4/F5 da revisão geral (tileset, elementos, parallax por mundo).
 
 ---
 
