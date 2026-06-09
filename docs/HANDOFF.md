@@ -1,6 +1,6 @@
 # HANDOFF — Gravidade Zero · O Jogo (Gzero)
 
-> **Para um chat/assistente novo (ou pessoa) que vai continuar este projeto.** Leia isto primeiro, depois os specs/planos referenciados. Data do handoff: 2026-06-08. Idioma do usuário: **pt-BR**.
+> **Para um chat/assistente novo (ou pessoa) que vai continuar este projeto.** Leia isto primeiro, depois os specs/planos referenciados. Data do handoff: 2026-06-08 (atualizado 2026-06-09). Idioma do usuário: **pt-BR**.
 
 ---
 
@@ -8,12 +8,13 @@
 
 **O que é:** um **platformer 2D** (estilo Mario) de marca da empresa **Gzero / Gravidade Zero**, feito a partir de um artefato público do Claude (jogo japonês "リーフのだいぼうけん", `C:\Users\artur\Downloads\remixed-6e07a45d.html`). Reescrito como projeto **Vite + TypeScript + Canvas 2D**, data-driven, com TDD.
 
-**Estado atual (3 marcos concluídos, pushed):**
+**Estado atual (4 marcos concluídos):**
 - **M0** ✅ — fatia vertical jogável (motor, física, fase, 1 personagem placeholder, goal/win).
 - **M1** ✅ — **5 personagens jogáveis** + tela de seleção + superpoder **Humanware** + inimigos "Tolo" + dano/corações/vidas/over.
 - **M2a** ✅ — **motor de animação** (procedural) + **arte real animada do Artur** + background parallax de ilhas flutuantes + partículas.
+- **M2b-Artur** ✅ — **PIVÔ (2026-06-09):** o Artur forneceu o **próprio character sheet 16-bit**; frames extraídos fielmente (Python/PIL) e animados **frame-a-frame** no jogo (`spriteAnim.ts` + `charAnims.ts`). O procedural do M2a virou **fallback** (quem não tem sheet cai no placeholder colorido).
 
-**Próximo: M2b** — gerar a arte dos outros 4 personagens (Renan/Dante/Julio/Einstein) + FX por habilidade. Depois M2c (inimigos/elementos animados) e M2d (backgrounds por mundo + cinematográfico via vídeo).
+**Próximo:** 1) **decidir o pipeline de arte dos outros 4** (Renan/Dante/Julio/Einstein) — geração IA está **pausada** (âncoras reprovadas); opções: sheets manuais / nova tentativa IA (estilo travado pelo style guide) / PixelLab. 2) **M2b-FX** — FX por habilidade como marco próprio. Depois M2c e M2d, re-validados contra o estilo do sheet do Artur.
 
 **Repo privado:** https://github.com/Artur-Antunes-1/super-gzero-world (branch `master`, ~44 commits, conta `Artur-Antunes-1`).
 **Diretório local:** `C:\Users\artur\Área de Trabalho\Gzero\SuperGzeroWorld` (Windows; bash via Git Bash disponível).
@@ -26,7 +27,7 @@
 npm install
 npm run dev        # Vite dev server (porta 5173+; abre na TELA DE SELEÇÃO)
 npm run build      # gera dist/ (inclui public/assets)
-npm run test       # Vitest (jsdom) — 281 testes unit
+npm run test       # Vitest (jsdom) — testes unit (28 arquivos)
 npm run test:e2e   # Playwright (build+preview:4173) — fluxo select->andar->win
 npx tsc -p tsconfig.json --noEmit   # type-check strict
 ```
@@ -53,6 +54,7 @@ Tudo em `src/`. Cada arquivo tem responsabilidade única; o motor é data-driven
 - `parallax.ts` (M2a) — `drawParallax` (camadas, screen space).
 - `particles.ts` (M2a) — `ParticleSystem`, `emitAmbient`/`emitBurst`/`updateParticles`/`drawParticles`.
 - `spriteDraw.ts` (M2a) — `drawAnimatedSprite` (ancora nos pés, SPRITE_DRAW_H=90, fallback se asset null).
+- `spriteAnim.ts` (M2b) — **frame-a-frame**: `FrameAnim`/`CharAnimSet`, `frameIndex` (loop/clamp), `drawCharFrame` (célula do sheet ancorada nos pés, espelha por facing; retorna false se o asset falta → fallback).
 
 **`src/game/`** (regras do jogo):
 - `player.ts` — `Player`(extends Body; +char,facing,coyote,jumpBuffer,lives,hearts,iframes,ability), `createPlayer`, `updatePlayer`, `damagePlayer`/`respawnPlayer`/`tickPlayerTimers`.
@@ -62,13 +64,13 @@ Tudo em `src/`. Cada arquivo tem responsabilidade única; o motor é data-driven
 - `levelParser.ts` — `parseLevel` (ASCII tilemap → ParsedLevel).
 - `goal.ts` — `checkGoal`.
 - `sprites.ts` — `drawPlaceholder` (fallback quando não há arte real).
-- `game.ts` — **`createGame(renderer,input,level,store?)`** — orquestra TUDO: select→playing→win/over, ordem do update, worldScale (Math.min), colisões, Humanware, parallax+sprite animado+partículas no render.
+- `game.ts` — **`createGame(renderer,input,level,store?)`** — orquestra TUDO: select→playing→win/over, ordem do update, worldScale (Math.min), colisões, Humanware, parallax+sprite animado+partículas no render. Render do player (M2b): tenta frame-a-frame (`CHAR_ANIMS[player.char.id]` + `drawCharFrame`); quem não tem arte cai no fallback procedural/placeholder do próprio personagem.
 
-**`src/data/`**: `schema.ts` (tipos), `characters.ts` (5 chars + `ABILITY_PARAMS`), `assets.ts` (`ASSET_MANIFEST`+`SKY_LAYERS`), `levels/world1-zona1.ts`.
-**`src/ui/`**: `hud.ts` (`drawHud`: TIME/LIVES/COINS/medidor Humanware/corações), `selectScreen.ts`.
+**`src/data/`**: `schema.ts` (tipos), `characters.ts` (5 chars + `ABILITY_PARAMS`), `assets.ts` (`ASSET_MANIFEST`+`SKY_LAYERS`), `charAnims.ts` (M2b: `CHAR_ANIMS` — mapeamento AnimState→sheet/frames/fps por personagem; só `artur` por ora), `levels/world1-zona1.ts`.
+**`src/ui/`**: `hud.ts` (`drawHud`: TIME/LIVES/COINS/medidor Humanware/corações), `selectScreen.ts` (aceita `store` — retrato real = frame 0 do idle p/ quem tem arte; os demais seguem placeholder).
 **`src/main.ts`**: boot — preload assets (async), cria tudo, `createLoop().start()`, expõe `__GAME_STATE`.
-**`public/assets/`**: arte real (chars/artur.png, bg/sky.png, bg/cosmic.png) servida pelo Vite.
-**`tests/`**: `unit/*.test.ts` (26 arquivos, 281 testes) + `e2e/world1.spec.ts`.
+**`public/assets/`**: arte real servida pelo Vite — `chars/artur/{idle,corrida,pulo,queda,danificado}.png` (sheets frame-a-frame M2b, célula 96×96, transparente) + `meta.json`, `chars/artur.png` (arte-base M2a/fallback), `bg/sky.png`, `bg/cosmic.png`.
+**`tests/`**: `unit/*.test.ts` (28 arquivos) + `e2e/world1.spec.ts`.
 
 ---
 
@@ -78,7 +80,7 @@ Tudo em `src/`. Cada arquivo tem responsabilidade única; o motor é data-driven
 - **Roster (5 jogáveis):** Renan (Salto Visionário/pulo duplo), Dante (Dash Criativo), Julio (Escudo de Governança), Artur=o usuário (Builder), Einstein=pai do Renan (E=mc² slow-time). Companheiro IA "Renante" = M3+ (só existe no enum, `m1Implemented:false`).
 - **Humanware:** medidor de coração/consciência; tecla H ativa o Modo (desacelera mundo a 0.35, congela "Tolos", pausa timer; player corre normal). Tema = doutrina real da Gzero ("IA amplifica, não substitui").
 - **Direção de arte (M2, TRAVADA):** pixel art **claro/suave/refinado** como o **artefato original** (NÃO o pixel escuro/neon das 1as amostras). Identidade Gzero via acentos **magenta `#ff0055`/ciano** + portais + membros reais como heróis + mundo de **ilhas flutuantes**. **Dois climas de background coexistem**: céu claro + cósmico escuro (por mundo). Spec: `docs/superpowers/specs/2026-06-08-m2-art-animation-design.md`.
-- **Animação = abordagem D (híbrido):** animação **procedural** sobre **arte-base de IA** (1 arte por entidade; motor anima por código) + `nano_banana_pro` p/ backgrounds + vídeo `seedance` p/ cinematográfico. O usuário aprovou a **fluidez** do procedural.
+- **Animação = abordagem D (híbrido):** animação **procedural** sobre **arte-base de IA** (1 arte por entidade; motor anima por código) + `nano_banana_pro` p/ backgrounds + vídeo `seedance` p/ cinematográfico. O usuário aprovou a **fluidez** do procedural. **→ ATUALIZADO (pivô 2026-06-09):** personagens principais agora são **frame-a-frame com arte autoral** (spec `2026-06-09-m2b-artur-frame-anim.md`); o procedural virou **fallback**. Ver o adendo no topo do spec de arte M2.
 - **Marca Gzero (2 identidades):** site público `gravidadezero.space` = cósmico/regenerativo (fundadores Renan & Dante, "Humanware®", já usa RPG/"Lifecards"); marca de produto "Tech-Noir" sóbria (preto+pink). Dossiê completo: `docs/gzero-site-dossier.md` (lido das 26 páginas do site).
 
 ---
@@ -114,8 +116,9 @@ Cada marco seguiu o mesmo fluxo, e ele **funciona muito bem**:
 
 ## 7. Índice de documentos & assets
 
-- **Specs:** `docs/superpowers/specs/2026-06-08-gravidade-zero-game-design.md` (mestre, §0 cânone) · `…/2026-06-08-m2-art-animation-design.md` (arte/animação M2).
+- **Specs:** `docs/superpowers/specs/2026-06-08-gravidade-zero-game-design.md` (mestre, §0 cânone) · `…/2026-06-08-m2-art-animation-design.md` (arte/animação M2; **ler o adendo pós-pivô no topo**) · `…/2026-06-09-m2b-artur-frame-anim.md` (pivô: Artur frame-a-frame com arte autoral) · `…/2026-06-09-m2b-art-style-guide.md` (style guide 16-bit — trava o estilo SE a via IA for retomada).
 - **Planos:** `docs/superpowers/plans/2026-06-08-gzero-m0-vertical-slice.md` · `…/2026-06-08-gzero-m1.md` · `…/2026-06-08-gzero-m2a.md` (cada um com Errata no topo).
+- **Evidências visuais:** `docs/evidence/` — screenshots dos marcos (seleção/gameplay M2a e M2b).
 - **Dossiê da empresa:** `docs/gzero-site-dossier.md` (+ `gzero-site-pages.json`) — leitura das 26 páginas de gravidadezero.space.
 - **Memória do agente:** `C:\Users\artur\.claude\projects\C--Users-artur--rea-de-Trabalho-Gzero-SuperGzeroWorld\memory\` (`gzero-game-project.md`, `artur-gzero.md`, índice `MEMORY.md`).
 - **Scratch de arte M2 (gitignored):** `.m2-samples/` — amostras geradas (`new-artur-v1.png`, `new-bg.png`, `background.png`/cósmico, `artur-video-C.mp4`, `procedural-demo.html`), referências originais, etc.
@@ -125,10 +128,10 @@ Cada marco seguiu o mesmo fluxo, e ele **funciona muito bem**:
 
 ## 8. Próximos passos
 
-1. **M2b** — gerar arte-base dos 4 (Renan/Dante/Julio/Einstein) com o pipeline acima; mapear em `data/assets.ts` (`char.<id>`); o render já usa `char.artur` fixo → generalizar p/ `char.${player.char.id}` com fallback. FX por habilidade (trilha do dash, aura do escudo, bloco do builder, time-warp, modo Humanware) usando partículas/overlays.
-2. **M2c** — inimigo "Tolo" com arte animada (patrulha/freeze/stomp/death) + elementos (moedas/portais/plataformas/coletáveis).
-3. **M2d** — backgrounds por mundo (parallax, ambos os climas) + cinematográfico (tela de título, retratos animados na seleção via vídeo `seedance`).
-4. **Cleanup pendente (chip de tarefa criado):** **downscale** dos 3 PNGs em `public/assets/` (~5 MB cada/~15 MB total, são renders 2k) pro tamanho de sprite/background — enxuga o repo. Sem regressão visual.
+1. **Decidir o pipeline de arte dos outros 4** (Renan/Dante/Julio/Einstein) — eles **não têm sheet**; a geração via `gpt_image_2` (método chongdashu) foi **pausada** (âncoras reprovadas pelo Artur). Opções em aberto: **sheets manuais** (como o do Artur) / **nova tentativa IA** (estilo travado pelo style guide de 2026-06-09) / **PixelLab**. Até lá, eles jogam com o fallback procedural/placeholder.
+2. **M2b-FX** — FX por habilidade (trilha do dash, aura do escudo, bloco do builder, time-warp, modo Humanware) com partículas/overlays. Marco próprio, **independente do pipeline de arte**.
+3. **M2c** — inimigo "Tolo" com arte animada (patrulha/freeze/stomp/death) + elementos (moedas/portais/plataformas/coletáveis). **Re-validar a direção contra o estilo do sheet do Artur antes de executar.**
+4. **M2d** — backgrounds por mundo (parallax, ambos os climas) + cinematográfico (tela de título, retratos animados na seleção via vídeo `seedance`). **Idem: re-validar contra o estilo do sheet antes de executar.**
 
 ---
 
@@ -139,8 +142,9 @@ Cada marco seguiu o mesmo fluxo, e ele **funciona muito bem**:
 3. **Bug do `Workflow` `args`:** passar `args` como string JSON faz `args.x` virar undefined no script. **Embuta os dados direto no script** (foi o que resolveu nos workflows de leitura/plano).
 4. **Windows/Git Bash:** caminhos com acento ("Área de Trabalho") e espaços — sempre aspas. Higgsfield no Node precisa de caminho `C:/...` (não `/c/...`).
 5. **favicon 404** no console é benigno (não há favicon; usar o logo "G0" depois).
-6. **PNGs grandes** em public/assets inflam o repo — downscale pendente (chip criado).
+6. ~~**PNGs grandes** em public/assets inflam o repo~~ — **RESOLVIDO (2026-06-09):** downscale feito (`chars/artur.png` → 180px de altura; `bg/sky.png` e `bg/cosmic.png` → 528px).
 7. **CRLF warnings** do git no Windows são cosméticos.
+8. **`meta.json` ↔ `charAnims.ts` têm teste de consistência** (`tests/unit/charAnimsMeta.test.ts`): ao regenerar os sheets do Artur, atualizar os **DOIS** — o `public/assets/chars/artur/meta.json` (saída do script) e o `src/data/charAnims.ts`.
 
 ---
 

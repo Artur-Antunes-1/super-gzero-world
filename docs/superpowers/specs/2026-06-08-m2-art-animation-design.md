@@ -2,6 +2,15 @@
 
 _Data: 2026-06-08 · Status: aprovado (direção validada com amostras reais) · Refina a §11 do spec principal._
 
+## Adendo pós-pivô (2026-06-09) — PREVALECE sobre o que contradisser abaixo
+
+Em 2026-06-09 o Artur forneceu o **próprio character sheet 16-bit** do personagem dele, e o M2b pivotou. O que muda neste documento:
+
+- **(a) Personagens principais = FRAME-A-FRAME com arte autoral** — frames extraídos fielmente do sheet (Python/PIL) e animados pelo motor frame-a-frame (`src/engine/spriteAnim.ts` + `src/data/charAnims.ts`). Spec: `2026-06-09-m2b-artur-frame-anim.md`. A abordagem D (procedural, §2 abaixo) **vira FALLBACK** para personagens sem sheet.
+- **(b) Geração por IA para personagens está PAUSADA** — a tentativa via `gpt_image_2` (método chongdashu) teve as âncoras reprovadas pelo Artur. **SE** a via IA for retomada, o style guide `2026-06-09-m2b-art-style-guide.md` **trava o estilo**. Decisão de pipeline dos outros 4 (Renan/Dante/Julio/Einstein) em aberto: sheets manuais / nova tentativa IA / PixelLab.
+- **(c) FX por habilidade saiu do M2b original** — trilha do dash, aura do escudo, bloco do builder, time-warp e modo Humanware viram marco próprio **"M2b-FX"** (partículas/overlays, independente do pipeline de arte).
+- **(d) M2c (inimigos/elementos) e M2d (backgrounds/cinematográfico)** mantêm a direção, mas devem ser **re-validados contra o estilo do sheet do Artur** antes de executar.
+
 ## 0. Contexto
 
 O M0 (fatia jogável) e o M1 (5 personagens + Humanware + inimigos + dano) usam **sprites placeholder desenhados em código**. O M2 substitui isso por **arte real animada**, com backgrounds, elementos e efeitos. Direção validada gerando amostras reais no Higgsfield (custo ~40 créditos; saldo Team ~3.760).
