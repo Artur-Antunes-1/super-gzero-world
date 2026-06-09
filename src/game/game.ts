@@ -202,6 +202,11 @@ export function createGame(
     time = TIME_START
     coins = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
     coinCount = 0
+    // Reseta o estado M2a para que uma nova rodada comece limpa.
+    hwWasActive = false
+    Object.assign(playerAnim, createAnimator())
+    ps.particles = []
+    ps.ambientAcc = 0
     // Reseta o cursor do select para o primeiro personagem em uma nova rodada.
     sel.index = 0
     state.set('select')
@@ -239,9 +244,10 @@ export function createGame(
       updateAnimator(playerAnim, p, p.iframes, dt)
       emitAmbient(ps, VIEW_W, VIEW_H, dt)
       // Burst no frame em que o Humanware ACABOU de ativar (borda de subida).
+      // Usa coordenadas de TELA (screen space) para consistencia com drawParticles.
       const hwActiveNow = isActive(hw)
       if (hwActiveNow && !hwWasActive) {
-        emitBurst(ps, p.x, p.y - 30, 24, [COLOR_MAGENTA, COLOR_LIME])
+        emitBurst(ps, p.x - cam.x, (p.y - 30) - cam.y, 24, [COLOR_MAGENTA, COLOR_LIME])
       }
       hwWasActive = hwActiveNow
       updateParticles(ps, dt)

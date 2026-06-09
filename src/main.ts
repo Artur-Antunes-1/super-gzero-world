@@ -44,4 +44,9 @@ async function boot(): Promise<void> {
   loop.start()
 }
 
-void boot()
+boot().catch((err: unknown) => {
+  console.error('[SuperGzeroWorld] falha ao carregar assets, iniciando sem arte (fallback placeholder):', err)
+  const game = createGame(renderer, input, level) // sem store -> drawPlaceholder
+  ;(window as any).__GAME_STATE = () => game.state.get()
+  createLoop(game.update.bind(game), game.render.bind(game)).start()
+})

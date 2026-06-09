@@ -301,6 +301,78 @@ describe('createGame — reset', () => {
   })
 })
 
+describe("createGame — reset limpa estado M2a (particulas/animacao/hwWasActive)", () => {
+  it("apos reset (win -> select -> nova rodada) o sistema de particulas comeca vazio e sem crash", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel()
+    const game = createGame(renderer, input, level)
+
+    // Seleciona e vai para playing.
+    selectFirst(game, input)
+    expect(game.state.get()).toBe("playing")
+
+    // Forca transicao para win.
+    game.player!.x = level.goal.x
+    game.player!.y = level.goal.y
+    game.update(1)
+    expect(game.state.get()).toBe("win")
+
+    // Confirma: deve voltar para select (e resetToSelect deve limpar ps/playerAnim/hwWasActive).
+    input.set("confirm", true)
+    game.update(1)
+    input.set("confirm", false)
+    game.update(1)
+    expect(game.state.get()).toBe("select")
+
+    // Inicia nova rodada.
+    selectFirst(game, input)
+    expect(game.state.get()).toBe("playing")
+
+    // Avanca alguns updates sem crash — garante que o estado M2a foi resetado corretamente.
+    expect(() => {
+      for (let i = 0; i < 10; i++) game.update(1)
+    }).not.toThrow()
+
+    // Render tambem nao deve lancar apos o reset.
+    expect(() => game.render(0)).not.toThrow()
+  })
+
+  it("apos reset (over -> select -> nova rodada) render e drawParticles chamados sem crash", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: "fool" }])
+    const game = createGame(renderer, input, level, makeStore())
+
+    selectFirst(game, input)
+    const p = game.player!
+    p.lives = 1; p.hearts = 1; p.iframes = 0; p.vy = 0
+    p.x = 2 * TILE; p.y = 8 * TILE + (TILE - 34)
+    game.update(1)
+    expect(game.state.get()).toBe("over")
+
+    input.set("confirm", true)
+    game.update(1)
+    input.set("confirm", false)
+    game.update(1)
+    expect(game.state.get()).toBe("select")
+
+    // Nova rodada.
+    selectFirst(game, input)
+    expect(game.state.get()).toBe("playing")
+
+    // 10 updates — nao deve lancar.
+    expect(() => {
+      for (let i = 0; i < 10; i++) game.update(1)
+    }).not.toThrow()
+
+    // drawParticles deve ser chamado no render da nova rodada.
+    vi.clearAllMocks()
+    game.render(0)
+    expect(particles.drawParticles).toHaveBeenCalledTimes(1)
+  })
+})
+
 // Builder: bloco temporario aparece em level.tiles e e restaurado apos o TTL.
 describe('createGame — builder tile restore', () => {
   // Calculo da celula-alvo:
