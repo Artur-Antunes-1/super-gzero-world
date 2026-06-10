@@ -21,6 +21,9 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   'char.artur.ataque': { url: '/assets/chars/artur/ataque.png' },
   'bg.sky': { url: '/assets/bg/sky.png' },
   'bg.cosmic': { url: '/assets/bg/cosmic.png' },
+  // C2: atlases de tiles Wang (PixelLab) ja transparentes -> sem chromaKey.
+  'tiles.terra': { url: '/assets/tiles/terra.png' },
+  'tiles.tijolo': { url: '/assets/tiles/tijolo.png' },
 }
 
 /**

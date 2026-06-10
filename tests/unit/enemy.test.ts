@@ -1,6 +1,6 @@
 // tests/unit/enemy.test.ts
 import { describe, it, expect } from 'vitest'
-import { ENEMY_SPEED, TILE } from '../../src/engine/constants'
+import { ENEMY_SPEED, TILE, TIME_START } from '../../src/engine/constants'
 import type { ParsedLevel, TileType, CharacterDef } from '../../src/data/schema'
 import {
   spawnEnemies,
@@ -11,7 +11,11 @@ import {
 import { createPlayer, type Player } from '../../src/game/player'
 
 // Constroi um ParsedLevel a partir de um mapa ASCII (mesmo padrao do physics.test.ts).
-function makeLevel(rows: string[], enemies: ParsedLevel['enemies'] = []): ParsedLevel {
+function makeLevel(
+  rows: string[],
+  enemies: ParsedLevel['enemies'] = [],
+  foolSpawns: ParsedLevel['foolSpawns'] = [],
+): ParsedLevel {
   const heightTiles = rows.length
   const widthTiles = Math.max(...rows.map((r) => r.length))
   const tiles: TileType[][] = []
@@ -38,6 +42,11 @@ function makeLevel(rows: string[], enemies: ParsedLevel['enemies'] = []): Parsed
     goal: { x: 0, y: 0 },
     coins: [],
     enemies,
+    qBlocks: [],
+    hearts: [],
+    checkpoints: [],
+    timeStart: TIME_START,
+    foolSpawns,
   }
 }
 
@@ -55,7 +64,32 @@ const CHAR: CharacterDef = {
 }
 
 describe('spawnEnemies', () => {
-  it('converte fool e enemy em Enemy kind tolo com dims/flags canonicas', () => {
+  it('consome foolSpawns: col/row -> px, patrol -> patrolMin/Max em px', () => {
+    const level = makeLevel(['....', '####'], [], [
+      { col: 1, row: 0, patrol: [1, 3] },
+      { col: 2, row: 0 },
+    ])
+    const es = spawnEnemies(level)
+    expect(es).toHaveLength(2)
+    expect(es[0].x).toBe(1 * TILE)
+    expect(es[0].y).toBe(0)
+    expect(es[0].patrolMin).toBe(1 * TILE)
+    expect(es[0].patrolMax).toBe(3 * TILE)
+    // Sem patrol: limites indefinidos.
+    expect(es[1].x).toBe(2 * TILE)
+    expect(es[1].patrolMin).toBeUndefined()
+    expect(es[1].patrolMax).toBeUndefined()
+    for (const e of es) {
+      expect(e.kind).toBe('tolo')
+      expect(e.w).toBe(38)
+      expect(e.h).toBe(34)
+      expect(e.dir).toBe(-1)
+      expect(e.alive).toBe(true)
+      expect(e.frozen).toBe(false)
+    }
+  })
+
+  it('compat legacy: sem foolSpawns, converte level.enemies (fool|enemy) em tolos', () => {
     const level = makeLevel(['....', '####'], [
       { x: 48, y: 0, kind: 'fool' },
       { x: 96, y: 0, kind: 'enemy' },
@@ -75,6 +109,17 @@ describe('spawnEnemies', () => {
     }
     expect(es[0].x).toBe(48)
     expect(es[1].x).toBe(96)
+  })
+
+  it('foolSpawns tem precedencia: enemies legacy nao duplica tolos', () => {
+    const level = makeLevel(
+      ['....', '####'],
+      [{ x: 48, y: 0, kind: 'fool' }], // espelho legacy do mesmo tolo
+      [{ col: 1, row: 0 }],
+    )
+    const es = spawnEnemies(level)
+    expect(es).toHaveLength(1)
+    expect(es[0].x).toBe(1 * TILE)
   })
 })
 
@@ -120,6 +165,73 @@ describe('updateEnemy patrulha', () => {
     expect(e.dir).toBe(-1)
     // E nao deve ter avancado para alem do tile de chao (sem cair).
     expect(e.x).toBeLessThanOrEqual(2 * TILE + 1)
+  })
+
+  it('FIX C3a: platform conta como piso — tolo sobre plataforma nao vibra', () => {
+    // Piso de platform (one-way) continuo na linha 1. Antes do fix, a deteccao
+    // de borda invertia dir a cada frame (platform nao era "chao").
+    const level = makeLevel(['........', '========'])
+    const e: Enemy = {
+      x: 4 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      onGround: true, kind: 'tolo', dir: -1, alive: true, frozen: false,
+    }
+    const x0 = e.x
+    updateEnemy(e, level, 1)
+    // Continua andando na mesma direcao, sem inverter.
+    expect(e.dir).toBe(-1)
+    expect(e.x).toBeLessThan(x0)
+    // Segundo frame: segue estavel (sem vibrar).
+    updateEnemy(e, level, 1)
+    expect(e.dir).toBe(-1)
+  })
+
+  it('inverte em borda de plataforma one-way (fim do piso platform)', () => {
+    // Plataforma so nas colunas 0..2; col 3+ e vazio.
+    const level = makeLevel(['........', '===.....'])
+    const e: Enemy = {
+      x: 2 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      onGround: true, kind: 'tolo', dir: 1, alive: true, frozen: false,
+    }
+    updateEnemy(e, level, 1)
+    expect(e.dir).toBe(-1)
+  })
+
+  it('inverte no limite esquerdo de patrulha (patrolMin)', () => {
+    const level = makeLevel(['..........', '##########'])
+    const e: Enemy = {
+      x: 2 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      onGround: true, kind: 'tolo', dir: -1, alive: true, frozen: false,
+      patrolMin: 2 * TILE, patrolMax: 6 * TILE,
+    }
+    updateEnemy(e, level, 1)
+    // Alcancou patrolMin indo a esquerda: inverte e anda para a direita.
+    expect(e.dir).toBe(1)
+    expect(e.x).toBeGreaterThan(2 * TILE)
+  })
+
+  it('inverte no limite direito de patrulha (patrolMax)', () => {
+    const level = makeLevel(['..........', '##########'])
+    const e: Enemy = {
+      x: 6 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      onGround: true, kind: 'tolo', dir: 1, alive: true, frozen: false,
+      patrolMin: 2 * TILE, patrolMax: 6 * TILE,
+    }
+    updateEnemy(e, level, 1)
+    // Alcancou patrolMax indo a direita: inverte e anda para a esquerda.
+    expect(e.dir).toBe(-1)
+    expect(e.x).toBeLessThan(6 * TILE)
+  })
+
+  it('dentro dos limites de patrulha, mantem a direcao', () => {
+    const level = makeLevel(['..........', '##########'])
+    const e: Enemy = {
+      x: 4 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      onGround: true, kind: 'tolo', dir: 1, alive: true, frozen: false,
+      patrolMin: 2 * TILE, patrolMax: 6 * TILE,
+    }
+    updateEnemy(e, level, 1)
+    expect(e.dir).toBe(1)
+    expect(e.x).toBeGreaterThan(4 * TILE)
   })
 
   it('nao move quando alive=false', () => {

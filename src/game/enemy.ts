@@ -1,7 +1,8 @@
 // src/game/enemy.ts
 import type { Body } from '../engine/physics'
 // isFullSolid/tileAt: fonte única no physics.ts (A2 — duplicatas locais removidas).
-// Nota: platform e one-way e NAO conta como piso para deteccao de borda do tolo.
+// FIX C3a: platform (one-way) CONTA como piso na deteccao de borda — tolos
+// sobre plataformas vibravam invertendo dir a cada frame.
 import { stepBody, isFullSolid, tileAt } from '../engine/physics'
 import type { ParsedLevel } from '../data/schema'
 import type { Renderer } from '../engine/render'
@@ -21,33 +22,60 @@ export interface Enemy extends Body {
   dir: 1 | -1
   alive: boolean
   frozen: boolean
+  // Limites de patrulha em px (col*TILE), aplicados ao x (borda esquerda).
+  patrolMin?: number
+  patrolMax?: number
 }
 
-// Cria os inimigos a partir de level.enemies. fool|enemy -> Enemy kind 'tolo'.
-// Dimensoes/flags canonicas: w=38, h=34, dir=-1, alive=true, frozen=false.
-export function spawnEnemies(level: ParsedLevel): Enemy[] {
-  return level.enemies.map((spawn) => ({
-    x: spawn.x,
-    y: spawn.y,
+// Campos canonicos comuns a todo tolo recem-criado.
+function baseTolo(x: number, y: number): Enemy {
+  return {
+    x,
+    y,
     w: 38,
     h: 34,
     vx: 0,
     vy: 0,
     onGround: false,
-    kind: 'tolo' as const,
-    dir: -1 as const,
+    kind: 'tolo',
+    dir: -1,
     alive: true,
     frozen: false,
-  }))
+  }
+}
+
+// Cria os inimigos a partir de level.foolSpawns (C3a; patrol em cols -> px).
+// Compat: se foolSpawns ausente/vazio, cai no campo legacy level.enemies
+// (fool|enemy -> kind 'tolo'). Dimensoes/flags: w=38, h=34, dir=-1.
+export function spawnEnemies(level: ParsedLevel): Enemy[] {
+  const spawns = level.foolSpawns
+  if (spawns && spawns.length > 0) {
+    return spawns.map((s) => {
+      const e = baseTolo(s.col * TILE, s.row * TILE)
+      if (s.patrol) {
+        e.patrolMin = s.patrol[0] * TILE
+        e.patrolMax = s.patrol[1] * TILE
+      }
+      return e
+    })
+  }
+  return (level.enemies ?? []).map((spawn) => baseTolo(spawn.x, spawn.y))
 }
 
 // Atualiza um tolo. dt ja chega escalado pelo mundo (dt*ws) — apenas repassa.
 // - !alive ou frozen: nao move (return).
 // - senao: define vx = ENEMY_SPEED*dir; integra com stepBody.
-//   Inverte dir quando bate em parede (stepBody zerou vx) OU quando a proxima
-//   celula a frente, na linha dos pes, nao tem chao solido abaixo (iminencia de borda).
+//   Inverte dir nos limites de patrulha (se definidos), na iminencia de borda
+//   (sem chao a frente) ou ao bater em parede (stepBody zerou vx).
 export function updateEnemy(e: Enemy, level: ParsedLevel, dt: number): void {
   if (!e.alive || e.frozen) return
+
+  // Limites de patrulha (px): inverte ao alcancar/passar o limite na direcao atual.
+  if (e.patrolMin !== undefined && e.dir < 0 && e.x <= e.patrolMin) {
+    e.dir = 1
+  } else if (e.patrolMax !== undefined && e.dir > 0 && e.x >= e.patrolMax) {
+    e.dir = -1
+  }
 
   // Deteccao de borda ANTES de mover: olha a celula diante dos pes na direcao atual.
   // footRow = linha logo abaixo do corpo (onde deveria haver chao).
@@ -55,7 +83,9 @@ export function updateEnemy(e: Enemy, level: ParsedLevel, dt: number): void {
   // Coluna a frente: borda dianteira do corpo na direcao dir, deslocada um tile.
   const frontEdgeX = e.dir > 0 ? e.x + e.w : e.x
   const aheadCol = Math.floor(frontEdgeX / TILE) + e.dir
-  if (!isFullSolid(tileAt(level, aheadCol, footRow))) {
+  const ahead = tileAt(level, aheadCol, footRow)
+  // FIX C3a: platform (one-way) conta como piso — tolos sobre plataformas vibravam.
+  if (!isFullSolid(ahead) && ahead !== 'platform') {
     // Sem chao a frente: inverte para nao cair do penhasco.
     e.dir = e.dir === 1 ? -1 : 1
   }

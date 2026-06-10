@@ -45,11 +45,24 @@ export interface CharacterDef {
   weightMul: number
 }
 
+// Spawn declarativo de entidade (CONTRATO C3a): col/row em tiles.
+// patrol em colunas (convertido p/ px no spawn); payload so para 'block'.
+export interface EntitySpawn {
+  type: 'fool' | 'block' | 'heart'
+  col: number
+  row: number
+  patrol?: [number, number]
+  payload?: 'coin' | 'item' | 'star'
+}
+
 export interface LevelDef {
   id: string
   world: number
   zone: number
   rows: string[]
+  entities?: EntitySpawn[]
+  checkpoints?: number[]
+  timeStart?: number
 }
 
 export interface SpawnPoint {
@@ -67,4 +80,10 @@ export interface ParsedLevel {
   goal: SpawnPoint
   coins: SpawnPoint[]
   enemies: Array<{ x: number; y: number; kind: string }>
+  // CONTRATO C3a: camadas novas (col/row em tiles).
+  qBlocks: { col: number; row: number; payload: 'coin' | 'item' | 'star' }[]
+  hearts: { col: number; row: number }[]
+  checkpoints: number[]
+  timeStart: number
+  foolSpawns: { col: number; row: number; patrol?: [number, number] }[]
 }

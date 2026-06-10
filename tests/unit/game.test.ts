@@ -130,20 +130,32 @@ function makeRenderer(): Renderer {
     beginWorld: vi.fn(),
     endWorld: vi.fn(),
     drawRect: vi.fn(),
+    drawSprite: vi.fn(), // C3b: usado por drawTile (atlas)
     present: vi.fn(),
   }
 }
 
 // ---------- Level plano: chao solido nas rows 9-10, resto vazio ----------
+// C3b: extras opcionais do contrato (qBlocks/hearts/checkpoints/timeStart).
+// Cast via `as ParsedLevel` — converge com o schema novo do C3a sem quebrar antes.
+interface LevelExtras {
+  qBlocks?: Array<{ col: number; row: number; payload: 'coin' | 'item' | 'star' }>
+  hearts?: Array<{ col: number; row: number }>
+  checkpoints?: number[]
+  timeStart?: number
+}
 function makeLevel(
   enemies: Array<{ x: number; y: number; kind: string }> = [],
   coins: Array<{ x: number; y: number }> = [],
+  extras: LevelExtras = {},
 ): ParsedLevel {
   const widthTiles = 40
   const heightTiles = 11
   const tiles: TileType[][] = Array.from({ length: heightTiles }, (_, r) =>
     Array.from({ length: widthTiles }, () => (r >= 9 ? 'ground' : 'empty')),
   )
+  // Blocos '?' sao tiles solidos 'block' (legenda nova do parser).
+  for (const qb of extras.qBlocks ?? []) tiles[qb.row][qb.col] = 'block'
   return {
     widthTiles,
     heightTiles,
@@ -154,7 +166,12 @@ function makeLevel(
     goal: { x: 36 * TILE, y: 8 * TILE },
     coins,
     enemies,
-  }
+    qBlocks: extras.qBlocks ?? [],
+    hearts: extras.hearts ?? [],
+    checkpoints: extras.checkpoints ?? [],
+    timeStart: extras.timeStart ?? TIME_START,
+    foolSpawns: [],
+  } as ParsedLevel
 }
 
 // Avanca o estado 'select' ate selecionar o personagem (index 0 = renan) com 'confirm'.
@@ -946,7 +963,11 @@ describe('createGame — M2 fase B: screen-shake', () => {
     game.update(1)
     expect(game.state.get()).toBe('select')
     selectFirst(game, input)
-    game.update(1) // followCamera com player no spawn -> cam=(0,0)
+    // C4 (camera com easing): a cam converge ao spawn em poucos frames e o
+    // clamp em 0 a torna EXATAMENTE (0,0). 5 updates + o do selectFirst = 6
+    // updates em playing — ainda MENOS que SHAKE_FRAMES (8): um shake nao
+    // resetado ainda produziria offset != 0 aqui (o teste mantem o gume).
+    for (let i = 0; i < 5; i++) game.update(1)
     vi.mocked(renderer.beginWorld).mockClear()
     game.render(0)
     expect(renderer.beginWorld).toHaveBeenCalledWith(0, 0)
@@ -1046,6 +1067,324 @@ describe('createGame — M2 fase B: victory one-shot', () => {
     expect(spy).toHaveBeenCalledTimes(1)
     expect(spy.mock.calls[0][1]).toBe('victory')
     expect(spy.mock.calls[0][2]).toBe(9999)
+  })
+})
+
+// ============================================================================
+// (C3b) blocos '?', heart-orbs, checkpoints, timer do level, variants/atlas
+// ============================================================================
+
+// Teleporta o player para baixo do bloco em (col, 5) e sobe contra ele:
+// vy=-6 -> apos gravidade -5.2 -> topo entra na row 5 -> fisica zera vy (teto).
+function bumpQBlock(
+  game: ReturnType<typeof createGame>,
+  col: number,
+): void {
+  const p = game.player!
+  p.x = col * TILE
+  p.y = 6 * TILE + 2 // 2px abaixo da base do bloco (row 5)
+  p.vx = 0
+  p.vy = -6
+  p.onGround = false
+  game.update(1)
+}
+
+describe("createGame — blocos '?' (C3b)", () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it("payload 'coin': bump da +8 no medidor e NAO premia duas vezes", () => {
+    const level = makeLevel([], [], {
+      qBlocks: [{ col: 5, row: 5, payload: 'coin' }],
+    })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    expect(game.humanware.meter).toBe(0)
+
+    bumpQBlock(game, 5)
+    expect(game.humanware.meter).toBe(8)
+
+    // Bump de novo no MESMO bloco (ja usado): nada muda.
+    bumpQBlock(game, 5)
+    expect(game.humanware.meter).toBe(8)
+  })
+
+  it("payload 'item': restaura 1 coracao com cap no maximo do personagem", () => {
+    const level = makeLevel([], [], {
+      qBlocks: [
+        { col: 5, row: 5, payload: 'item' },
+        { col: 8, row: 5, payload: 'item' },
+      ],
+    })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input) // renan: hearts max 3
+    const p = game.player!
+
+    p.hearts = 1
+    bumpQBlock(game, 5)
+    expect(p.hearts).toBe(2)
+    // item nao mexe no medidor
+    expect(game.humanware.meter).toBe(0)
+
+    // Com hearts no maximo: bump no segundo bloco nao passa do cap.
+    p.hearts = p.char.hearts
+    bumpQBlock(game, 8)
+    expect(p.hearts).toBe(p.char.hearts)
+  })
+
+  it("payload 'star': bump da +30 no medidor", () => {
+    const level = makeLevel([], [], {
+      qBlocks: [{ col: 5, row: 5, payload: 'star' }],
+    })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+
+    bumpQBlock(game, 5)
+    expect(game.humanware.meter).toBe(30)
+  })
+
+  it("render: '?' fechado desenha o glifo lime; usado desenha veu escuro", () => {
+    const level = makeLevel([], [], {
+      qBlocks: [{ col: 5, row: 5, payload: 'coin' }],
+    })
+    const game = createGame(renderer, input, level) // sem store -> fallback rect
+    selectFirst(game, input)
+
+    // Fechado: glifo '?' via ctx.fillText.
+    game.render(0)
+    const fillText = vi.mocked(renderer.ctx.fillText)
+    expect(fillText.mock.calls.some((c) => c[0] === '?')).toBe(true)
+
+    // Usa o bloco e re-renderiza: veu escuro alpha 0.35, sem glifo.
+    bumpQBlock(game, 5)
+    vi.mocked(renderer.drawRect).mockClear()
+    fillText.mockClear()
+    game.render(0)
+    expect(fillText.mock.calls.some((c) => c[0] === '?')).toBe(false)
+    const veil = vi
+      .mocked(renderer.drawRect)
+      .mock.calls.find(
+        (c) =>
+          c[0] === 5 * TILE &&
+          c[1] === 5 * TILE &&
+          c[2] === TILE &&
+          c[3] === TILE &&
+          c[4] === 'rgba(0,0,0,0.35)',
+      )
+    expect(veil).toBeDefined()
+  })
+})
+
+describe('createGame — heart-orbs (C3b)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('coletar coracao soma +25 no medidor e some (nao re-coleta)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([], [], { hearts: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+
+    // Caixa fixa do heart: 20px centrada na celula (5,8) -> (254..274, 398..418).
+    p.x = 250
+    p.y = 390
+    p.vy = 0
+    game.update(1)
+    expect(game.humanware.meter).toBe(25)
+
+    // Continua em cima: nao re-coleta.
+    game.update(1)
+    expect(game.humanware.meter).toBe(25)
+  })
+
+  it('render desenha o heart como quadrado magenta ~20px (pulso ±2px)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([], [], { hearts: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+
+    game.render(0)
+    const heartCall = vi
+      .mocked(renderer.drawRect)
+      .mock.calls.find(
+        (c) =>
+          c[4] === COLOR_MAGENTA &&
+          (c[2] as number) >= 18 &&
+          (c[2] as number) <= 22 &&
+          Math.abs((c[0] as number) - 254) <= 2,
+      )
+    expect(heartCall).toBeDefined()
+  })
+})
+
+describe('createGame — checkpoints (C3b)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('cruzar a coluna do checkpoint muda o respawn apos perder vida', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    // Inimigo na col 12 (depois do checkpoint na col 10), longe do spawn.
+    const level = makeLevel(
+      [{ x: 12 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [],
+      { checkpoints: [10] },
+    )
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.lives = 2
+    p.hearts = 1
+    p.iframes = 0
+    p.vy = 0
+    // Teleporta para o inimigo: o MESMO update cruza o checkpoint (1b) e toma o
+    // hit com perda de vida (passo 6) -> respawn no checkpoint, nao no spawn.
+    p.x = 12 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1)
+    expect(game.state.get()).toBe('playing')
+    expect(p.x).toBe(10 * TILE)
+    expect(p.y).toBe(level.playerSpawn.y)
+  })
+
+  it('resetToSelect re-zera o checkpoint: rodada nova respawna no spawn', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    // Inimigo junto ao spawn (para o hit da rodada 2); checkpoint na col 10.
+    const level = makeLevel(
+      [{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [],
+      { checkpoints: [10] },
+    )
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
+    const p = game.player!
+
+    // Rodada 1: cruza o checkpoint e vence.
+    p.x = 11 * TILE
+    p.y = 8 * TILE
+    p.vy = 0
+    game.update(1)
+    p.x = level.goal.x
+    p.y = level.goal.y
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    game.update(1)
+    expect(game.state.get()).toBe('select')
+
+    // Rodada 2: perde vida SEM cruzar o checkpoint -> respawn no spawn original.
+    selectFirst(game, input)
+    drainHitstop(game)
+    const p2 = game.player!
+    p2.lives = 2
+    p2.hearts = 1
+    p2.iframes = 0
+    p2.vy = 0
+    p2.x = 2 * TILE
+    p2.y = 8 * TILE + (TILE - 34)
+    game.update(1)
+    expect(game.state.get()).toBe('playing')
+    expect(p2.x).toBe(level.playerSpawn.x)
+  })
+})
+
+describe('createGame — timer do level (C3b)', () => {
+  it('timer usa level.timeStart (nao TIME_START fixo)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([], [], { timeStart: 10 })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+
+    // 10 / FIXED_DT = 600 updates ate zerar. Na metade ainda esta playing.
+    for (let i = 0; i < 300; i++) game.update(1)
+    expect(game.state.get()).toBe('playing')
+
+    for (let i = 0; i < 305; i++) game.update(1)
+    expect(game.state.get()).toBe('over')
+  })
+})
+
+describe('createGame — tiles com arte + variants recomputadas (C3b)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('com store de tiles: chao desenhado via drawSprite (atlas)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(
+      renderer,
+      input,
+      makeLevel(),
+      makeStore(['tiles.terra', 'tiles.tijolo']),
+    )
+    selectFirst(game, input)
+    game.render(0)
+    const calls = vi.mocked(renderer.drawSprite).mock.calls
+    // Celula de chao (0,9) visivel com cam(0,0): dx=0, dy=9*TILE.
+    expect(calls.some((c) => c[5] === 0 && c[6] === 9 * TILE)).toBe(true)
+  })
+
+  it('builder: bloco temporario desenha via atlas com variant RECOMPUTADA e some ao restaurar', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel()
+    const game = createGame(
+      renderer,
+      input,
+      level,
+      makeStore(['tiles.terra', 'tiles.tijolo']),
+    )
+    selectArtur(game, input)
+    expect(game.player!.char.id).toBe('artur')
+
+    // Antes do builder: nenhum drawSprite na celula (2,8).
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    let calls = vi.mocked(renderer.drawSprite).mock.calls
+    expect(calls.some((c) => c[5] === 2 * TILE && c[6] === 8 * TILE)).toBe(false)
+
+    // Ativa o builder: escreve 'block' em (2,8) -> variants recomputadas.
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    game.update(1)
+    expect(level.tiles[8][2]).toBe('block')
+
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    calls = vi.mocked(renderer.drawSprite).mock.calls
+    const blockCall = calls.find((c) => c[5] === 2 * TILE && c[6] === 8 * TILE)
+    expect(blockCall).toBeDefined()
+    // Variant 4 (vizinho solido SO ao Sul): celula [3,0] do atlas -> sx=144, sy=0.
+    // Variants velhas dariam variant 0 -> celula [2,1] (sx=96, sy=48): flagra
+    // a falta de recompute.
+    expect(blockCall![1]).toBe(144) // sx
+    expect(blockCall![2]).toBe(0) // sy
+
+    // Expira o TTL (builderTtl=240): tile restaurado -> sem drawSprite na celula.
+    for (let i = 0; i < 245; i++) game.update(1)
+    expect(level.tiles[8][2]).toBe('empty')
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    calls = vi.mocked(renderer.drawSprite).mock.calls
+    expect(calls.some((c) => c[5] === 2 * TILE && c[6] === 8 * TILE)).toBe(false)
   })
 })
 

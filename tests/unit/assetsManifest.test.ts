@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { ASSET_MANIFEST, SKY_LAYERS } from '../../src/data/assets'
 
 describe('ASSET_MANIFEST', () => {
-  it('tem as chaves do M2a + os sprite-sheets de animacao do Artur (M2b)', () => {
+  it('tem as chaves do M2a + sheets do Artur (M2b) + atlases de tiles (C2)', () => {
     expect(Object.keys(ASSET_MANIFEST).sort()).toEqual(
       [
         'bg.cosmic',
@@ -15,6 +15,8 @@ describe('ASSET_MANIFEST', () => {
         'char.artur.queda',
         'char.artur.danificado',
         'char.artur.ataque',
+        'tiles.terra',
+        'tiles.tijolo',
       ].sort(),
     )
   })
@@ -29,6 +31,8 @@ describe('ASSET_MANIFEST', () => {
     expect(ASSET_MANIFEST['char.artur.ataque'].url).toBe(
       '/assets/chars/artur/ataque.png',
     )
+    expect(ASSET_MANIFEST['tiles.terra'].url).toBe('/assets/tiles/terra.png')
+    expect(ASSET_MANIFEST['tiles.tijolo'].url).toBe('/assets/tiles/tijolo.png')
   })
 
   it('chroma-key so na arte-base; sheets M2b ja sao transparentes (sem chromaKey)', () => {
@@ -44,6 +48,9 @@ describe('ASSET_MANIFEST', () => {
       'char.artur.queda',
       'char.artur.danificado',
       'char.artur.ataque',
+      // C2: atlases de tiles tambem ja vem com alpha
+      'tiles.terra',
+      'tiles.tijolo',
     ]) {
       expect(ASSET_MANIFEST[k].chromaKey).toBeUndefined()
     }

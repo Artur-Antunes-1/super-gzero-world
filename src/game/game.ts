@@ -89,6 +89,22 @@ import { drawCharFrame, drawContactShadow } from '../engine/spriteAnim'
 import { SKY_LAYERS } from '../data/assets'
 import { CHAR_ANIMS } from '../data/charAnims'
 
+// --- C3b: tiles com arte (autotiling) + entidades novas ---
+import { TILE_ATLASES } from '../data/tiles'
+import { computeTileVariants, drawTile } from '../engine/tilemap'
+
+// C3b: ganhos canônicos do medidor Humanware (spec mestre §0.2; estrela em §6.2.2).
+// moeda=8 · stomp=60 (já usado no passo 6) · heart-orb=25 · estrela=30.
+const HW_GAIN_COIN = 8
+const HW_GAIN_STAR = 30
+const HW_GAIN_HEART_ORB = 25
+
+// C3b: lado do heart-orb (quadrado magenta placeholder até a Fase D).
+const HEART_SIZE = 20
+
+// C3b: véu escuro sobre bloco '?' já usado.
+const QBLOCK_USED_VEIL = 'rgba(0,0,0,0.35)'
+
 // Cor por tipo de tile (world space).
 function tileColor(t: TileType): string {
   switch (t) {
@@ -152,13 +168,49 @@ export function createGame(
   let hitstop = 0
   let shakeT = 0
 
+  // C3b: autotiling — variants recomputadas SEMPRE que level.tiles muda
+  // (builder escreve/restaura). Indice row-major (row*widthTiles+col).
+  let variants = computeTileVariants(level)
+  function recomputeVariants(): void {
+    variants = computeTileVariants(level)
+  }
+
+  // C3b: blocos '?' — mapa 'col,row' -> payload (contrato C3a: level.qBlocks).
+  // Fallback ?? []: levels legados (testes antigos) ainda nao tem o campo.
+  const qBlockMap = new Map<string, 'coin' | 'item' | 'star'>()
+  for (const qb of level.qBlocks ?? []) {
+    qBlockMap.set(qb.col + ',' + qb.row, qb.payload)
+  }
+  let usedQBlocks = new Set<string>()
+
+  // C3b: heart-orbs — caixa fixa HEART_SIZE centrada na celula (colisao estavel;
+  // o pulso e so visual).
+  interface HeartEnt {
+    x: number
+    y: number
+    active: boolean
+  }
+  function spawnHearts(): HeartEnt[] {
+    return (level.hearts ?? []).map((h) => ({
+      x: h.col * TILE + (TILE - HEART_SIZE) / 2,
+      y: h.row * TILE + (TILE - HEART_SIZE) / 2,
+      active: true,
+    }))
+  }
+
   // Mutaveis: recriados no reset.
   let player: Player | null = null
   let hw: HumanwareState = createHumanware()
   let enemies: Enemy[] = spawnEnemies(level)
-  let time = TIME_START
+  // C3b: timer vem do level (fallback TIME_START p/ levels legados de teste).
+  let time = level.timeStart ?? TIME_START
   let coins: CoinEntity[] = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
   let coinCount = 0
+  let heartEnts: HeartEnt[] = spawnHearts()
+  // C3b: checkpoint (px) — respawn volta aqui em vez do spawn.
+  let lastCheckpointX = level.playerSpawn.x
+  // C3b: relogio de jogo (pulso visual dos heart-orbs). Congela no hitstop.
+  let clock = 0
 
   // Celula do bloco temporario do Builder atualmente escrita em level.tiles (ou null).
   // Mecanismo canonico (contrato §builder): UMA unica referencia; escreve 'block' somente
@@ -177,6 +229,7 @@ export function createGame(
     ) {
       if (level.tiles[builderWritten.row]?.[builderWritten.col] === 'block') {
         level.tiles[builderWritten.row][builderWritten.col] = 'empty'
+        recomputeVariants() // C3b: tiles mudou
       }
       builderWritten = null
     }
@@ -186,6 +239,7 @@ export function createGame(
       if (cur === 'empty') {
         level.tiles[row][col] = 'block'
         builderWritten = { col, row }
+        recomputeVariants() // C3b: tiles mudou
       }
     }
   }
@@ -196,6 +250,7 @@ export function createGame(
     if (player && abilityBuilderTile(player)) return // ainda ativo
     if (level.tiles[builderWritten.row]?.[builderWritten.col] === 'block') {
       level.tiles[builderWritten.row][builderWritten.col] = 'empty'
+      recomputeVariants() // C3b: tiles mudou
     }
     builderWritten = null
   }
@@ -214,14 +269,20 @@ export function createGame(
     // Restaura qualquer bloco temporario antes de descartar o player.
     if (builderWritten && level.tiles[builderWritten.row]?.[builderWritten.col] === 'block') {
       level.tiles[builderWritten.row][builderWritten.col] = 'empty'
+      recomputeVariants() // C3b: tiles mudou
     }
     builderWritten = null
     player = null
     hw = createHumanware()
     enemies = spawnEnemies(level)
-    time = TIME_START
+    time = level.timeStart ?? TIME_START
     coins = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
     coinCount = 0
+    // C3b: re-zera blocos '?', heart-orbs, checkpoint e clock.
+    usedQBlocks = new Set<string>()
+    heartEnts = spawnHearts()
+    lastCheckpointX = level.playerSpawn.x
+    clock = 0
     // Reseta o estado M2a para que uma nova rodada comece limpa.
     hwWasActive = false
     hitstop = 0
@@ -247,9 +308,14 @@ export function createGame(
         player = createPlayer(CHARACTERS[picked], level.playerSpawn)
         enemies = spawnEnemies(level)
         hw = createHumanware()
-        time = TIME_START
+        time = level.timeStart ?? TIME_START
         coins = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
         coinCount = 0
+        // C3b: rodada nova comeca com blocos '?' fechados e hearts no lugar.
+        usedQBlocks = new Set<string>()
+        heartEnts = spawnHearts()
+        lastCheckpointX = level.playerSpawn.x
+        clock = 0
         state.set('playing')
       }
       return
@@ -266,11 +332,51 @@ export function createGame(
       // Shake decai no update normal (fora do hitstop).
       if (shakeT > 0) shakeT = Math.max(0, shakeT - dt)
 
+      // C3b: relogio de jogo (congela junto com o hitstop, acima).
+      clock += dt
+
       // §0.6 worldScale: sempre Math.min (nunca multiplicar). Player roda em escala 1.
       const ws = Math.min(humanwareWorldScale(hw), abilityWorldScale(p), 1)
 
+      // C3b: vy ANTES da fisica — deteccao deterministica de batida de cabeca.
+      const prevVy = p.vy
+
       // 1) Player: SEMPRE dt (escala 1).
       updatePlayer(p, input, level, dt)
+
+      // 1b) C3b: checkpoint — centro do player cruzou a coluna => avanca o respawn.
+      for (const ccol of level.checkpoints ?? []) {
+        const cx = ccol * TILE
+        if (cx > lastCheckpointX && p.x + p.w / 2 >= cx) lastCheckpointX = cx
+      }
+
+      // 1c) C3b: bloco '?' — vy<0 zerado pela fisica (e nao pousou) = bateu o teto.
+      // headRow = celula logo acima da cabeca; tolerancia de ±1 col com overlap
+      // horizontal REAL do player contra a celula candidata.
+      if (prevVy < 0 && p.vy === 0 && !p.onGround && qBlockMap.size > 0) {
+        const headRow = Math.floor((p.y - 1) / TILE)
+        const centerCol = Math.floor((p.x + p.w / 2) / TILE)
+        for (const dc of [0, -1, 1]) {
+          const col = centerCol + dc
+          const key = col + ',' + headRow
+          const payload = qBlockMap.get(key)
+          if (payload === undefined || usedQBlocks.has(key)) continue
+          if (p.x < (col + 1) * TILE && p.x + p.w > col * TILE) {
+            usedQBlocks.add(key)
+            if (payload === 'coin') {
+              coinCount++
+              addMeter(hw, HW_GAIN_COIN)
+            } else if (payload === 'item') {
+              // Cogumelo: restaura 1 coracao (cap no maximo do personagem).
+              p.hearts = Math.min(p.hearts + 1, p.char.hearts)
+            } else {
+              addMeter(hw, HW_GAIN_STAR)
+            }
+            recomputeVariants() // contrato C3b: '?' usado tambem recomputa
+            break
+          }
+        }
+      }
 
       // 2) Habilidade: tempo do player (dt, escala 1).
       // M2 fase B (CAST): detecta ativacao REAL comparando antes/depois — dash liga
@@ -334,7 +440,10 @@ export function createGame(
             // M2 fase B: dano que conecta congela o mundo e chacoalha a camera.
             hitstop = HITSTOP_FRAMES
             shakeT = SHAKE_FRAMES
-            if (p.lives < livesBefore) respawnPlayer(p, level.playerSpawn)
+            // C3b: respawn no ultimo checkpoint cruzado (y do spawn original).
+            if (p.lives < livesBefore) {
+              respawnPlayer(p, { x: lastCheckpointX, y: level.playerSpawn.y })
+            }
           }
         }
       }
@@ -349,7 +458,21 @@ export function createGame(
         if (p.x < cr && pr > coin.x && p.y < cb && pb > coin.y) {
           coin.active = false
           coinCount++
-          addMeter(hw, 8)
+          addMeter(hw, HW_GAIN_COIN)
+        }
+      }
+
+      // 7b) C3b: heart-orb — AABB com caixa fixa 20px; +25 no medidor e some.
+      for (const hEnt of heartEnts) {
+        if (!hEnt.active) continue
+        if (
+          p.x < hEnt.x + HEART_SIZE &&
+          pr > hEnt.x &&
+          p.y < hEnt.y + HEART_SIZE &&
+          pb > hEnt.y
+        ) {
+          hEnt.active = false
+          addMeter(hw, HW_GAIN_HEART_ORB)
         }
       }
 
@@ -415,7 +538,32 @@ export function createGame(
       for (let col = startCol; col <= endCol; col++) {
         const t = level.tiles[row][col]
         if (t === 'empty') continue
-        renderer.drawRect(col * TILE, row * TILE, TILE, TILE, tileColor(t))
+        // C3b: arte via atlas (autotiling); fallback = rect com tileColor.
+        const atlas = TILE_ATLASES[t]
+        const variant = variants[row * level.widthTiles + col]
+        const drew =
+          store !== undefined &&
+          atlas !== undefined &&
+          drawTile(renderer, store, atlas, variant, col, row)
+        if (!drew) {
+          renderer.drawRect(col * TILE, row * TILE, TILE, TILE, tileColor(t))
+        }
+        // C3b: overlay do bloco '?' — glifo lime quando fechado; veu escuro usado.
+        const qKey = col + ',' + row
+        if (qBlockMap.has(qKey)) {
+          if (usedQBlocks.has(qKey)) {
+            renderer.drawRect(col * TILE, row * TILE, TILE, TILE, QBLOCK_USED_VEIL)
+          } else {
+            const ctx = renderer.ctx
+            ctx.save()
+            ctx.font = 'bold 20px monospace'
+            ctx.fillStyle = COLOR_LIME
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText('?', col * TILE + TILE / 2, row * TILE + TILE / 2)
+            ctx.restore()
+          }
+        }
       }
     }
 
@@ -433,6 +581,15 @@ export function createGame(
         COIN_SIZE,
         COLOR_LIME,
       )
+    }
+
+    // C3b: heart-orbs — quadrado magenta 20px com pulso senoidal (±2px no clock).
+    // Placeholder ate a Fase D; colisao usa a caixa fixa, o pulso e so visual.
+    for (const hEnt of heartEnts) {
+      if (!hEnt.active) continue
+      const s = HEART_SIZE + Math.sin(clock * 0.12) * 2
+      const off = (HEART_SIZE - s) / 2
+      renderer.drawRect(hEnt.x + off, hEnt.y + off, s, s, COLOR_MAGENTA)
     }
 
     // Inimigos.

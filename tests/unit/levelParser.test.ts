@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseLevel } from '../../src/game/levelParser'
-import { TILE } from '../../src/engine/constants'
+import { parseLevel, validateLevel } from '../../src/game/levelParser'
+import { TILE, TIME_START } from '../../src/engine/constants'
 import type { LevelDef } from '../../src/data/schema'
 
 // ---------------------------------------------------------------------------
@@ -65,21 +65,167 @@ describe('parseLevel', () => {
     expect(lvl.coins).toEqual([{ x: 3 * TILE, y: 0 * TILE }])
   })
 
-  it('inicia sem inimigos quando o mapa nao tem g', () => {
+  it('inicia sem inimigos/foolSpawns quando o mapa nao tem F nem entities', () => {
     const lvl = parseLevel(def)
     expect(lvl.enemies).toEqual([])
+    expect(lvl.foolSpawns).toEqual([])
   })
 
-  it('coleta inimigos g em px com kind "enemy"', () => {
-    const withEnemy: LevelDef = {
-      id: 'test-enemy',
+  it('defaults: checkpoints=[], timeStart=TIME_START, hearts=[]', () => {
+    const lvl = parseLevel(def)
+    expect(lvl.checkpoints).toEqual([])
+    expect(lvl.timeStart).toBe(TIME_START)
+    expect(lvl.hearts).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Legenda nova (C3a): '?' qBlocks, 'H' heart, '>' goal, 'g' ignorado,
+// foolSpawns via entities (com patrol) + legacy 'F' (sem patrol).
+// ---------------------------------------------------------------------------
+describe('parseLevel — legenda nova (C3a)', () => {
+  it('"?" vira tile block + entrada em qBlocks com payload das entities (default coin)', () => {
+    const d: LevelDef = {
+      id: 'test-qblocks',
       world: 9,
       zone: 9,
-      rows: ['....', '.g..', '####'],
+      rows: [
+        '.?.?....', // blocks col 1 e col 3, row 0
+        'S.....G.',
+        '########',
+      ],
+      entities: [{ type: 'block', col: 3, row: 0, payload: 'star' }],
     }
-    const lvl = parseLevel(withEnemy)
-    expect(lvl.enemies).toEqual([{ x: 1 * TILE, y: 1 * TILE, kind: 'enemy' }])
+    const lvl = parseLevel(d)
+    expect(lvl.tiles[0][1]).toBe('block')
+    expect(lvl.tiles[0][3]).toBe('block')
+    expect(lvl.qBlocks).toEqual([
+      { col: 1, row: 0, payload: 'coin' }, // sem entity -> default
+      { col: 3, row: 0, payload: 'star' }, // payload da entity matching col/row
+    ])
+  })
+
+  it('"H" vira tile empty + entrada em hearts (col/row)', () => {
+    const d: LevelDef = {
+      id: 'test-heart',
+      world: 9,
+      zone: 9,
+      rows: ['..H.....', 'S.....G.', '########'],
+    }
+    const lvl = parseLevel(d)
+    expect(lvl.tiles[0][2]).toBe('empty')
+    expect(lvl.hearts).toEqual([{ col: 2, row: 0 }])
+  })
+
+  it('">" posiciona o goal igual a "G"', () => {
+    const d: LevelDef = {
+      id: 'test-portal',
+      world: 9,
+      zone: 9,
+      rows: ['........', 'S....>..', '########'],
+    }
+    const lvl = parseLevel(d)
+    expect(lvl.goal).toEqual({ x: 5 * TILE, y: 1 * TILE })
+    expect(lvl.tiles[1][5]).toBe('empty')
+  })
+
+  it('"g" e ignorado (marcador visual; tolos vem das entities)', () => {
+    const d: LevelDef = {
+      id: 'test-g-marker',
+      world: 9,
+      zone: 9,
+      rows: ['........', 'Sg....G.', '########'],
+    }
+    const lvl = parseLevel(d)
     expect(lvl.tiles[1][1]).toBe('empty')
+    expect(lvl.enemies).toEqual([])
+    expect(lvl.foolSpawns).toEqual([])
+  })
+
+  it('foolSpawns = entities fool (com patrol) + legacy F (sem patrol)', () => {
+    const d: LevelDef = {
+      id: 'test-fools',
+      world: 9,
+      zone: 9,
+      rows: ['........', 'S..F..G.', '########'],
+      entities: [{ type: 'fool', col: 5, row: 1, patrol: [4, 6] }],
+    }
+    const lvl = parseLevel(d)
+    expect(lvl.foolSpawns).toEqual([
+      { col: 5, row: 1, patrol: [4, 6] }, // entity primeiro
+      { col: 3, row: 1 }, // legacy 'F' sem patrol
+    ])
+    // Espelho legacy: 'F' continua em enemies (compat).
+    expect(lvl.enemies).toEqual([{ x: 3 * TILE, y: 1 * TILE, kind: 'fool' }])
+  })
+
+  it('copia checkpoints e timeStart do LevelDef', () => {
+    const d: LevelDef = {
+      id: 'test-meta',
+      world: 9,
+      zone: 9,
+      rows: ['........', 'S.....G.', '########'],
+      checkpoints: [4],
+      timeStart: 99,
+    }
+    const lvl = parseLevel(d)
+    expect(lvl.checkpoints).toEqual([4])
+    expect(lvl.timeStart).toBe(99)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// validateLevel: spawn/goal obrigatorios, larguras consistentes, checkpoints
+// dentro de [0, cols).
+// ---------------------------------------------------------------------------
+describe('validateLevel', () => {
+  const base = { world: 9, zone: 9 }
+
+  it('aceita fase valida (S, G, larguras iguais, checkpoint no range)', () => {
+    const d: LevelDef = {
+      id: 'ok',
+      ...base,
+      rows: ['S.....G.', '########'],
+      checkpoints: [0, 7],
+    }
+    expect(() => validateLevel(d)).not.toThrow()
+  })
+
+  it('aceita ">" como goal', () => {
+    const d: LevelDef = { id: 'ok-portal', ...base, rows: ['S....>..', '########'] }
+    expect(() => validateLevel(d)).not.toThrow()
+  })
+
+  it('lanca se faltar spawn S', () => {
+    const d: LevelDef = { id: 'sem-spawn', ...base, rows: ['......G.', '########'] }
+    expect(() => validateLevel(d)).toThrow(/spawn/)
+  })
+
+  it('lanca se faltar goal (G ou >)', () => {
+    const d: LevelDef = { id: 'sem-goal', ...base, rows: ['S.......', '########'] }
+    expect(() => validateLevel(d)).toThrow(/goal/)
+  })
+
+  it('lanca se as larguras de linha forem inconsistentes', () => {
+    const d: LevelDef = { id: 'larguras', ...base, rows: ['S.....G.', '#####'] }
+    expect(() => validateLevel(d)).toThrow(/largura/)
+  })
+
+  it('lanca se checkpoint estiver fora de [0, cols)', () => {
+    const tooBig: LevelDef = {
+      id: 'cp-grande',
+      ...base,
+      rows: ['S.....G.', '########'],
+      checkpoints: [8],
+    }
+    expect(() => validateLevel(tooBig)).toThrow(/checkpoint/)
+    const negative: LevelDef = {
+      id: 'cp-negativo',
+      ...base,
+      rows: ['S.....G.', '########'],
+      checkpoints: [-1],
+    }
+    expect(() => validateLevel(negative)).toThrow(/checkpoint/)
   })
 })
 
@@ -131,12 +277,17 @@ describe('world1-zona1 (fase greybox — Errata E3+E4)', () => {
     }
   })
 
-  it('tem exatamente 2 tolos (F -> kind "fool") posicionados acima das plataformas', () => {
+  it('tem exatamente 2 tolos (F) em enemies E foolSpawns, acima das plataformas', () => {
     const lvl = parseLevel(world1Zona1)
     const fools = lvl.enemies.filter((e) => e.kind === 'fool')
     expect(fools.length).toBe(2)
     // Nenhum inimigo 'enemy' (so 'fool' nesta fase).
     expect(lvl.enemies.every((e) => e.kind === 'fool')).toBe(true)
+    // foolSpawns espelha os F legacy (sem patrol).
+    expect(lvl.foolSpawns).toEqual([
+      { col: 14, row: 4 },
+      { col: 24, row: 4 },
+    ])
     // Os tolos estao na row 4 (acima das plataformas na row 5), sobre chao continuo.
     for (const f of fools) {
       expect(f.y).toBe(4 * TILE)

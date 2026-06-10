@@ -25,7 +25,9 @@ test.setTimeout(60000)
 test('World 1 Zona 1 (M1): select -> escolher personagem -> andar ate vencer', async ({
   page,
 }) => {
-  await page.goto('/')
+  // C3b: a fase plana legacy agora vive no registry como 'zona1'
+  // (o default '/' passou a ser a w1-1 nova, com buracos/blocos '?').
+  await page.goto('/?level=zona1')
 
   // Canvas visivel e loop ativo
   const canvas = page.locator('canvas#game')
@@ -92,4 +94,46 @@ test('World 1 Zona 1 (M1): select -> escolher personagem -> andar ate vencer', a
     true,
   )
   expect(finalState).toBe('win')
+})
+
+// C3b: teste leve da fase default (w1-1) — '/' sem query string.
+// Entra com Enter e anda ~1s para a direita: o player deve avancar em X
+// e o estado deve continuar 'playing' (sem morrer no comeco da fase).
+test('W1-1 (default): entrar com Enter e andar ~1s avanca X mantendo playing', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const canvas = page.locator('canvas#game')
+  await canvas.waitFor({ state: 'visible' })
+  await canvas.click()
+
+  // Probe rico __GAME() exposto em src/main.ts.
+  await page.waitForFunction(
+    () => typeof (window as any).__GAME === 'function',
+    { timeout: 5000 },
+  )
+  await page.waitForFunction(
+    () => (window as any).__GAME().state === 'select',
+    { timeout: 5000 },
+  )
+
+  // Confirma o 1o personagem (Renan).
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(
+    () => (window as any).__GAME().state === 'playing',
+    { timeout: 5000 },
+  )
+
+  const x0 = (await page.evaluate(() => (window as any).__GAME().playerX)) as number
+  expect(x0).not.toBeNull()
+
+  // Segura ArrowRight por ~1s.
+  await page.keyboard.down('ArrowRight')
+  await page.waitForTimeout(1000)
+  await page.keyboard.up('ArrowRight')
+
+  const g = await page.evaluate(() => (window as any).__GAME())
+  expect(g.state).toBe('playing')
+  expect(g.playerX).toBeGreaterThan(x0)
 })

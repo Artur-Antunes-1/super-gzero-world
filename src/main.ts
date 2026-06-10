@@ -2,8 +2,7 @@
 import { createRenderer } from './engine/render'
 import { createInput } from './engine/input'
 import { createLoop } from './engine/loop'
-import { parseLevel } from './game/levelParser'
-import { world1Zona1 } from './data/levels/world1-zona1'
+import { parseLevelById, DEFAULT_LEVEL_ID } from './data/levels'
 import { createGame } from './game/game'
 import { loadAssets, type AssetStore } from './engine/assets'
 import { ASSET_MANIFEST } from './data/assets'
@@ -24,8 +23,10 @@ const renderer = createRenderer(canvas)
 const input = createInput()
 input.attach(window)
 
-// 4. Parse the level data
-const level = parseLevel(world1Zona1)
+// 4. Selecao de fase via URL: /?level=<id>. Id desconhecido (ou ausente)
+//    cai no DEFAULT_LEVEL_ID — parseLevelById re-parseia FRESCO (contrato C3a).
+const levelId = new URLSearchParams(location.search).get('level')
+const level = parseLevelById(levelId ?? DEFAULT_LEVEL_ID)
 
 // 5. Pinta o fundo enquanto os assets carregam (evita flash branco).
 renderer.clear(COLOR_BG)
