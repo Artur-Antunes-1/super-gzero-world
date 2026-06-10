@@ -24,6 +24,11 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   // C2: atlases de tiles Wang (PixelLab) ja transparentes -> sem chromaKey.
   'tiles.terra': { url: '/assets/tiles/terra.png' },
   'tiles.tijolo': { url: '/assets/tiles/tijolo.png' },
+  // D1: sheets de objetos (moeda/portal) e do Tolo — PNGs com alpha.
+  'obj.moeda': { url: '/assets/objects/moeda.png' },
+  'obj.portal': { url: '/assets/objects/portal.png' },
+  'char.tolo': { url: '/assets/chars/tolo/walk.png' },
+  'char.tolo.idle': { url: '/assets/chars/tolo/idle.png' },
 }
 
 /**

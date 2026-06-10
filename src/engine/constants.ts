@@ -58,3 +58,9 @@ export const COLOR_BLUE = '#0099ff'
 export const COLOR_LIME = '#cdf140'
 export const COLOR_VIOLET = '#7112ff'
 export const COLOR_TEXT = '#f7f3f6'
+
+// Tokens SEMANTICOS de cor (Fase D) — a arte nova segue estes aliases.
+export const COLOR_OBJETIVO = COLOR_MAGENTA // marca / objetivo / destaque
+export const COLOR_TECH = COLOR_BLUE // habilidades / builder / Humanware (ciano)
+export const COLOR_PERIGO = COLOR_VIOLET // inimigos / dano
+export const COLOR_COLETAVEL = COLOR_LIME // exclusivo de coletaveis

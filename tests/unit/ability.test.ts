@@ -17,7 +17,7 @@ import type { Enemy } from '../../src/game/enemy'
 import type { CharacterDef, AbilityId, ParsedLevel, TileType } from '../../src/data/schema'
 import type { Input, InputAction } from '../../src/engine/input'
 import type { Renderer } from '../../src/engine/render'
-import { JUMP_VEL, TILE } from '../../src/engine/constants'
+import { JUMP_VEL, TILE, COLOR_TECH } from '../../src/engine/constants'
 import { ABILITY_PARAMS } from '../../src/data/characters'
 
 // FakeInput canonico (mesmo padrao de player.test.ts): pressed = edge desde o ultimo update().
@@ -72,15 +72,37 @@ function makeLevel(): ParsedLevel {
 
 function makeCtx(level: ParsedLevel, enemies: Enemy[]): AbilityCtx { return { level, enemies } }
 
-// Renderer fake que apenas conta drawRect.
-function makeRenderer(): { r: Renderer; rects: number } {
-  const state = { rects: 0 }
-  const r: Renderer = {
-    ctx: {} as CanvasRenderingContext2D,
-    clear() {}, beginWorld() {}, endWorld() {}, present() {},
-    drawRect() { state.rects++ },
+// Renderer fake para FX (Fase D): grava drawRect (com alpha no momento da
+// chamada) e ctx.arc (com alpha/strokeStyle/lineWidth no momento da chamada).
+interface RectCall { x: number; y: number; w: number; h: number; color: string; alpha: number }
+interface ArcCall {
+  x: number; y: number; r: number; a0: number; a1: number
+  alpha: number; stroke: string; lineWidth: number
+}
+function makeFxRenderer(): { r: Renderer; rects: RectCall[]; arcs: ArcCall[] } {
+  const rects: RectCall[] = []
+  const arcs: ArcCall[] = []
+  const alphaStack: number[] = []
+  const ctxObj: Record<string, unknown> & {
+    globalAlpha: number; strokeStyle: string; lineWidth: number
+  } = { globalAlpha: 1, strokeStyle: '', lineWidth: 0 }
+  ctxObj.save = () => { alphaStack.push(ctxObj.globalAlpha) }
+  ctxObj.restore = () => { ctxObj.globalAlpha = alphaStack.pop() ?? 1 }
+  ctxObj.beginPath = () => {}
+  ctxObj.stroke = () => {}
+  ctxObj.arc = (x: number, y: number, rad: number, a0: number, a1: number) => {
+    arcs.push({
+      x, y, r: rad, a0, a1,
+      alpha: ctxObj.globalAlpha, stroke: ctxObj.strokeStyle, lineWidth: ctxObj.lineWidth,
+    })
   }
-  return { r, get rects() { return state.rects } } as unknown as { r: Renderer; rects: number }
+  const r: Renderer = {
+    ctx: ctxObj as unknown as CanvasRenderingContext2D,
+    clear() {}, beginWorld() {}, endWorld() {}, present() {},
+    drawSprite() {},
+    drawRect(x, y, w, h, color) { rects.push({ x, y, w, h, color, alpha: ctxObj.globalAlpha }) },
+  }
+  return { r, rects, arcs }
 }
 
 // --- tests ---
@@ -314,39 +336,131 @@ describe('updateAbility — amplificador (M3, desligado)', () => {
   })
 })
 
-describe('drawAbilityFx', () => {
-  it('com escudo ativo, desenha exatamente 4 retangulos (aura de contorno)', () => {
-    const p = makePlayer('escudo_governanca')
+describe('drawAbilityFx — Fase D', () => {
+  it('dash ativo: 3 after-images COLOR_TECH contra o movimento (alphas 0.25/0.15/0.08)', () => {
+    const p = makePlayer('dash_criativo'); p.facing = 1
     const input = new FakeInput(); input.set('ability', true)
-    updateAbility(p, input, 1, makeCtx(makeLevel(), []))
-    const m = makeRenderer()
+    updateAbility(p, input, 1, makeCtx(makeLevel(), [])) // ativa: vx=+dashSpeed
+    const m = makeFxRenderer()
     drawAbilityFx(m.r, p)
-    expect(m.rects).toBe(4)
+    const ghosts = m.rects.filter(
+      (rc) => rc.color === COLOR_TECH && rc.w === p.w && rc.h === p.h,
+    )
+    expect(ghosts).toHaveLength(3)
+    // vx>0 -> deslocadas para TRAS (esquerda), -10/-20/-30.
+    expect(ghosts.map((g) => g.x)).toEqual([p.x - 10, p.x - 20, p.x - 30])
+    expect(ghosts.map((g) => g.y)).toEqual([p.y, p.y, p.y])
+    expect(ghosts.map((g) => g.alpha)).toEqual([0.25, 0.15, 0.08])
   })
 
-  it('com bloco do builder ativo, desenha exatamente 1 retangulo (bloco)', () => {
+  it('dash com facing=-1: after-images deslocadas para a DIREITA (contra o vx<0)', () => {
+    const p = makePlayer('dash_criativo'); p.facing = -1
+    const input = new FakeInput(); input.set('ability', true)
+    updateAbility(p, input, 1, makeCtx(makeLevel(), [])) // vx negativo
+    const m = makeFxRenderer()
+    drawAbilityFx(m.r, p)
+    const ghosts = m.rects.filter((rc) => rc.color === COLOR_TECH && rc.w === p.w)
+    expect(ghosts.map((g) => g.x)).toEqual([p.x + 10, p.x + 20, p.x + 30])
+  })
+
+  it('dash INATIVO: nenhuma after-image', () => {
+    const p = makePlayer('dash_criativo')
+    const m = makeFxRenderer()
+    drawAbilityFx(m.r, p)
+    expect(m.rects.filter((rc) => rc.w === p.w && rc.h === p.h)).toHaveLength(0)
+  })
+
+  it('escudo: arco frontal de 160 graus, raio 34, alpha proporcional a stamina', () => {
+    const p = makePlayer('escudo_governanca'); p.facing = 1
+    const input = new FakeInput(); input.set('ability', true)
+    const ctx = makeCtx(makeLevel(), [])
+    updateAbility(p, input, 1, ctx); input.update(); input.set('ability', false)
+    const stamina = ABILITY_PARAMS.escudo_governanca.shieldStamina ?? 0
+
+    // Recem-ativado: shieldTimer = stamina -> alpha 1.
+    let m = makeFxRenderer()
+    drawAbilityFx(m.r, p)
+    expect(m.arcs).toHaveLength(1)
+    let arc = m.arcs[0]
+    expect(arc.alpha).toBeCloseTo(p.ability.shieldTimer / stamina, 5)
+    expect(arc.alpha).toBeCloseTo(1, 5)
+    expect(arc.r).toBe(34)
+    expect(arc.stroke).toBe(COLOR_TECH)
+    expect(arc.lineWidth).toBe(3)
+    // 160 graus de abertura, centrado no facing=1 (angulo 0).
+    expect(arc.a1 - arc.a0).toBeCloseTo((160 * Math.PI) / 180, 5)
+    expect((arc.a0 + arc.a1) / 2).toBeCloseTo(0, 5)
+    // Centro no peito (40% da altura).
+    expect(arc.x).toBeCloseTo(p.x + p.w / 2, 5)
+    expect(arc.y).toBeCloseTo(p.y + p.h * 0.4, 5)
+
+    // Metade da stamina gasta -> alpha ~0.5 (proporcional).
+    const half = Math.floor(stamina / 2)
+    for (let i = 0; i < half; i++) { updateAbility(p, input, 1, ctx); input.update() }
+    m = makeFxRenderer()
+    drawAbilityFx(m.r, p)
+    expect(m.arcs).toHaveLength(1)
+    arc = m.arcs[0]
+    expect(arc.alpha).toBeCloseTo(p.ability.shieldTimer / stamina, 5)
+    expect(arc.alpha).toBeCloseTo(0.5, 2)
+  })
+
+  it('escudo com facing=-1: arco orientado para tras (centro em PI)', () => {
+    const p = makePlayer('escudo_governanca'); p.facing = -1
+    const input = new FakeInput(); input.set('ability', true)
+    updateAbility(p, input, 1, makeCtx(makeLevel(), []))
+    const m = makeFxRenderer()
+    drawAbilityFx(m.r, p)
+    expect((m.arcs[0].a0 + m.arcs[0].a1) / 2).toBeCloseTo(Math.PI, 5)
+  })
+
+  it('builder PRONTO (cooldown 0): outline COLOR_TECH (4 linhas 2px) na celula-alvo', () => {
+    const p = makePlayer('builder'); p.facing = 1; p.x = 5 * TILE; p.y = 7 * TILE
+    const m = makeFxRenderer()
+    drawAbilityFx(m.r, p)
+    const cellX = Math.floor((p.x + p.w) / TILE) * TILE
+    const cellY = Math.floor((p.y + p.h - 1) / TILE) * TILE
+    const lines = m.rects.filter((rc) => rc.color === COLOR_TECH)
+    expect(lines).toHaveLength(4)
+    expect(lines.every((rc) => rc.w === 2 || rc.h === 2)).toBe(true)
+    // Topo e fundo da celula presentes.
+    expect(lines.some((rc) => rc.x === cellX && rc.y === cellY)).toBe(true)
+    expect(lines.some((rc) => rc.x === cellX && rc.y === cellY + TILE - 2)).toBe(true)
+  })
+
+  it('builder em COOLDOWN: sem indicador de celula-alvo', () => {
     const p = makePlayer('builder'); p.x = 5 * TILE; p.y = 7 * TILE
     const input = new FakeInput(); input.set('ability', true)
-    updateAbility(p, input, 1, makeCtx(makeLevel(), []))
-    const m = makeRenderer()
+    updateAbility(p, input, 1, makeCtx(makeLevel(), [])) // arma cooldown=90
+    const m = makeFxRenderer()
     drawAbilityFx(m.r, p)
-    expect(m.rects).toBe(1)
+    expect(m.rects.filter((rc) => rc.color === COLOR_TECH)).toHaveLength(0)
   })
 
-  it('com emc2 ativo, desenha exatamente 1 retangulo (faixa topo)', () => {
+  it('emc2 ativo: anel de relogio (arco fino COLOR_TECH, alpha 0.5) em volta do player', () => {
     const p = makePlayer('emc2')
     const input = new FakeInput(); input.set('ability', true)
     updateAbility(p, input, 1, makeCtx(makeLevel(), []))
-    const m = makeRenderer()
+    const m = makeFxRenderer()
     drawAbilityFx(m.r, p)
-    expect(m.rects).toBe(1)
+    expect(m.arcs).toHaveLength(1)
+    const arc = m.arcs[0]
+    expect(arc.alpha).toBeCloseTo(0.5, 5)
+    expect(arc.stroke).toBe(COLOR_TECH)
+    expect(arc.lineWidth).toBeLessThanOrEqual(2) // fino
+    expect(arc.x).toBeCloseTo(p.x + p.w / 2, 5)
+    expect(arc.y).toBeCloseTo(p.y + p.h / 2, 5)
+    // Recem-ativado (frac=1): varredura completa a partir do topo.
+    expect(arc.a0).toBeCloseTo(-Math.PI / 2, 5)
+    expect(arc.a1 - arc.a0).toBeCloseTo(Math.PI * 2, 5)
   })
 
-  it('sem FX ativo nao desenha nada', () => {
+  it('sem FX ativo nao desenha nada (nem rects, nem arcos)', () => {
     const p = makePlayer('salto_visionario')
-    const m = makeRenderer()
+    const m = makeFxRenderer()
     drawAbilityFx(m.r, p)
-    expect(m.rects).toBe(0)
+    expect(m.rects).toHaveLength(0)
+    expect(m.arcs).toHaveLength(0)
   })
 })
 

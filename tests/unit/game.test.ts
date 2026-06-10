@@ -13,6 +13,10 @@ import {
   STOMP_BOUNCE,
   COLOR_MAGENTA,
   COLOR_LIME,
+  COLOR_OBJETIVO,
+  COLOR_TECH,
+  COLOR_PERIGO,
+  COLOR_COLETAVEL,
   HW_METER_MAX,
   HURT_FRAMES,
   CAST_FRAMES,
@@ -110,12 +114,18 @@ function makeRenderer(): Renderer {
     scale: vi.fn(),
     rotate: vi.fn(),
     drawImage: vi.fn(),
+    // D4: drawAbilityFx pode usar arcos (escudo/emc2).
+    beginPath: vi.fn(),
+    arc: vi.fn(),
+    stroke: vi.fn(),
     imageSmoothingEnabled: false,
     globalAlpha: 1,
     font: '',
     textAlign: '',
     textBaseline: '',
     fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 0,
   }
   ctxObj.save = vi.fn(() => {
     alphaStack.push(ctxObj.globalAlpha)
@@ -297,6 +307,8 @@ describe('createGame — playing', () => {
     p.y = 8 * TILE + (TILE - 34) // alinhado verticalmente ao inimigo => overlap, nao stomp
     game.update(1)
     expect(game.state.get()).toBe('over')
+    // D4: morte empilha o SFX 'over'.
+    expect(game.events).toContain('over')
   })
 
   it('ao perder vida com lives>0 o player volta ao spawn (E2)', () => {
@@ -1206,7 +1218,7 @@ describe('createGame — heart-orbs (C3b)', () => {
     expect(game.humanware.meter).toBe(25)
   })
 
-  it('render desenha o heart como quadrado magenta ~20px (pulso ±2px)', () => {
+  it('render desenha o heart-orb como coracao pixel (varios rects COLOR_OBJETIVO, pulso ~20px)', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     const level = makeLevel([], [], { hearts: [{ col: 5, row: 8 }] })
@@ -1214,16 +1226,23 @@ describe('createGame — heart-orbs (C3b)', () => {
     selectFirst(game, input)
 
     game.render(0)
-    const heartCall = vi
+    // D4: coracao por codigo — varios fillRects magenta dentro da caixa do orb
+    // (centro 264,408; caixa fixa 20px com pulso ±2px).
+    const rects = vi
       .mocked(renderer.drawRect)
-      .mock.calls.find(
+      .mock.calls.filter(
         (c) =>
-          c[4] === COLOR_MAGENTA &&
-          (c[2] as number) >= 18 &&
-          (c[2] as number) <= 22 &&
-          Math.abs((c[0] as number) - 254) <= 2,
+          c[4] === COLOR_OBJETIVO &&
+          (c[0] as number) >= 248 &&
+          (c[0] as number) <= 280 &&
+          (c[1] as number) >= 392 &&
+          (c[1] as number) <= 420,
       )
-    expect(heartCall).toBeDefined()
+    expect(rects.length).toBeGreaterThanOrEqual(5)
+    // A linha mais larga do coracao tem ~s de largura (20 ± 2 do pulso).
+    const maxW = Math.max(...rects.map((c) => c[2] as number))
+    expect(maxW).toBeGreaterThanOrEqual(18)
+    expect(maxW).toBeLessThanOrEqual(22)
   })
 })
 
@@ -1427,5 +1446,430 @@ describe('createGame — M2 fase B: sombra de contato', () => {
     expect(shadow.mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(sprites.drawPlaceholder).mock.invocationCallOrder[0],
     )
+  })
+})
+
+// ============================================================================
+// (D4) eventos de SFX, clock global, arte de objetos, holograma do builder,
+// particulas de evento e vinheta do Humanware
+// ============================================================================
+
+// Grava (fillStyle, globalAlpha, args) de cada ctx.fillRect do renderer fake.
+function recordFills(
+  renderer: Renderer,
+): Array<{ style: unknown; alpha: number; args: unknown[] }> {
+  const fills: Array<{ style: unknown; alpha: number; args: unknown[] }> = []
+  vi.mocked(renderer.ctx.fillRect).mockImplementation((...args: unknown[]) => {
+    fills.push({
+      style: (renderer.ctx as unknown as { fillStyle: unknown }).fillStyle,
+      alpha: renderer.ctx.globalAlpha,
+      args,
+    })
+  })
+  return fills
+}
+
+describe('createGame — eventos de SFX (D4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it("coleta de moeda empilha 'coin'", () => {
+    const level = makeLevel([], [{ x: 5 * TILE, y: 8 * TILE }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.events.length = 0
+    const p = game.player!
+    p.x = 5 * TILE
+    p.y = 8 * TILE
+    p.vy = 0
+    game.update(1)
+    expect(game.events).toContain('coin')
+  })
+
+  it("stomp empilha 'stomp'", () => {
+    const level = makeLevel([{ x: 6 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.events.length = 0
+    const p = game.player!
+    p.x = 6 * TILE
+    p.y = 8 * TILE + (TILE - 34) - p.h + 4
+    p.vy = 5
+    game.update(1)
+    expect(game.events).toContain('stomp')
+  })
+
+  it("bump no bloco '?' empilha 'qblock'", () => {
+    const level = makeLevel([], [], { qBlocks: [{ col: 5, row: 5, payload: 'coin' }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.events.length = 0
+    bumpQBlock(game, 5)
+    expect(game.events).toContain('qblock')
+  })
+
+  it("coleta de heart-orb empilha 'heart'", () => {
+    const level = makeLevel([], [], { hearts: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.events.length = 0
+    const p = game.player!
+    p.x = 250
+    p.y = 390
+    p.vy = 0
+    game.update(1)
+    expect(game.events).toContain('heart')
+  })
+
+  it("cruzar checkpoint empilha 'checkpoint'", () => {
+    const level = makeLevel([], [], { checkpoints: [10] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.events.length = 0
+    const p = game.player!
+    p.x = 11 * TILE
+    p.y = 8 * TILE
+    p.vy = 0
+    game.update(1)
+    expect(game.events).toContain('checkpoint')
+  })
+
+  it("tocar o goal empilha 'win'", () => {
+    const level = makeLevel()
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.events.length = 0
+    game.player!.x = level.goal.x
+    game.player!.y = level.goal.y
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    expect(game.events).toContain('win')
+  })
+
+  it("dano conectado empilha 'hurt'; uso de habilidade empilha 'cast'", () => {
+    const level = makeLevel([{ x: 12 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const game = createGame(renderer, input, level)
+    selectArtur(game, input)
+    const p = game.player!
+    // cast (builder do artur)
+    game.events.length = 0
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    expect(game.events).toContain('cast')
+    // hurt: teleporta para o inimigo sem i-frames
+    game.update(1)
+    game.events.length = 0
+    p.lives = 3
+    p.hearts = 3
+    p.iframes = 0
+    p.vy = 0
+    p.x = 12 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1)
+    expect(game.events).toContain('hurt')
+  })
+
+  it('fila de eventos limitada a 16 (descarta o excedente)', () => {
+    // 20 moedas no MESMO lugar: a coleta de todas em 1 frame estoura o cap.
+    const coins = Array.from({ length: 20 }, () => ({ x: 5 * TILE, y: 8 * TILE }))
+    const level = makeLevel([], coins)
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.events.length = 0
+    const p = game.player!
+    p.x = 5 * TILE
+    p.y = 8 * TILE
+    p.vy = 0
+    game.update(1)
+    expect(game.events.length).toBeLessThanOrEqual(16)
+    expect(game.events.filter((e) => e === 'coin')).toHaveLength(16)
+  })
+})
+
+describe('createGame — clock global e arte de objetos (D4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // Acha a chamada de drawSprite da MOEDA (destino 32x32).
+  function findMoeda(renderer: Renderer): unknown[] | undefined {
+    return vi
+      .mocked(renderer.drawSprite)
+      .mock.calls.find((c) => c[7] === 32 && c[8] === 32)
+  }
+
+  it('moeda anima pelo clock (avanca no playing) e o clock reseta no select', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([], [{ x: 5 * TILE, y: 8 * TILE }])
+    const game = createGame(renderer, input, level, makeStore(['obj.moeda']))
+    selectFirst(game, input) // clock=1 (1 update em playing)
+
+    // frame 0 do spin: sx=0
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    let moeda = findMoeda(renderer)
+    expect(moeda).toBeDefined()
+    expect(moeda![1]).toBe(0) // sx
+    // destino: 32x32 centrado no tile da moeda
+    expect(moeda![5]).toBe(5 * TILE + TILE / 2 - 16)
+    expect(moeda![6]).toBe(8 * TILE + TILE / 2 - 16)
+
+    // +11 updates -> clock=12 -> frame 2 (fps 10) -> sx = 2*64 = 128
+    for (let i = 0; i < 11; i++) game.update(1)
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    moeda = findMoeda(renderer)
+    expect(moeda![1]).toBe(128)
+
+    // win -> confirm -> select -> nova rodada: clock zerado -> sx=0 de novo
+    const p = game.player!
+    p.x = level.goal.x
+    p.y = level.goal.y
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    game.update(1)
+    expect(game.state.get()).toBe('select')
+    selectFirst(game, input)
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    moeda = findMoeda(renderer)
+    expect(moeda![1]).toBe(0)
+  })
+
+  it('portal: com store desenha via drawSprite 96x96 com base no chao do tile do goal', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel()
+    const game = createGame(renderer, input, level, makeStore(['obj.portal']))
+    selectFirst(game, input)
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    const portal = vi
+      .mocked(renderer.drawSprite)
+      .mock.calls.find((c) => c[7] === 96 && c[8] === 96)
+    expect(portal).toBeDefined()
+    // centrado na coluna do goal, base no chao do tile
+    expect(portal![5]).toBe(level.goal.x + TILE / 2 - 48)
+    expect(portal![6]).toBe(level.goal.y + TILE - 96)
+  })
+
+  it('sem store: moeda cai no rect lime e goal no rect magenta (fallback)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([], [{ x: 5 * TILE, y: 8 * TILE }])
+    const game = createGame(renderer, input, level) // sem store
+    selectFirst(game, input)
+    vi.mocked(renderer.drawRect).mockClear()
+    game.render(0)
+    const rects = vi.mocked(renderer.drawRect).mock.calls
+    const coinOff = (TILE - 26) / 2
+    expect(
+      rects.some(
+        (c) =>
+          c[0] === 5 * TILE + coinOff &&
+          c[1] === 8 * TILE + coinOff &&
+          c[2] === 26 &&
+          c[3] === 26 &&
+          c[4] === COLOR_COLETAVEL,
+      ),
+    ).toBe(true)
+    expect(
+      rects.some(
+        (c) =>
+          c[0] === level.goal.x &&
+          c[1] === level.goal.y &&
+          c[2] === TILE &&
+          c[3] === TILE &&
+          c[4] === COLOR_OBJETIVO,
+      ),
+    ).toBe(true)
+    expect(renderer.drawSprite).not.toHaveBeenCalled()
+  })
+})
+
+describe('createGame — holograma do builder (D4)', () => {
+  it('fill ciano alpha 0.25 + brackets; pisca 0.3/0.1 nos ultimos 60 frames do TTL', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel()
+    const game = createGame(renderer, input, level)
+    selectArtur(game, input)
+    const fills = recordFills(renderer)
+
+    // Ativa o builder (bloco em (2,8)); 1 update extra -> ttl=239.
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    game.update(1)
+    expect(level.tiles[8][2]).toBe('block')
+
+    fills.length = 0
+    game.render(0)
+    let holo = fills.filter((f) => f.style === COLOR_TECH)
+    expect(holo).toHaveLength(1)
+    expect(holo[0].alpha).toBeCloseTo(0.25, 5)
+    expect(holo[0].args).toEqual([2 * TILE, 8 * TILE, TILE, TILE])
+    // Brackets: 8 linhas 2px COLOR_TECH via drawRect na celula.
+    const brackets = vi
+      .mocked(renderer.drawRect)
+      .mock.calls.filter(
+        (c) =>
+          c[4] === COLOR_TECH &&
+          (c[2] === 2 || c[3] === 2) &&
+          (c[0] as number) >= 2 * TILE &&
+          (c[0] as number) < 3 * TILE &&
+          (c[1] as number) >= 8 * TILE &&
+          (c[1] as number) < 9 * TILE,
+      )
+    expect(brackets.length).toBeGreaterThanOrEqual(8)
+
+    // Avanca ate ttl=60: floor(60/8)=7 (impar) -> alpha 0.3.
+    for (let i = 0; i < 179; i++) game.update(1)
+    fills.length = 0
+    game.render(0)
+    holo = fills.filter((f) => f.style === COLOR_TECH)
+    expect(holo).toHaveLength(1)
+    expect(holo[0].alpha).toBeCloseTo(0.3, 5)
+
+    // +8 updates: ttl=52, floor(52/8)=6 (par) -> alpha 0.1 (piscou).
+    for (let i = 0; i < 8; i++) game.update(1)
+    fills.length = 0
+    game.render(0)
+    holo = fills.filter((f) => f.style === COLOR_TECH)
+    expect(holo).toHaveLength(1)
+    expect(holo[0].alpha).toBeCloseTo(0.1, 5)
+  })
+})
+
+describe('createGame — particulas de evento (D4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('coin: burst de 8 COLETAVEL no centro do tile da moeda (world)', () => {
+    const level = makeLevel([], [{ x: 5 * TILE, y: 8 * TILE }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    vi.mocked(particles.emitBurst).mockClear()
+    const p = game.player!
+    p.x = 5 * TILE
+    p.y = 8 * TILE
+    p.vy = 0
+    game.update(1)
+    const call = vi
+      .mocked(particles.emitBurst)
+      .mock.calls.find((c) => c[3] === 8 && (c[4] as string[])[0] === COLOR_COLETAVEL)
+    expect(call).toBeDefined()
+    expect(call![1]).toBe(5 * TILE + TILE / 2)
+    expect(call![2]).toBe(8 * TILE + TILE / 2)
+    expect(call![5]).toBe('world')
+  })
+
+  it('stomp: burst de 12 PERIGO no inimigo (world)', () => {
+    const level = makeLevel([{ x: 6 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    vi.mocked(particles.emitBurst).mockClear()
+    const p = game.player!
+    p.x = 6 * TILE
+    p.y = 8 * TILE + (TILE - 34) - p.h + 4
+    p.vy = 5
+    game.update(1)
+    const call = vi
+      .mocked(particles.emitBurst)
+      .mock.calls.find((c) => c[3] === 12 && (c[4] as string[])[0] === COLOR_PERIGO)
+    expect(call).toBeDefined()
+    expect(call![5]).toBe('world')
+  })
+
+  it('land: burst de 5 poeira nos pes quando updateAnimator reporta landed', () => {
+    const game = createGame(renderer, input, makeLevel())
+    selectFirst(game, input)
+    vi.mocked(particles.emitBurst).mockClear()
+    vi.mocked(animator.updateAnimator).mockReturnValueOnce({ landed: true })
+    game.update(1)
+    const p = game.player!
+    const call = vi.mocked(particles.emitBurst).mock.calls.find((c) => c[3] === 5)
+    expect(call).toBeDefined()
+    expect(call![1]).toBe(p.x + p.w / 2)
+    expect(call![2]).toBe(p.y + p.h)
+    expect(call![5]).toBe('world')
+  })
+
+  it("jump: burst de 3 poeira nos pes + evento 'jump'", () => {
+    const game = createGame(renderer, input, makeLevel())
+    selectFirst(game, input)
+    // Espera o player assentar no chao.
+    for (let i = 0; i < 10; i++) game.update(1)
+    expect(game.player!.onGround).toBe(true)
+    vi.mocked(particles.emitBurst).mockClear()
+    game.events.length = 0
+    input.set('jump', true)
+    game.update(1)
+    input.set('jump', false)
+    expect(game.events).toContain('jump')
+    const call = vi.mocked(particles.emitBurst).mock.calls.find((c) => c[3] === 3)
+    expect(call).toBeDefined()
+    expect(call![5]).toBe('world')
+  })
+})
+
+describe('createGame — vinheta do Humanware (D4)', () => {
+  it('bordas OBJETIVO (0.15/0.07) + veu escuro 0.06 SO com o Modo ativo', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    // 125 coins (=1000=HW_METER_MAX) para encher o medidor.
+    const coins = Array.from({ length: 125 }, (_, i) => ({
+      x: (3 + (i % 30)) * TILE,
+      y: 8 * TILE,
+    }))
+    const level = makeLevel([], coins)
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const fills = recordFills(renderer)
+
+    // SEM Modo ativo: nenhuma faixa magenta de vinheta.
+    fills.length = 0
+    game.render(0)
+    expect(fills.filter((f) => f.style === COLOR_OBJETIVO && f.alpha === 0.15)).toHaveLength(0)
+
+    // Enche o medidor e ativa.
+    const p = game.player!
+    for (const c of level.coins) {
+      p.x = c.x
+      p.y = c.y
+      p.vy = 0
+      game.update(1)
+    }
+    expect(game.humanware.meter).toBe(HW_METER_MAX)
+    game.events.length = 0
+    input.set('humanware', true)
+    game.update(1)
+    input.set('humanware', false)
+    // D4: ativacao real empilha o SFX 'humanware'.
+    expect(game.events).toContain('humanware')
+
+    fills.length = 0
+    game.render(0)
+    // 4 faixas externas (0.15) + 4 internas (0.07) em COLOR_OBJETIVO + veu '#000' 0.06.
+    expect(fills.filter((f) => f.style === COLOR_OBJETIVO && f.alpha === 0.15)).toHaveLength(4)
+    expect(fills.filter((f) => f.style === COLOR_OBJETIVO && f.alpha === 0.07)).toHaveLength(4)
+    expect(fills.filter((f) => f.style === '#000' && f.alpha === 0.06)).toHaveLength(1)
   })
 })

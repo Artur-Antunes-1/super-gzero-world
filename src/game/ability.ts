@@ -8,7 +8,7 @@ import { ABILITY_PARAMS } from '../data/characters'
 import type { CharacterDef, AbilityId, ParsedLevel } from '../data/schema'
 import type { Input } from '../engine/input'
 import type { Renderer } from '../engine/render'
-import { JUMP_VEL, TILE, COLOR_BLUE, COLOR_LIME, COLOR_TEXT } from '../engine/constants'
+import { JUMP_VEL, TILE, COLOR_TECH } from '../engine/constants'
 
 export interface AbilityState {
   id: AbilityId
@@ -149,22 +149,80 @@ export function updateAbility(player: Player, input: Input, dt: number, ctx: Abi
 }
 
 // FX em ESPACO DE MUNDO (chamado pelo game dentro de beginWorld/endWorld).
-// Aura do escudo (contorno azul ao redor do player) + bloco do builder (lime) + marca emc2 (text).
+// Fase D: after-images do dash, arco frontal do escudo, anel de relogio do
+// emc2 e indicador da celula-alvo do builder — tudo em COLOR_TECH.
+// (O bloco JA colocado e desenhado pelo game: atlas + holograma.)
 export function drawAbilityFx(r: Renderer, player: Player): void {
   const s = player.ability
+  const ctx = r.ctx
+
+  // Dash: 3 after-images do tamanho do player, deslocadas CONTRA o movimento.
+  if (s.id === 'dash_criativo' && s.active && s.timer > 0) {
+    const sgn = Math.sign(player.vx)
+    const ghosts = [
+      { off: -10 * sgn, alpha: 0.25 },
+      { off: -20 * sgn, alpha: 0.15 },
+      { off: -30 * sgn, alpha: 0.08 },
+    ]
+    for (const g of ghosts) {
+      ctx.save()
+      ctx.globalAlpha = g.alpha
+      r.drawRect(player.x + g.off, player.y, player.w, player.h, COLOR_TECH)
+      ctx.restore()
+    }
+  }
+
+  // Escudo: arco frontal de 160 graus no peito, orientado pelo facing;
+  // alpha proporcional a stamina restante (vai sumindo conforme gasta).
   if (abilityHasShield(player)) {
-    const pad = 4
-    // contorno: 4 barras finas ao redor da AABB do player
-    r.drawRect(player.x - pad, player.y - pad, player.w + pad * 2, 2, COLOR_BLUE)
-    r.drawRect(player.x - pad, player.y + player.h + pad - 2, player.w + pad * 2, 2, COLOR_BLUE)
-    r.drawRect(player.x - pad, player.y - pad, 2, player.h + pad * 2, COLOR_BLUE)
-    r.drawRect(player.x + player.w + pad - 2, player.y - pad, 2, player.h + pad * 2, COLOR_BLUE)
+    const stamina = ABILITY_PARAMS.escudo_governanca.shieldStamina ?? 1
+    const frac = Math.max(0, Math.min(1, s.shieldTimer / stamina))
+    const cx = player.x + player.w / 2
+    const cy = player.y + player.h * 0.4 // peito
+    const center = player.facing === 1 ? 0 : Math.PI
+    const half = (160 / 2) * (Math.PI / 180)
+    ctx.save()
+    ctx.globalAlpha = frac
+    ctx.strokeStyle = COLOR_TECH
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.arc(cx, cy, 34, center - half, center + half)
+    ctx.stroke()
+    ctx.restore()
   }
-  if (s.builder) {
-    r.drawRect(s.builder.col * TILE, s.builder.row * TILE, TILE, TILE, COLOR_LIME)
+
+  // Builder pronto (sem cooldown): outline da celula onde o bloco nasceria.
+  // Mesmo calculo do updateAbility (sem clamp: fora do level fica off-screen).
+  if (s.id === 'builder' && s.cooldown <= 0) {
+    const col = player.facing === 1
+      ? Math.floor((player.x + player.w) / TILE)
+      : Math.floor(player.x / TILE) - 1
+    const row = Math.floor((player.y + player.h - 1) / TILE)
+    const bx = col * TILE
+    const by = row * TILE
+    ctx.save()
+    ctx.globalAlpha = 0.5
+    r.drawRect(bx, by, TILE, 2, COLOR_TECH)
+    r.drawRect(bx, by + TILE - 2, TILE, 2, COLOR_TECH)
+    r.drawRect(bx, by, 2, TILE, COLOR_TECH)
+    r.drawRect(bx + TILE - 2, by, 2, TILE, COLOR_TECH)
+    ctx.restore()
   }
+
+  // emc2: anel de relogio em volta do player — arco fino que varre o tempo
+  // restante a partir do topo (12h), alpha 0.5.
   if (s.einsteinTimer > 0) {
-    // marca leve do emc2: faixa no topo do player
-    r.drawRect(player.x, player.y - 4, player.w, 2, COLOR_TEXT)
+    const dur = ABILITY_PARAMS.emc2.einsteinDuration ?? 1
+    const frac = Math.max(0, Math.min(1, s.einsteinTimer / dur))
+    const cx = player.x + player.w / 2
+    const cy = player.y + player.h / 2
+    ctx.save()
+    ctx.globalAlpha = 0.5
+    ctx.strokeStyle = COLOR_TECH
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(cx, cy, Math.max(player.w, player.h) * 0.75, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
   }
 }

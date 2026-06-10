@@ -7,6 +7,7 @@ import { createGame } from './game/game'
 import { loadAssets, type AssetStore } from './engine/assets'
 import { ASSET_MANIFEST } from './data/assets'
 import { COLOR_BG } from './engine/constants'
+import { createAudio } from './engine/audio'
 
 // 1. Canvas
 const canvasEl = document.getElementById('game') as HTMLCanvasElement | null
@@ -22,6 +23,11 @@ const renderer = createRenderer(canvas)
 // 3. Input — attach to window so keyboard events are captured everywhere
 const input = createInput()
 input.attach(window)
+
+// 3b. Audio procedural (D2): cria o bus e desbloqueia o contexto no PRIMEIRO
+//     keydown (autoplay policy dos navegadores exige gesto do usuario).
+const audio = createAudio()
+window.addEventListener('keydown', () => audio.unlock(), { once: true })
 
 // 4. Selecao de fase via URL: /?level=<id>. Id desconhecido (ou ausente)
 //    cai no DEFAULT_LEVEL_ID — parseLevelById re-parseia FRESCO (contrato C3a).
@@ -56,8 +62,13 @@ function startGame(store: AssetStore): void {
     playerX: game.player?.x ?? null,
   })
 
-  // Cria e inicia o loop de timestep fixo.
-  const loop = createLoop(game.update.bind(game), game.render.bind(game))
+  // Cria e inicia o loop de timestep fixo. O step envolve game.update para
+  // drenar os SFX enfileirados no frame (contrato D4: game.events) e tocar
+  // cada um no bus de audio.
+  const loop = createLoop((dt) => {
+    game.update(dt)
+    for (const e of game.events.splice(0)) audio.play(e)
+  }, game.render.bind(game))
   loop.start()
 }
 

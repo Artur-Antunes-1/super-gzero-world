@@ -6,11 +6,16 @@ import type { Body } from '../engine/physics'
 import { stepBody, isFullSolid, tileAt } from '../engine/physics'
 import type { ParsedLevel } from '../data/schema'
 import type { Renderer } from '../engine/render'
+import type { AssetStore } from '../engine/assets'
+import { frameIndex } from '../engine/spriteAnim'
+// Contrato D1: animacoes de objetos/inimigos data-driven (sheet 'char.tolo').
+import { OBJECT_ANIMS } from '../data/objects'
 import type { Player } from './player'
 import {
   ENEMY_SPEED,
   TILE,
-  COLOR_MAGENTA2,
+  COLOR_VIOLET,
+  COLOR_BLUE,
   COLOR_INK,
   COLOR_TEXT,
 } from '../engine/constants'
@@ -27,13 +32,35 @@ export interface Enemy extends Body {
   patrolMax?: number
 }
 
-// Campos canonicos comuns a todo tolo recem-criado.
+// D3: definicoes data-driven por tipo de inimigo (padrao de CHARACTERS).
+// Valores identicos aos hardcoded anteriores — zero mudanca de gameplay.
+// color = COLOR_VIOLET (token de perigo; magenta fica para objetivo/marca).
+export interface EnemyDef {
+  w: number
+  h: number
+  speed: number
+  color: string
+  behavior: 'patrol'
+}
+
+export const ENEMY_DEFS: Record<'tolo', EnemyDef> = {
+  tolo: {
+    w: 38,
+    h: 34,
+    speed: ENEMY_SPEED,
+    color: COLOR_VIOLET,
+    behavior: 'patrol',
+  },
+}
+
+// Campos canonicos comuns a todo tolo recem-criado (dimensoes do def).
 function baseTolo(x: number, y: number): Enemy {
+  const def = ENEMY_DEFS.tolo
   return {
     x,
     y,
-    w: 38,
-    h: 34,
+    w: def.w,
+    h: def.h,
     vx: 0,
     vy: 0,
     onGround: false,
@@ -46,7 +73,7 @@ function baseTolo(x: number, y: number): Enemy {
 
 // Cria os inimigos a partir de level.foolSpawns (C3a; patrol em cols -> px).
 // Compat: se foolSpawns ausente/vazio, cai no campo legacy level.enemies
-// (fool|enemy -> kind 'tolo'). Dimensoes/flags: w=38, h=34, dir=-1.
+// (fool|enemy -> kind 'tolo'). Dimensoes vem de ENEMY_DEFS; dir=-1.
 export function spawnEnemies(level: ParsedLevel): Enemy[] {
   const spawns = level.foolSpawns
   if (spawns && spawns.length > 0) {
@@ -64,11 +91,13 @@ export function spawnEnemies(level: ParsedLevel): Enemy[] {
 
 // Atualiza um tolo. dt ja chega escalado pelo mundo (dt*ws) — apenas repassa.
 // - !alive ou frozen: nao move (return).
-// - senao: define vx = ENEMY_SPEED*dir; integra com stepBody.
+// - senao: define vx = def.speed*dir; integra com stepBody.
 //   Inverte dir nos limites de patrulha (se definidos), na iminencia de borda
 //   (sem chao a frente) ou ao bater em parede (stepBody zerou vx).
 export function updateEnemy(e: Enemy, level: ParsedLevel, dt: number): void {
   if (!e.alive || e.frozen) return
+
+  const def = ENEMY_DEFS[e.kind]
 
   // Limites de patrulha (px): inverte ao alcancar/passar o limite na direcao atual.
   if (e.patrolMin !== undefined && e.dir < 0 && e.x <= e.patrolMin) {
@@ -90,7 +119,7 @@ export function updateEnemy(e: Enemy, level: ParsedLevel, dt: number): void {
     e.dir = e.dir === 1 ? -1 : 1
   }
 
-  e.vx = ENEMY_SPEED * e.dir
+  e.vx = def.speed * e.dir
   stepBody(e, level, dt)
 
   // Bateu em parede solida: stepBody zerou vx. Inverte direcao.
@@ -110,11 +139,62 @@ export function isStomp(player: Player, e: Enemy): boolean {
   return overlapX && overlapY
 }
 
-// Placeholder em codigo: corpo COLOR_MAGENTA2 + detalhe COLOR_INK.
-// Congelado (Modo Humanware): tom mais claro sobreposto via COLOR_TEXT (E6 — importado).
-export function drawEnemy(r: Renderer, e: Enemy): void {
+// Desenha o tolo. Com store + sheet 'char.tolo' carregado: frame do sheet
+// (OBJECT_ANIMS.tolo) via frameIndex(clock global), ancorado nos PES (base da
+// hitbox), flip horizontal por e.dir (como drawCharFrame faz com facing).
+// frozen: alpha 0.7 + veu azulado (ciano 0.25) + frame congelado (clock=0).
+// Sem store/sheet: fallback nos retangulos (cor do def + detalhe COLOR_INK).
+export function drawEnemy(
+  r: Renderer,
+  e: Enemy,
+  store?: AssetStore,
+  clock?: number,
+): void {
   if (!e.alive) return
-  r.drawRect(e.x, e.y, e.w, e.h, COLOR_MAGENTA2)
+  const def = ENEMY_DEFS[e.kind]
+
+  if (store) {
+    const anim = OBJECT_ANIMS.tolo
+    const sheet = store.get(anim.key)
+    if (sheet) {
+      // frozen: SEM avanco de frame — clock congelado em 0.
+      const t = e.frozen ? 0 : clock ?? 0
+      const idx = frameIndex(anim, t)
+      const sx = idx * anim.cellW
+      // Ancora: centro horizontal da hitbox, base (pes).
+      const cx = e.x + e.w / 2
+      const footY = e.y + e.h
+      const ctx = r.ctx
+      ctx.save()
+      if (e.frozen) ctx.globalAlpha = 0.7
+      ctx.translate(cx, footY)
+      ctx.scale(e.dir, 1)
+      r.drawSprite(
+        sheet.src,
+        sx,
+        0,
+        anim.cellW,
+        anim.cellH,
+        -anim.drawW / 2,
+        -anim.drawH,
+        anim.drawW,
+        anim.drawH,
+      )
+      ctx.restore()
+      if (e.frozen) {
+        // Veu azulado do Modo Humanware por cima do sprite.
+        ctx.save()
+        ctx.globalAlpha = 0.25
+        ctx.fillStyle = COLOR_BLUE
+        ctx.fillRect(cx - anim.drawW / 2, footY - anim.drawH, anim.drawW, anim.drawH)
+        ctx.restore()
+      }
+      return
+    }
+  }
+
+  // Fallback (sem store/sheet): corpo na cor do def + detalhe COLOR_INK.
+  r.drawRect(e.x, e.y, e.w, e.h, def.color)
   // Detalhe (faixa de "olhos") em COLOR_INK.
   r.drawRect(e.x + 6, e.y + 8, e.w - 12, 8, COLOR_INK)
   if (e.frozen) {

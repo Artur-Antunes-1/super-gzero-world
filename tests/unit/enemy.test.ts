@@ -1,11 +1,25 @@
 // tests/unit/enemy.test.ts
 import { describe, it, expect } from 'vitest'
-import { ENEMY_SPEED, TILE, TIME_START } from '../../src/engine/constants'
+import {
+  ENEMY_SPEED,
+  TILE,
+  TIME_START,
+  COLOR_VIOLET,
+  COLOR_BLUE,
+  COLOR_INK,
+  COLOR_TEXT,
+} from '../../src/engine/constants'
 import type { ParsedLevel, TileType, CharacterDef } from '../../src/data/schema'
+import type { Renderer } from '../../src/engine/render'
+import type { AssetStore } from '../../src/engine/assets'
+import { frameIndex } from '../../src/engine/spriteAnim'
+import { OBJECT_ANIMS } from '../../src/data/objects'
 import {
   spawnEnemies,
   updateEnemy,
   isStomp,
+  drawEnemy,
+  ENEMY_DEFS,
   type Enemy,
 } from '../../src/game/enemy'
 import { createPlayer, type Player } from '../../src/game/player'
@@ -284,5 +298,215 @@ describe('isStomp', () => {
     player.y = 200
     player.vy = -2
     expect(isStomp(player, e)).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// D3: ENEMY_DEFS data-driven + drawEnemy com sprite do sheet 'char.tolo'.
+// ---------------------------------------------------------------------------
+
+describe('ENEMY_DEFS', () => {
+  it('tolo: dimensoes/velocidade atuais (fisica identica) e behavior patrol', () => {
+    const def = ENEMY_DEFS.tolo
+    expect(def.w).toBe(38)
+    expect(def.h).toBe(34)
+    expect(def.speed).toBe(ENEMY_SPEED)
+    expect(def.behavior).toBe('patrol')
+  })
+
+  it('tolo: color = COLOR_VIOLET (token de perigo; magenta e da marca)', () => {
+    expect(ENEMY_DEFS.tolo.color).toBe(COLOR_VIOLET)
+  })
+
+  it('spawnEnemies usa as dimensoes do def', () => {
+    const level: ParsedLevel = makeLevel(['....', '####'], [], [{ col: 1, row: 0 }])
+    const es = spawnEnemies(level)
+    expect(es[0].w).toBe(ENEMY_DEFS.tolo.w)
+    expect(es[0].h).toBe(ENEMY_DEFS.tolo.h)
+  })
+})
+
+// Renderer falso: registra rects, sprites (com alpha no momento da chamada),
+// fillRects do ctx (com alpha+fillStyle) e transforms (translate/scale).
+function makeFakeRenderer() {
+  const rects: Array<{ x: number; y: number; w: number; h: number; color: string }> = []
+  const sprites: Array<{
+    src: CanvasImageSource; sx: number; sy: number; sw: number; sh: number
+    dx: number; dy: number; dw: number; dh: number; alpha: number
+  }> = []
+  const fills: Array<{ x: number; y: number; w: number; h: number; alpha: number; fillStyle: string }> = []
+  const scales: Array<[number, number]> = []
+  const translates: Array<[number, number]> = []
+  const stack: Array<{ alpha: number; fillStyle: string }> = []
+  const state = { alpha: 1, fillStyle: '' }
+  const ctx = {
+    get globalAlpha() { return state.alpha },
+    set globalAlpha(v: number) { state.alpha = v },
+    get fillStyle() { return state.fillStyle },
+    set fillStyle(v: string) { state.fillStyle = v },
+    save() { stack.push({ alpha: state.alpha, fillStyle: state.fillStyle }) },
+    restore() {
+      const s = stack.pop()
+      if (s) { state.alpha = s.alpha; state.fillStyle = s.fillStyle }
+    },
+    translate(x: number, y: number) { translates.push([x, y]) },
+    scale(x: number, y: number) { scales.push([x, y]) },
+    rotate() {},
+    fillRect(x: number, y: number, w: number, h: number) {
+      fills.push({ x, y, w, h, alpha: state.alpha, fillStyle: state.fillStyle })
+    },
+    drawImage() {},
+  } as unknown as CanvasRenderingContext2D
+  const r: Renderer = {
+    ctx,
+    clear() {},
+    beginWorld() {},
+    endWorld() {},
+    drawRect(x: number, y: number, w: number, h: number, color: string) {
+      rects.push({ x, y, w, h, color })
+    },
+    drawSprite(
+      src: CanvasImageSource,
+      sx: number, sy: number, sw: number, sh: number,
+      dx: number, dy: number, dw: number, dh: number,
+    ) {
+      sprites.push({ src, sx, sy, sw, sh, dx, dy, dw, dh, alpha: state.alpha })
+    },
+    present() {},
+  }
+  return { r, rects, sprites, fills, scales, translates }
+}
+
+const FAKE_SHEET = { fake: 'tolo-sheet' } as unknown as CanvasImageSource
+
+// Store falso: so possui as chaves listadas.
+function makeStore(keys: string[]): AssetStore {
+  return {
+    get(key: string) {
+      return keys.includes(key) ? { src: FAKE_SHEET, w: 999, h: 999 } : null
+    },
+    ready: true,
+  }
+}
+
+function makeTolo(over: Partial<Enemy> = {}): Enemy {
+  return {
+    x: 96, y: 200, w: 38, h: 34, vx: 0, vy: 0,
+    onGround: true, kind: 'tolo', dir: -1, alive: true, frozen: false,
+    ...over,
+  }
+}
+
+describe('drawEnemy com sprite (store + sheet char.tolo)', () => {
+  const anim = OBJECT_ANIMS.tolo
+
+  it('desenha o frame via drawSprite, ancorado nos pes, com flip por dir=-1', () => {
+    const { r, sprites, rects, translates, scales } = makeFakeRenderer()
+    const e = makeTolo({ dir: -1 })
+    drawEnemy(r, e, makeStore([anim.key]), 0)
+    // Um sprite desenhado a partir do sheet; nada do fallback de rects.
+    expect(sprites).toHaveLength(1)
+    expect(rects).toHaveLength(0)
+    const s = sprites[0]
+    expect(s.src).toBe(FAKE_SHEET)
+    // clock=0 -> frame 0 (sx=0); recorte = celula do contrato.
+    expect(s.sx).toBe(0)
+    expect(s.sy).toBe(0)
+    expect(s.sw).toBe(anim.cellW)
+    expect(s.sh).toBe(anim.cellH)
+    // Destino: drawW/H do contrato, centrado em x e com base nos pes.
+    expect(s.dx).toBeCloseTo(-anim.drawW / 2, 5)
+    expect(s.dy).toBeCloseTo(-anim.drawH, 5)
+    expect(s.dw).toBe(anim.drawW)
+    expect(s.dh).toBe(anim.drawH)
+    // Ancora nos PES: centro horizontal da hitbox, base da hitbox.
+    expect(translates[0]).toEqual([e.x + e.w / 2, e.y + e.h])
+    // Flip horizontal por dir (como drawCharFrame faz com facing).
+    expect(scales[0]).toEqual([-1, 1])
+  })
+
+  it('dir=1 desenha sem flip (scale 1,1)', () => {
+    const { r, scales } = makeFakeRenderer()
+    drawEnemy(r, makeTolo({ dir: 1 }), makeStore([anim.key]), 0)
+    expect(scales[0]).toEqual([1, 1])
+  })
+
+  it('anima com o clock global: sx = frameIndex(anim, clock) * cellW', () => {
+    const { r, sprites } = makeFakeRenderer()
+    // Clock suficiente para avancar pelo menos 1 frame de animacao.
+    const clock = Math.ceil(60 / anim.fps)
+    drawEnemy(r, makeTolo(), makeStore([anim.key]), clock)
+    const expected = frameIndex(anim, clock) * anim.cellW
+    expect(sprites[0].sx).toBe(expected)
+    if (anim.frames > 1) expect(sprites[0].sx).toBeGreaterThan(0)
+  })
+
+  it('sem veu nem alpha quando nao congelado', () => {
+    const { r, sprites, fills } = makeFakeRenderer()
+    drawEnemy(r, makeTolo(), makeStore([anim.key]), 30)
+    expect(sprites[0].alpha).toBe(1)
+    expect(fills).toHaveLength(0)
+  })
+
+  it('frozen: alpha 0.7 no sprite + veu ciano 0.25 + NAO anima (frame 0)', () => {
+    const { r, sprites, fills } = makeFakeRenderer()
+    const e = makeTolo({ frozen: true })
+    // Clock alto: animaria varios frames se nao estivesse congelado.
+    drawEnemy(r, e, makeStore([anim.key]), 1234)
+    expect(sprites).toHaveLength(1)
+    // Congelado: clock tratado como 0 -> frame 0 (sem avanco).
+    expect(sprites[0].sx).toBe(0)
+    expect(sprites[0].alpha).toBeCloseTo(0.7, 5)
+    // Veu azulado por cima do sprite (ciano, alpha 0.25, area do sprite).
+    expect(fills).toHaveLength(1)
+    const v = fills[0]
+    expect(v.fillStyle).toBe(COLOR_BLUE)
+    expect(v.alpha).toBeCloseTo(0.25, 5)
+    expect(v.x).toBeCloseTo(e.x + e.w / 2 - anim.drawW / 2, 5)
+    expect(v.y).toBeCloseTo(e.y + e.h - anim.drawH, 5)
+    expect(v.w).toBe(anim.drawW)
+    expect(v.h).toBe(anim.drawH)
+  })
+
+  it('store sem o sheet char.tolo -> fallback de retangulos', () => {
+    const { r, sprites, rects } = makeFakeRenderer()
+    drawEnemy(r, makeTolo(), makeStore([]), 0)
+    expect(sprites).toHaveLength(0)
+    expect(rects.length).toBeGreaterThan(0)
+    expect(rects[0].color).toBe(ENEMY_DEFS.tolo.color)
+  })
+
+  it('nao desenha nada quando alive=false', () => {
+    const { r, sprites, rects, fills } = makeFakeRenderer()
+    drawEnemy(r, makeTolo({ alive: false }), makeStore([anim.key]), 0)
+    expect(sprites).toHaveLength(0)
+    expect(rects).toHaveLength(0)
+    expect(fills).toHaveLength(0)
+  })
+})
+
+describe('drawEnemy fallback (sem store)', () => {
+  it('desenha corpo na cor do def (violet) + faixa de olhos COLOR_INK', () => {
+    const { r, rects, sprites } = makeFakeRenderer()
+    const e = makeTolo()
+    drawEnemy(r, e)
+    expect(sprites).toHaveLength(0)
+    expect(rects).toHaveLength(2)
+    expect(rects[0]).toEqual({ x: e.x, y: e.y, w: e.w, h: e.h, color: COLOR_VIOLET })
+    expect(rects[1].color).toBe(COLOR_INK)
+  })
+
+  it('frozen adiciona a faixa clara COLOR_TEXT no topo', () => {
+    const { r, rects } = makeFakeRenderer()
+    const e = makeTolo({ frozen: true })
+    drawEnemy(r, e)
+    expect(rects).toHaveLength(3)
+    expect(rects[2]).toEqual({ x: e.x, y: e.y, w: e.w, h: 4, color: COLOR_TEXT })
+  })
+
+  it('nao desenha nada quando alive=false', () => {
+    const { r, rects } = makeFakeRenderer()
+    drawEnemy(r, makeTolo({ alive: false }))
+    expect(rects).toHaveLength(0)
   })
 })

@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { ASSET_MANIFEST, SKY_LAYERS } from '../../src/data/assets'
 
 describe('ASSET_MANIFEST', () => {
-  it('tem as chaves do M2a + sheets do Artur (M2b) + atlases de tiles (C2)', () => {
+  it('tem as chaves do M2a + sheets do Artur (M2b) + tiles (C2) + objetos (D1)', () => {
     expect(Object.keys(ASSET_MANIFEST).sort()).toEqual(
       [
         'bg.cosmic',
@@ -17,6 +17,10 @@ describe('ASSET_MANIFEST', () => {
         'char.artur.ataque',
         'tiles.terra',
         'tiles.tijolo',
+        'obj.moeda',
+        'obj.portal',
+        'char.tolo',
+        'char.tolo.idle',
       ].sort(),
     )
   })
@@ -33,6 +37,13 @@ describe('ASSET_MANIFEST', () => {
     )
     expect(ASSET_MANIFEST['tiles.terra'].url).toBe('/assets/tiles/terra.png')
     expect(ASSET_MANIFEST['tiles.tijolo'].url).toBe('/assets/tiles/tijolo.png')
+    // D1: objetos e Tolo
+    expect(ASSET_MANIFEST['obj.moeda'].url).toBe('/assets/objects/moeda.png')
+    expect(ASSET_MANIFEST['obj.portal'].url).toBe('/assets/objects/portal.png')
+    expect(ASSET_MANIFEST['char.tolo'].url).toBe('/assets/chars/tolo/walk.png')
+    expect(ASSET_MANIFEST['char.tolo.idle'].url).toBe(
+      '/assets/chars/tolo/idle.png',
+    )
   })
 
   it('chroma-key so na arte-base; sheets M2b ja sao transparentes (sem chromaKey)', () => {
@@ -51,6 +62,11 @@ describe('ASSET_MANIFEST', () => {
       // C2: atlases de tiles tambem ja vem com alpha
       'tiles.terra',
       'tiles.tijolo',
+      // D1: sheets de objetos e do Tolo tambem ja vem com alpha
+      'obj.moeda',
+      'obj.portal',
+      'char.tolo',
+      'char.tolo.idle',
     ]) {
       expect(ASSET_MANIFEST[k].chromaKey).toBeUndefined()
     }

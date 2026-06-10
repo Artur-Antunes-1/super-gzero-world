@@ -63,6 +63,10 @@ import {
   COLOR_MAGENTA,
   COLOR_LIME,
   COLOR_TEXT,
+  COLOR_OBJETIVO,
+  COLOR_TECH,
+  COLOR_PERIGO,
+  COLOR_COLETAVEL,
   VIEW_W,
   VIEW_H,
 } from '../engine/constants'
@@ -85,9 +89,12 @@ import {
 } from '../engine/particles'
 import { drawParallax } from '../engine/parallax'
 import { drawAnimatedSprite } from '../engine/spriteDraw'
-import { drawCharFrame, drawContactShadow } from '../engine/spriteAnim'
+import { drawCharFrame, drawContactShadow, frameIndex } from '../engine/spriteAnim'
 import { SKY_LAYERS } from '../data/assets'
 import { CHAR_ANIMS } from '../data/charAnims'
+
+// --- D4: animacoes de objetos (moeda/portal) — contrato D1 ---
+import { OBJECT_ANIMS } from '../data/objects'
 
 // --- C3b: tiles com arte (autotiling) + entidades novas ---
 import { TILE_ATLASES } from '../data/tiles'
@@ -104,6 +111,29 @@ const HEART_SIZE = 20
 
 // C3b: véu escuro sobre bloco '?' já usado.
 const QBLOCK_USED_VEIL = 'rgba(0,0,0,0.35)'
+
+// D4: fila de SFX (contrato D2) — cap; excedente e descartado.
+const EVENTS_MAX = 16
+
+// D4: poeira cinza clara (pouso/pulo/pulo duplo).
+const DUST_COLOR = '#cfcfd6'
+
+// D4: janela final do TTL do builder em que o holograma pisca.
+const BUILDER_BLINK_FRAMES = 60
+
+// D4: coracao pixel desenhado por codigo (2 "lobos" no topo + corpo + ponta
+// que estreita — quadrados/linhas via fillRect), centrado em (cx, cy), lado s.
+function drawHeartPixel(r: Renderer, cx: number, cy: number, s: number): void {
+  const u = s / 7
+  const x0 = cx - s / 2
+  const y0 = cy - u * 3
+  r.drawRect(x0 + u, y0, u * 2, u, COLOR_OBJETIVO)
+  r.drawRect(x0 + u * 4, y0, u * 2, u, COLOR_OBJETIVO)
+  r.drawRect(x0, y0 + u, u * 7, u * 2, COLOR_OBJETIVO)
+  r.drawRect(x0 + u, y0 + u * 3, u * 5, u, COLOR_OBJETIVO)
+  r.drawRect(x0 + u * 2, y0 + u * 4, u * 3, u, COLOR_OBJETIVO)
+  r.drawRect(x0 + u * 3, y0 + u * 5, u, u, COLOR_OBJETIVO)
+}
 
 // Cor por tipo de tile (world space).
 function tileColor(t: TileType): string {
@@ -140,6 +170,8 @@ export interface Game {
   enemies: Enemy[]
   // (A2) estado interno do Humanware — contrato com A1 (main.ts le game.humanware).
   humanware: HumanwareState
+  // (D4) fila de SFX empilhados no update; o main drena a cada frame (contrato D2).
+  events: string[]
 }
 
 interface CoinEntity {
@@ -209,8 +241,15 @@ export function createGame(
   let heartEnts: HeartEnt[] = spawnHearts()
   // C3b: checkpoint (px) — respawn volta aqui em vez do spawn.
   let lastCheckpointX = level.playerSpawn.x
-  // C3b: relogio de jogo (pulso visual dos heart-orbs). Congela no hitstop.
+  // C3b/D4: relogio GLOBAL de frames (anima objetos e pulso dos heart-orbs).
+  // Congela no hitstop; NAO reseta no respawn; reseta ao voltar pro select.
   let clock = 0
+
+  // D4: fila de SFX (referencia VIVA exposta em game.events; main drena via splice).
+  const events: string[] = []
+  function pushEvent(name: string): void {
+    if (events.length < EVENTS_MAX) events.push(name)
+  }
 
   // Celula do bloco temporario do Builder atualmente escrita em level.tiles (ou null).
   // Mecanismo canonico (contrato §builder): UMA unica referencia; escreve 'block' somente
@@ -283,6 +322,8 @@ export function createGame(
     heartEnts = spawnHearts()
     lastCheckpointX = level.playerSpawn.x
     clock = 0
+    // D4: descarta SFX pendentes da rodada anterior.
+    events.length = 0
     // Reseta o estado M2a para que uma nova rodada comece limpa.
     hwWasActive = false
     hitstop = 0
@@ -341,13 +382,29 @@ export function createGame(
       // C3b: vy ANTES da fisica — deteccao deterministica de batida de cabeca.
       const prevVy = p.vy
 
+      // D4: estado pre-fisica para detectar o PULO REAL (intencao + apto).
+      const wasJumpable = p.onGround || p.coyote > 0
+      const hadJumpIntent = p.jumpBuffer > 0 || input.pressed('jump')
+
       // 1) Player: SEMPRE dt (escala 1).
       updatePlayer(p, input, level, dt)
+
+      // 1a) D4: pulo real disparou dentro do updatePlayer (buffer consumido,
+      // saiu do chao subindo) -> SFX 'jump' + poeira nos pes.
+      if (wasJumpable && hadJumpIntent && p.jumpBuffer === 0 && !p.onGround && p.vy < 0) {
+        pushEvent('jump')
+        emitBurst(ps, p.x + p.w / 2, p.y + p.h, 3, [DUST_COLOR], 'world')
+      }
 
       // 1b) C3b: checkpoint — centro do player cruzou a coluna => avanca o respawn.
       for (const ccol of level.checkpoints ?? []) {
         const cx = ccol * TILE
-        if (cx > lastCheckpointX && p.x + p.w / 2 >= cx) lastCheckpointX = cx
+        if (cx > lastCheckpointX && p.x + p.w / 2 >= cx) {
+          lastCheckpointX = cx
+          // D4: feedback de checkpoint cruzado.
+          pushEvent('checkpoint')
+          emitBurst(ps, cx, p.y + p.h / 2, 10, [COLOR_TECH], 'world')
+        }
       }
 
       // 1c) C3b: bloco '?' — vy<0 zerado pela fisica (e nao pousou) = bateu o teto.
@@ -373,6 +430,16 @@ export function createGame(
               addMeter(hw, HW_GAIN_STAR)
             }
             recomputeVariants() // contrato C3b: '?' usado tambem recomputa
+            // D4: feedback do bump no '?'.
+            pushEvent('qblock')
+            emitBurst(
+              ps,
+              col * TILE + TILE / 2,
+              headRow * TILE + TILE / 2,
+              6,
+              [COLOR_COLETAVEL],
+              'world',
+            )
             break
           }
         }
@@ -390,12 +457,22 @@ export function createGame(
         (!abBefore.active && ab.active) ||
         ab.airJumps > abBefore.airJumps ||
         (ab.cooldown > abBefore.cooldown && !dashEnded)
-      if (casted) triggerOneShot(playerAnim, 'cast', CAST_FRAMES)
+      if (casted) {
+        triggerOneShot(playerAnim, 'cast', CAST_FRAMES)
+        pushEvent('cast') // D4: SFX junto do one-shot
+      }
+      // D4: pulo duplo (airJumps consumido) -> poeira extra nos pes.
+      if (ab.airJumps > abBefore.airJumps) {
+        emitBurst(ps, p.x + p.w / 2, p.y + p.h, 6, [DUST_COLOR], 'world')
+      }
 
       // 2b) M2a: animacao do player (logica pura, sem render) + particulas ambiente.
       // M2 fase B: 3o arg = hurtTimer (estado 'hurt' curto), NAO os i-frames de 90f.
       const { landed } = updateAnimator(playerAnim, p, p.hurtTimer, dt)
-      void landed // reservado para FX de pouso (poeira/squash) futuros
+      // D4: pouso -> poeira cinza clara nos pes.
+      if (landed) {
+        emitBurst(ps, p.x + p.w / 2, p.y + p.h, 5, [DUST_COLOR], 'world')
+      }
       emitAmbient(ps, VIEW_W, VIEW_H, dt)
       // Burst no frame em que o Humanware ACABOU de ativar (borda de subida).
       // (A2) Emitido em COORDENADAS DE MUNDO — desenhado por drawParticlesWorld.
@@ -410,7 +487,8 @@ export function createGame(
       syncBuilderTile()
 
       // 4) Gatilho do Humanware (KeyH) + update do estado.
-      if (input.pressed('humanware')) tryActivate(hw)
+      // D4: ativacao REAL (tryActivate true) empilha o SFX 'humanware'.
+      if (input.pressed('humanware') && tryActivate(hw)) pushEvent('humanware')
       updateHumanware(hw, dt)
 
       // 5) Inimigos: mundo desacelera (dt*ws); congelam no Modo.
@@ -427,6 +505,10 @@ export function createGame(
           e.alive = false
           p.vy = STOMP_BOUNCE
           addMeter(hw, 60)
+          // D4: feedback do stomp — SFX + burst PERIGO + shake curto (menor que o de dano).
+          pushEvent('stomp')
+          emitBurst(ps, e.x + e.w / 2, e.y + e.h / 2, 12, [COLOR_PERIGO], 'world')
+          shakeT = Math.max(shakeT, 4)
         } else if (abilityKillsEnemy(p) && overlap(p, e)) {
           e.alive = false
         } else if (overlap(p, e)) {
@@ -435,9 +517,11 @@ export function createGame(
           const result = damagePlayer(p, e.x)
           if (result === 'death') {
             // Sai limpo no frame da morte (input.update() acontece em update()).
+            pushEvent('over') // D4
             state.set('over'); return
           } else if (result === 'hit') {
             // M2 fase B: dano que conecta congela o mundo e chacoalha a camera.
+            pushEvent('hurt') // D4: dano CONECTADO
             hitstop = HITSTOP_FRAMES
             shakeT = SHAKE_FRAMES
             // C3b: respawn no ultimo checkpoint cruzado (y do spawn original).
@@ -459,6 +543,9 @@ export function createGame(
           coin.active = false
           coinCount++
           addMeter(hw, HW_GAIN_COIN)
+          // D4: feedback da coleta — SFX + burst COLETAVEL no centro do tile.
+          pushEvent('coin')
+          emitBurst(ps, coin.x + TILE / 2, coin.y + TILE / 2, 8, [COLOR_COLETAVEL], 'world')
         }
       }
 
@@ -473,13 +560,26 @@ export function createGame(
         ) {
           hEnt.active = false
           addMeter(hw, HW_GAIN_HEART_ORB)
+          // D4: feedback do heart-orb — SFX + burst OBJETIVO.
+          pushEvent('heart')
+          emitBurst(
+            ps,
+            hEnt.x + HEART_SIZE / 2,
+            hEnt.y + HEART_SIZE / 2,
+            8,
+            [COLOR_OBJETIVO],
+            'world',
+          )
         }
       }
 
       // 8) Timer: PAUSADO no Modo; 0 -> over.
       if (!isActive(hw)) {
         time = Math.max(0, time - dt * FIXED_DT)
-        if (time <= 0) state.set('over')
+        if (time <= 0) {
+          pushEvent('over') // D4
+          state.set('over')
+        }
       }
 
       // 9) Timers do player (i-frames) + restaurar bloco expirado.
@@ -491,6 +591,7 @@ export function createGame(
       if (state.is('playing') && checkGoal(p, level)) {
         // M2 fase B: pose de vitoria mantida na tela de win (duracao "infinita").
         triggerOneShot(playerAnim, 'victory', 9999)
+        pushEvent('win') // D4
         state.set('win')
       }
 
@@ -567,35 +668,99 @@ export function createGame(
       }
     }
 
-    // Goal (coordenada: o parser mapeia 'G' para tile vazio, desenhamos aqui).
-    renderer.drawRect(level.goal.x, level.goal.y, TILE, TILE, COLOR_MAGENTA)
+    // D4: holograma do bloco temporario do Builder POR CIMA do atlas —
+    // fill ciano translucido + 4 cantos em "bracket"; pisca no fim do TTL.
+    if (builderWritten) {
+      const ttl = player?.ability.builder?.ttl ?? 0
+      const alpha =
+        ttl <= BUILDER_BLINK_FRAMES
+          ? (Math.floor(ttl / 8) & 1) === 1
+            ? 0.3
+            : 0.1
+          : 0.25
+      const bx = builderWritten.col * TILE
+      const by = builderWritten.row * TILE
+      const ctx = renderer.ctx
+      ctx.save()
+      ctx.globalAlpha = alpha
+      ctx.fillStyle = COLOR_TECH
+      ctx.fillRect(bx, by, TILE, TILE)
+      ctx.restore()
+      const L = 10 // comprimento do bracket (linhas de 2px)
+      renderer.drawRect(bx, by, L, 2, COLOR_TECH)
+      renderer.drawRect(bx, by, 2, L, COLOR_TECH)
+      renderer.drawRect(bx + TILE - L, by, L, 2, COLOR_TECH)
+      renderer.drawRect(bx + TILE - 2, by, 2, L, COLOR_TECH)
+      renderer.drawRect(bx, by + TILE - 2, L, 2, COLOR_TECH)
+      renderer.drawRect(bx, by + TILE - L, 2, L, COLOR_TECH)
+      renderer.drawRect(bx + TILE - L, by + TILE - 2, L, 2, COLOR_TECH)
+      renderer.drawRect(bx + TILE - 2, by + TILE - L, 2, L, COLOR_TECH)
+    }
 
-    // Coins ativos.
+    // Goal: portal animado (96x96, base no chao do tile, centrado na col);
+    // fallback = rect magenta (token OBJETIVO) de antes.
+    const portalAnim = OBJECT_ANIMS.portal
+    const portalSheet = store ? store.get(portalAnim.key) : null
+    if (portalSheet) {
+      const idx = frameIndex(portalAnim, clock)
+      renderer.drawSprite(
+        portalSheet.src,
+        idx * portalAnim.cellW,
+        0,
+        portalAnim.cellW,
+        portalAnim.cellH,
+        level.goal.x + TILE / 2 - portalAnim.drawW / 2,
+        level.goal.y + TILE - portalAnim.drawH,
+        portalAnim.drawW,
+        portalAnim.drawH,
+      )
+    } else {
+      renderer.drawRect(level.goal.x, level.goal.y, TILE, TILE, COLOR_OBJETIVO)
+    }
+
+    // Coins ativos: sheet da moeda (32x32 centrado no tile) animado pelo clock;
+    // fallback = rect lime (token COLETAVEL) de antes.
+    const moedaAnim = OBJECT_ANIMS.moeda
+    const moedaSheet = store ? store.get(moedaAnim.key) : null
+    const moedaIdx = moedaSheet ? frameIndex(moedaAnim, clock) : 0
     const coinOffset = (TILE - COIN_SIZE) / 2
     for (const coin of coins) {
       if (!coin.active) continue
-      renderer.drawRect(
-        coin.x + coinOffset,
-        coin.y + coinOffset,
-        COIN_SIZE,
-        COIN_SIZE,
-        COLOR_LIME,
-      )
+      if (moedaSheet) {
+        renderer.drawSprite(
+          moedaSheet.src,
+          moedaIdx * moedaAnim.cellW,
+          0,
+          moedaAnim.cellW,
+          moedaAnim.cellH,
+          coin.x + TILE / 2 - moedaAnim.drawW / 2,
+          coin.y + TILE / 2 - moedaAnim.drawH / 2,
+          moedaAnim.drawW,
+          moedaAnim.drawH,
+        )
+      } else {
+        renderer.drawRect(
+          coin.x + coinOffset,
+          coin.y + coinOffset,
+          COIN_SIZE,
+          COIN_SIZE,
+          COLOR_COLETAVEL,
+        )
+      }
     }
 
-    // C3b: heart-orbs — quadrado magenta 20px com pulso senoidal (±2px no clock).
-    // Placeholder ate a Fase D; colisao usa a caixa fixa, o pulso e so visual.
+    // D4: heart-orbs — coracao pixel por codigo (COLOR_OBJETIVO) com o pulso
+    // senoidal de antes (±2px no clock). Colisao continua na caixa fixa.
     for (const hEnt of heartEnts) {
       if (!hEnt.active) continue
       const s = HEART_SIZE + Math.sin(clock * 0.12) * 2
-      const off = (HEART_SIZE - s) / 2
-      renderer.drawRect(hEnt.x + off, hEnt.y + off, s, s, COLOR_MAGENTA)
+      drawHeartPixel(renderer, hEnt.x + HEART_SIZE / 2, hEnt.y + HEART_SIZE / 2, s)
     }
 
-    // Inimigos.
+    // Inimigos (D3: sheet do Tolo animado pelo clock global; fallback rects).
     for (const e of enemies) {
       if (!e.alive) continue
-      drawEnemy(renderer, e)
+      drawEnemy(renderer, e, store, clock)
     }
 
     // FX da habilidade + player.
@@ -675,6 +840,38 @@ export function createGame(
 
     renderer.endWorld()
 
+    // D4: vinheta do Modo Humanware (screen space) — 2 faixas por lado em
+    // COLOR_OBJETIVO (alpha 0.15 externa / 0.07 interna) + veu escuro 0.06.
+    if (isActive(hw)) {
+      const ctx = renderer.ctx
+      ctx.save()
+      ctx.fillStyle = COLOR_OBJETIVO
+      ctx.globalAlpha = 0.15
+      ctx.fillRect(0, 0, VIEW_W, 8)
+      ctx.fillRect(0, VIEW_H - 8, VIEW_W, 8)
+      ctx.fillRect(0, 0, 8, VIEW_H)
+      ctx.fillRect(VIEW_W - 8, 0, 8, VIEW_H)
+      ctx.globalAlpha = 0.07
+      ctx.fillRect(8, 8, VIEW_W - 16, 10)
+      ctx.fillRect(8, VIEW_H - 18, VIEW_W - 16, 10)
+      ctx.fillRect(8, 8, 10, VIEW_H - 16)
+      ctx.fillRect(VIEW_W - 18, 8, 10, VIEW_H - 16)
+      ctx.globalAlpha = 0.06
+      ctx.fillStyle = '#000'
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H)
+      ctx.restore()
+    }
+
+    // D4: veu ciano sutil enquanto o worldScale do emc2 esta ativo.
+    if (player && abilityWorldScale(player) < 1) {
+      const ctx = renderer.ctx
+      ctx.save()
+      ctx.globalAlpha = 0.06
+      ctx.fillStyle = COLOR_TECH
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H)
+      ctx.restore()
+    }
+
     // M2a: particulas em SCREEN SPACE, por cima do mundo, antes do HUD.
     drawParticles(renderer, ps)
 
@@ -721,6 +918,8 @@ export function createGame(
   return {
     update,
     render,
+    // D4: referencia VIVA da fila de SFX (main drena via splice a cada frame).
+    events,
     get state() {
       return state
     },
