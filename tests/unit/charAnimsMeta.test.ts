@@ -59,6 +59,19 @@ describe('charAnims x meta.json (artur)', () => {
     }
   })
 
+  it('cast usa o sheet "ataque" (one-shot 12fps, sem loop) — contrato §2', () => {
+    const cast = ARTUR_ANIMS.anims.cast
+    expect(cast, 'estado cast ausente em ARTUR_ANIMS.anims').toBeDefined()
+    expect(sheetName(cast!.key)).toBe('ataque')
+    expect(cast!.fps).toBe(12)
+    expect(cast!.loop).toBe(false)
+  })
+
+  it('escala inteira (contrato §1): drawH = cellH (1x) e corpo ~78px declarado', () => {
+    expect(ARTUR_ANIMS.drawH).toBe(ARTUR_ANIMS.cellH)
+    expect(ARTUR_ANIMS.bodyHpx).toBe(78)
+  })
+
   it('nenhuma entrada char.artur.* orfa no manifesto: toda key e usada por algum FrameAnim', () => {
     const used = new Set(Object.values(ARTUR_ANIMS.anims).map((fa) => fa.key))
     for (const key of Object.keys(ASSET_MANIFEST)) {

@@ -27,6 +27,14 @@ export const IFRAME_FRAMES = 90
 export const KNOCKBACK_VX = 4.5
 export const KNOCKBACK_VY = -8
 
+// FX de combate / animacao (M2 fase B) — duracoes em FRAMES
+export const HURT_FRAMES = 24 // estado visual 'hurt' (separado dos i-frames de 90f)
+export const LAND_FRAMES = 10 // one-shot de pouso
+export const CAST_FRAMES = 18 // one-shot de uso de habilidade
+export const HITSTOP_FRAMES = 3 // mundo congelado ao tomar dano
+export const SHAKE_FRAMES = 8 // duracao do screen-shake
+export const SHAKE_PX = 3 // amplitude do shake (px)
+
 // Dimensoes de entidades
 export const PLAYER_W = 34
 export const PLAYER_H = 42

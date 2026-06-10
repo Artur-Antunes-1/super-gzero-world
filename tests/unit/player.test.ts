@@ -19,6 +19,7 @@ import {
   IFRAME_FRAMES,
   KNOCKBACK_VX,
   KNOCKBACK_VY,
+  HURT_FRAMES,
 } from '../../src/engine/constants'
 
 // FakeInput: implements exactly the Input interface from the CONTRATO.
@@ -391,6 +392,72 @@ describe('respawnPlayer', () => {
     // ability should be freshly initialized
     expect(p.ability.shield).toBe(false)
     expect(p.ability.shieldTimer).toBe(0)
+  })
+})
+
+// --- M2 fase B: hurtTimer (estado visual 'hurt', separado dos i-frames) ---
+
+describe('hurtTimer (M2 fase B)', () => {
+  let level: ParsedLevel
+  let p: Player
+
+  beforeEach(() => {
+    level = makeFlatLevel()
+    p = createPlayer(CHARACTERS['renan'], level.playerSpawn)
+    p.hearts = p.char.hearts
+    p.lives = START_LIVES
+    p.iframes = 0
+  })
+
+  it('createPlayer inicia hurtTimer=0', () => {
+    expect(p.hurtTimer).toBe(0)
+  })
+
+  it('dano que conecta ("hit") seta hurtTimer=HURT_FRAMES alem dos iframes', () => {
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('hit')
+    expect(p.hurtTimer).toBe(HURT_FRAMES)
+    expect(p.iframes).toBe(IFRAME_FRAMES) // iframes continuam separados
+  })
+
+  it('dano fatal ("death") tambem seta hurtTimer=HURT_FRAMES', () => {
+    p.hearts = 1
+    p.lives = 1
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('death')
+    expect(p.hurtTimer).toBe(HURT_FRAMES)
+  })
+
+  it('dano "blocked" por iframes NAO seta hurtTimer', () => {
+    p.iframes = IFRAME_FRAMES
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('blocked')
+    expect(p.hurtTimer).toBe(0)
+  })
+
+  it('dano "blocked" por escudo NAO seta hurtTimer', () => {
+    p.ability.shield = true
+    p.ability.shieldTimer = 180
+    const result = damagePlayer(p, p.x + 100)
+    expect(result).toBe('blocked')
+    expect(p.hurtTimer).toBe(0)
+  })
+
+  it('respawnPlayer zera hurtTimer', () => {
+    p.hurtTimer = HURT_FRAMES
+    respawnPlayer(p, level.playerSpawn)
+    expect(p.hurtTimer).toBe(0)
+  })
+
+  it('tickPlayerTimers decrementa hurtTimer junto com iframes (clamp em 0)', () => {
+    p.hurtTimer = HURT_FRAMES
+    p.iframes = IFRAME_FRAMES
+    tickPlayerTimers(p, 1)
+    expect(p.hurtTimer).toBe(HURT_FRAMES - 1)
+    expect(p.iframes).toBe(IFRAME_FRAMES - 1)
+    tickPlayerTimers(p, 1000)
+    expect(p.hurtTimer).toBe(0)
+    expect(p.iframes).toBe(0)
   })
 })
 

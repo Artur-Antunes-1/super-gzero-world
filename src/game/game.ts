@@ -53,6 +53,10 @@ import {
   TIME_START,
   COIN_SIZE,
   STOMP_BOUNCE,
+  CAST_FRAMES,
+  HITSTOP_FRAMES,
+  SHAKE_FRAMES,
+  SHAKE_PX,
   COLOR_BG,
   COLOR_SURFACE,
   COLOR_INK,
@@ -65,7 +69,12 @@ import {
 
 // --- M2a: motor de animacao (consumido, nao recriado) ---
 import type { AssetStore } from '../engine/assets'
-import { createAnimator, updateAnimator } from '../engine/animator'
+import {
+  createAnimator,
+  updateAnimator,
+  triggerOneShot,
+  getFrameTransform,
+} from '../engine/animator'
 import {
   createParticles,
   emitAmbient,
@@ -76,7 +85,7 @@ import {
 } from '../engine/particles'
 import { drawParallax } from '../engine/parallax'
 import { drawAnimatedSprite } from '../engine/spriteDraw'
-import { drawCharFrame } from '../engine/spriteAnim'
+import { drawCharFrame, drawContactShadow } from '../engine/spriteAnim'
 import { SKY_LAYERS } from '../data/assets'
 import { CHAR_ANIMS } from '../data/charAnims'
 
@@ -139,6 +148,9 @@ export function createGame(
   const ps = createParticles()
   // Rastreia a borda de ativacao do Humanware para emitir 1 burst no frame que ativa.
   let hwWasActive = false
+  // M2 fase B: hitstop (mundo congelado por N frames) + screen-shake ao tomar dano.
+  let hitstop = 0
+  let shakeT = 0
 
   // Mutaveis: recriados no reset.
   let player: Player | null = null
@@ -212,6 +224,8 @@ export function createGame(
     coinCount = 0
     // Reseta o estado M2a para que uma nova rodada comece limpa.
     hwWasActive = false
+    hitstop = 0
+    shakeT = 0
     Object.assign(playerAnim, createAnimator())
     ps.particles = []
     ps.ambientAcc = 0
@@ -244,6 +258,14 @@ export function createGame(
     if (state.is('playing') && player) {
       const p = player
 
+      // M2 fase B: HITSTOP — mundo congelado; nada mais atualiza neste frame.
+      if (hitstop > 0) {
+        hitstop = Math.max(0, hitstop - dt)
+        return
+      }
+      // Shake decai no update normal (fora do hitstop).
+      if (shakeT > 0) shakeT = Math.max(0, shakeT - dt)
+
       // §0.6 worldScale: sempre Math.min (nunca multiplicar). Player roda em escala 1.
       const ws = Math.min(humanwareWorldScale(hw), abilityWorldScale(p), 1)
 
@@ -251,10 +273,23 @@ export function createGame(
       updatePlayer(p, input, level, dt)
 
       // 2) Habilidade: tempo do player (dt, escala 1).
+      // M2 fase B (CAST): detecta ativacao REAL comparando antes/depois — dash liga
+      // `active`; salto gasta `airJumps`; escudo/builder/emc2 ARMAM `cooldown`
+      // (o fim do dash tambem arma cooldown — excluido via dashEnded).
+      const ab = p.ability
+      const abBefore = { cooldown: ab.cooldown, active: ab.active, airJumps: ab.airJumps }
       updateAbility(p, input, dt, { level, enemies })
+      const dashEnded = abBefore.active && !ab.active
+      const casted =
+        (!abBefore.active && ab.active) ||
+        ab.airJumps > abBefore.airJumps ||
+        (ab.cooldown > abBefore.cooldown && !dashEnded)
+      if (casted) triggerOneShot(playerAnim, 'cast', CAST_FRAMES)
 
       // 2b) M2a: animacao do player (logica pura, sem render) + particulas ambiente.
-      updateAnimator(playerAnim, p, p.iframes, dt)
+      // M2 fase B: 3o arg = hurtTimer (estado 'hurt' curto), NAO os i-frames de 90f.
+      const { landed } = updateAnimator(playerAnim, p, p.hurtTimer, dt)
+      void landed // reservado para FX de pouso (poeira/squash) futuros
       emitAmbient(ps, VIEW_W, VIEW_H, dt)
       // Burst no frame em que o Humanware ACABOU de ativar (borda de subida).
       // (A2) Emitido em COORDENADAS DE MUNDO — desenhado por drawParticlesWorld.
@@ -295,8 +330,11 @@ export function createGame(
           if (result === 'death') {
             // Sai limpo no frame da morte (input.update() acontece em update()).
             state.set('over'); return
-          } else if (result === 'hit' && p.lives < livesBefore) {
-            respawnPlayer(p, level.playerSpawn)
+          } else if (result === 'hit') {
+            // M2 fase B: dano que conecta congela o mundo e chacoalha a camera.
+            hitstop = HITSTOP_FRAMES
+            shakeT = SHAKE_FRAMES
+            if (p.lives < livesBefore) respawnPlayer(p, level.playerSpawn)
           }
         }
       }
@@ -328,6 +366,8 @@ export function createGame(
       // 10) Camera + goal.
       followCamera(cam, p, level)
       if (state.is('playing') && checkGoal(p, level)) {
+        // M2 fase B: pose de vitoria mantida na tela de win (duracao "infinita").
+        triggerOneShot(playerAnim, 'victory', 9999)
         state.set('win')
       }
 
@@ -357,7 +397,14 @@ export function createGame(
     // store pode ser undefined (testes/loading) — drawParallax pula layers sem asset.
     if (store) drawParallax(renderer, SKY_LAYERS, store, cam)
 
-    renderer.beginWorld(cam.x, cam.y)
+    // M2 fase B: screen-shake deterministico enquanto shakeT>0 (offset na camera).
+    let shakeDx = 0
+    let shakeDy = 0
+    if (shakeT > 0) {
+      shakeDx = Math.round(Math.sin(shakeT * 2.7) * SHAKE_PX)
+      shakeDy = Math.round(Math.cos(shakeT * 1.9) * SHAKE_PX * 0.6)
+    }
+    renderer.beginWorld(cam.x + shakeDx, cam.y + shakeDy)
 
     // Tiles visiveis.
     const startCol = Math.max(0, Math.floor(cam.x / TILE))
@@ -398,54 +445,72 @@ export function createGame(
     if (player) {
       drawAbilityFx(renderer, player)
 
-      // M2a: pisca de i-frames — pula o desenho do sprite em frames alternados.
-      const blink = player.iframes > 0 && ((player.iframes >> 2) & 1) === 1
-      if (!blink) {
-        // M2b: frame-a-frame com a arte ORIGINAL do personagem (Artur), se houver.
-        const set = CHAR_ANIMS[player.char.id]
-        const drewFrame =
-          store !== undefined &&
-          set !== undefined &&
-          drawCharFrame(
+      // M2 fase B: sombra de contato ANTES do sprite (vale para TODOS os caminhos).
+      drawContactShadow(
+        renderer,
+        player.x + player.w / 2,
+        player.y + player.h,
+        player.w,
+        player.onGround,
+      )
+
+      // M2 fase B: i-frames = ALPHA alternado (0.45) — NUNCA pular o draw
+      // (a animacao de dano precisa ser vista; contrato §2 regras de exibicao).
+      const ctx = renderer.ctx
+      const dimmed = player.iframes > 0 && ((player.iframes >> 2) & 1) === 1
+      if (dimmed) {
+        ctx.save()
+        ctx.globalAlpha = 0.45
+      }
+
+      // M2b: frame-a-frame com a arte ORIGINAL do personagem (Artur), se houver.
+      const set = CHAR_ANIMS[player.char.id]
+      const drewFrame =
+        store !== undefined &&
+        set !== undefined &&
+        drawCharFrame(
+          renderer,
+          store,
+          set,
+          playerAnim.state,
+          playerAnim.t,
+          player.x + player.w / 2,
+          player.y + player.h,
+          player.facing,
+          // M2 fase B: overlay procedural (respiracao/lean/squash) POR CIMA do frame.
+          getFrameTransform(playerAnim, player),
+        )
+      if (!drewFrame) {
+        // Fallback M2a: arte procedural DO personagem; sem arte propria, placeholder M1.
+        const art = store
+          ? store.get(CHAR_ART_KEYS[player.char.id] ?? 'char.' + player.char.id)
+          : null
+        if (art) {
+          drawAnimatedSprite(
             renderer,
-            store,
-            set,
-            playerAnim.state,
-            playerAnim.t,
+            art,
+            playerAnim,
             player.x + player.w / 2,
             player.y + player.h,
+            player.w,
+            player.h,
+            player.facing,
+            player,
+          )
+        } else {
+          drawPlaceholder(
+            renderer,
+            player.char,
+            player.x,
+            player.y,
+            player.w,
+            player.h,
             player.facing,
           )
-        if (!drewFrame) {
-          // Fallback M2a: arte procedural DO personagem; sem arte propria, placeholder M1.
-          const art = store
-            ? store.get(CHAR_ART_KEYS[player.char.id] ?? 'char.' + player.char.id)
-            : null
-          if (art) {
-            drawAnimatedSprite(
-              renderer,
-              art,
-              playerAnim,
-              player.x + player.w / 2,
-              player.y + player.h,
-              player.w,
-              player.h,
-              player.facing,
-              player,
-            )
-          } else {
-            drawPlaceholder(
-              renderer,
-              player.char,
-              player.x,
-              player.y,
-              player.w,
-              player.h,
-              player.facing,
-            )
-          }
         }
       }
+
+      if (dimmed) ctx.restore()
     }
 
     // (A2) particulas em WORLD SPACE (ex.: burst do Humanware), depois do player.

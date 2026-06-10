@@ -1,11 +1,12 @@
 // src/engine/spriteAnim.ts
 // M2b: animacao FRAME-A-FRAME (sprite-sheets do personagem). Logica pura
-// (frameIndex) + desenho (drawCharFrame). Reusa AnimState/Animator de animator.ts;
-// o procedural do M2a (spriteDraw.ts) permanece como FALLBACK no game.
+// (frameIndex) + desenho (drawCharFrame + drawContactShadow). Reusa
+// AnimState/SpriteTransform de animator.ts; o procedural do M2a
+// (spriteDraw.ts) permanece como FALLBACK no game.
 import { FIXED_DT } from './constants'
 import type { Renderer } from './render'
 import type { AssetStore } from './assets'
-import type { AnimState } from './animator'
+import type { AnimState, SpriteTransform } from './animator'
 
 export interface FrameAnim {
   /** Chave do sprite-sheet no AssetStore. */
@@ -27,8 +28,30 @@ export interface CharAnimSet {
   anchorY: number
   /** Altura desenhada da CELULA na tela (px); o personagem ocupa parte dela. */
   drawH: number
+  /**
+   * Altura do CORPO dentro da celula (px), declarada pelo personagem
+   * (contrato: ~78 na celula 96). Opcional — usada por HUD/sombra/escala.
+   */
+  bodyHpx?: number
   /** Mapeamento estado-de-animacao -> animacao. 'idle' serve de fallback interno. */
   anims: Partial<Record<AnimState, FrameAnim>>
+}
+
+// One-shots sem sheet caem numa animacao "parecida" antes do 'idle' final
+// (contrato 2026-06-09: land->idle, skid->run, cast->idle, victory->jump).
+const ONE_SHOT_FALLBACK: Partial<Record<AnimState, AnimState>> = {
+  land: 'idle',
+  skid: 'run',
+  cast: 'idle',
+  victory: 'jump',
+}
+
+// Cadeia: anims[state] -> anims[fallback do one-shot] -> anims['idle'].
+function pickAnim(set: CharAnimSet, state: AnimState): FrameAnim | undefined {
+  const direct = set.anims[state]
+  if (direct) return direct
+  const fb = ONE_SHOT_FALLBACK[state]
+  return (fb ? set.anims[fb] : undefined) ?? set.anims.idle
 }
 
 /**
@@ -43,11 +66,16 @@ export function frameIndex(fa: FrameAnim, t: number): number {
   return adv < 0 ? 0 : adv >= n ? n - 1 : adv
 }
 
+// Sem tf, drawCharFrame aplica identidade (comportamento de antes).
+const IDENTITY_TF: SpriteTransform = { scaleX: 1, scaleY: 1, rotation: 0, offsetY: 0 }
+
 /**
  * Desenha a celula do frame atual ancorada nos PES do corpo (x = centro
- * horizontal, y = base), espelhada por `facing`. Retorna `false` SEM desenhar
- * quando falta a animacao do estado (e o idle) ou o sheet no store — o game
- * entao faz fallback (procedural/placeholder).
+ * horizontal, y = base), espelhada por `facing`. `tf` (opcional) e o overlay
+ * procedural de getFrameTransform, aplicado em volta do drawImage na MESMA
+ * ordem do spriteDraw.ts: translate -> scale -> rotate. Retorna `false` SEM
+ * desenhar quando falta a animacao do estado (apos os fallbacks) ou o sheet
+ * no store — o game entao faz fallback (procedural/placeholder).
  */
 export function drawCharFrame(
   r: Renderer,
@@ -58,8 +86,9 @@ export function drawCharFrame(
   x: number,
   y: number,
   facing: 1 | -1,
+  tf?: SpriteTransform,
 ): boolean {
-  const fa = set.anims[state] ?? set.anims.idle
+  const fa = pickAnim(set, state)
   if (!fa) return false
   const sheet = store.get(fa.key)
   if (!sheet) return false
@@ -70,10 +99,13 @@ export function drawCharFrame(
   const dh = set.cellH * scale
   const sx = idx * set.cellW
 
+  const T = tf ?? IDENTITY_TF
   const ctx = r.ctx
   ctx.save()
-  ctx.translate(x, y)
-  ctx.scale(facing, 1)
+  // Mesma ordem do spriteDraw.ts: translate (com offsetY) -> scale -> rotate.
+  ctx.translate(x, y + T.offsetY)
+  ctx.scale(facing * T.scaleX, T.scaleY)
+  ctx.rotate(T.rotation)
   // (anchorX, anchorY) da celula cai na origem (pes do corpo).
   ctx.drawImage(
     sheet.src,
@@ -88,4 +120,28 @@ export function drawCharFrame(
   )
   ctx.restore()
   return true
+}
+
+/**
+ * Sombra de contato: elipse preta nos pes. No chao: alpha 0.25 e largura w;
+ * no ar: alpha 0.12 e largura w*0.7 (encolhe). Altura total ~w*0.18.
+ * Chamador desenha ANTES do sprite.
+ */
+export function drawContactShadow(
+  r: Renderer,
+  cx: number,
+  footY: number,
+  w: number,
+  onGround: boolean,
+): void {
+  const ctx = r.ctx
+  const rx = (onGround ? w : w * 0.7) / 2
+  const ry = (w * 0.18) / 2
+  ctx.save()
+  ctx.globalAlpha = onGround ? 0.25 : 0.12
+  ctx.fillStyle = '#000'
+  ctx.beginPath()
+  ctx.ellipse(cx, footY, rx, ry, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
 }

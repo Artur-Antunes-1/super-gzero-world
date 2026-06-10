@@ -14,6 +14,7 @@ describe('ASSET_MANIFEST', () => {
         'char.artur.pulo',
         'char.artur.queda',
         'char.artur.danificado',
+        'char.artur.ataque',
       ].sort(),
     )
   })
@@ -24,6 +25,9 @@ describe('ASSET_MANIFEST', () => {
     expect(ASSET_MANIFEST['bg.cosmic'].url).toBe('/assets/bg/cosmic.png')
     expect(ASSET_MANIFEST['char.artur.corrida'].url).toBe(
       '/assets/chars/artur/corrida.png',
+    )
+    expect(ASSET_MANIFEST['char.artur.ataque'].url).toBe(
+      '/assets/chars/artur/ataque.png',
     )
   })
 
@@ -39,6 +43,7 @@ describe('ASSET_MANIFEST', () => {
       'char.artur.pulo',
       'char.artur.queda',
       'char.artur.danificado',
+      'char.artur.ataque',
     ]) {
       expect(ASSET_MANIFEST[k].chromaKey).toBeUndefined()
     }

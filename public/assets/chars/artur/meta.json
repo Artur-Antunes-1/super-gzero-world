@@ -10,6 +10,7 @@
   "corrida": 4,
   "pulo": 3,
   "queda": 4,
-  "danificado": 3
+  "danificado": 3,
+  "ataque": 4
  }
 }

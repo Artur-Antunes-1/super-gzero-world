@@ -17,6 +17,7 @@ import {
   JUMP_BUFFER_FRAMES,
   START_LIVES,
   IFRAME_FRAMES,
+  HURT_FRAMES,
   KNOCKBACK_VX,
   KNOCKBACK_VY,
 } from '../engine/constants'
@@ -31,6 +32,8 @@ export interface Player extends Body {
   lives: number
   hearts: number
   iframes: number
+  // M2 fase B: timer do estado VISUAL 'hurt' (curto), separado dos i-frames (90f).
+  hurtTimer: number
   ability: AbilityState
 }
 
@@ -50,6 +53,7 @@ export function createPlayer(char: CharacterDef, spawn: SpawnPoint): Player {
     lives: START_LIVES,
     hearts: char.hearts,
     iframes: 0,
+    hurtTimer: 0,
     ability: createAbilityState(char),
   }
 }
@@ -137,6 +141,8 @@ export function damagePlayer(player: Player, fromX: number): 'blocked' | 'hit' |
   // Take damage
   player.hearts -= 1
   player.iframes = IFRAME_FRAMES
+  // M2 fase B: dano que CONECTA ('hit'/'death') liga o estado visual 'hurt'.
+  player.hurtTimer = HURT_FRAMES
   // Knockback: away from the source
   player.vx = player.x < fromX ? -KNOCKBACK_VX : KNOCKBACK_VX
   player.vy = KNOCKBACK_VY
@@ -165,6 +171,7 @@ export function respawnPlayer(player: Player, spawn: SpawnPoint): void {
   player.vy = 0
   player.hearts = player.char.hearts
   player.iframes = IFRAME_FRAMES
+  player.hurtTimer = 0
   player.ability = createAbilityState(player.char)
 }
 
@@ -174,4 +181,5 @@ export function respawnPlayer(player: Player, spawn: SpawnPoint): void {
  */
 export function tickPlayerTimers(player: Player, dt: number): void {
   player.iframes = Math.max(0, player.iframes - dt)
+  player.hurtTimer = Math.max(0, player.hurtTimer - dt)
 }

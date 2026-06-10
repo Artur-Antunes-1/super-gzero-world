@@ -18,6 +18,7 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   'char.artur.pulo': { url: '/assets/chars/artur/pulo.png' },
   'char.artur.queda': { url: '/assets/chars/artur/queda.png' },
   'char.artur.danificado': { url: '/assets/chars/artur/danificado.png' },
+  'char.artur.ataque': { url: '/assets/chars/artur/ataque.png' },
   'bg.sky': { url: '/assets/bg/sky.png' },
   'bg.cosmic': { url: '/assets/bg/cosmic.png' },
 }

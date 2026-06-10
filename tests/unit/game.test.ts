@@ -14,6 +14,11 @@ import {
   COLOR_MAGENTA,
   COLOR_LIME,
   HW_METER_MAX,
+  HURT_FRAMES,
+  CAST_FRAMES,
+  HITSTOP_FRAMES,
+  SHAKE_FRAMES,
+  SHAKE_PX,
 } from '../../src/engine/constants'
 
 // (M2a Task 6) — imports adicionais
@@ -22,6 +27,9 @@ import * as spriteDraw from '../../src/engine/spriteDraw'
 import * as parallax from '../../src/engine/parallax'
 import * as particles from '../../src/engine/particles'
 import * as sprites from '../../src/game/sprites'
+// (M2 fase B) — animator/spriteAnim no contrato B1
+import * as animator from '../../src/engine/animator'
+import * as spriteAnim from '../../src/engine/spriteAnim'
 
 // Mocka os modulos que tocam canvas real (jsdom nao tem 2d de verdade aqui).
 // As fns viram spies; preservamos as fns puras de `particles` que o game usa no update.
@@ -45,6 +53,28 @@ vi.mock('../../src/engine/particles', async (importOriginal) => {
 vi.mock('../../src/game/sprites', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/game/sprites')>()
   return { ...actual, drawPlaceholder: vi.fn(actual.drawPlaceholder) }
+})
+// (M2 fase B) animator MOCKADO no formato do contrato B1 (one-shots/landed/transform):
+// os testes de integracao do game nao dependem do timing da implementacao real.
+vi.mock('../../src/engine/animator', () => ({
+  createAnimator: vi.fn(() => ({
+    state: 'idle',
+    t: 0,
+    oneShot: null,
+    oneShotT: 0,
+    oneShotDur: 0,
+    prevOnGround: false,
+  })),
+  classifyAnim: vi.fn(() => 'idle'),
+  updateAnimator: vi.fn(() => ({ landed: false })),
+  getTransform: vi.fn(() => ({ scaleX: 1, scaleY: 1, rotation: 0, offsetY: 0 })),
+  getFrameTransform: vi.fn(() => ({ scaleX: 1, scaleY: 1, rotation: 0, offsetY: 0 })),
+  triggerOneShot: vi.fn(),
+}))
+// drawContactShadow vira spy puro; drawCharFrame continua REAL (cascata M2b testada).
+vi.mock('../../src/engine/spriteAnim', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/engine/spriteAnim')>()
+  return { ...actual, drawContactShadow: vi.fn() }
 })
 
 // ---------- FakeInput canonico (igual ao de player.test.ts) ----------
@@ -70,21 +100,30 @@ class FakeInput implements Input {
 }
 
 // ---------- Fake Renderer minimo ----------
+// save/restore emulam a pilha de globalAlpha (necessario p/ o teste de i-frames).
 function makeRenderer(): Renderer {
-  const ctx = {
-    save: vi.fn(),
-    restore: vi.fn(),
+  const alphaStack: number[] = []
+  const ctxObj: Record<string, unknown> & { globalAlpha: number } = {
     fillRect: vi.fn(),
     fillText: vi.fn(),
     translate: vi.fn(),
     scale: vi.fn(),
+    rotate: vi.fn(),
     drawImage: vi.fn(),
     imageSmoothingEnabled: false,
+    globalAlpha: 1,
     font: '',
     textAlign: '',
     textBaseline: '',
     fillStyle: '',
-  } as unknown as CanvasRenderingContext2D
+  }
+  ctxObj.save = vi.fn(() => {
+    alphaStack.push(ctxObj.globalAlpha)
+  })
+  ctxObj.restore = vi.fn(() => {
+    ctxObj.globalAlpha = alphaStack.pop() ?? 1
+  })
+  const ctx = ctxObj as unknown as CanvasRenderingContext2D
   return {
     ctx,
     clear: vi.fn(),
@@ -136,6 +175,25 @@ function selectArtur(game: ReturnType<typeof createGame>, input: FakeInput): voi
     game.update(1)
   }
   // Confirma a selecao.
+  input.set('confirm', true)
+  game.update(1)
+  input.set('confirm', false)
+  game.update(1)
+}
+
+// (M2 fase B) Inimigo junto ao spawn pode acertar o player JA durante o select
+// (frame de confirm) — isso arma o hitstop e congelaria o proximo update do teste.
+// Drena o hitstop incidental antes de configurar o cenario.
+function drainHitstop(game: ReturnType<typeof createGame>): void {
+  for (let i = 0; i < HITSTOP_FRAMES; i++) game.update(1)
+}
+
+// Navega para 'dante' (index 1, dash_criativo) e confirma.
+function selectDante(game: ReturnType<typeof createGame>, input: FakeInput): void {
+  input.set('right', true)
+  game.update(1)
+  input.set('right', false)
+  game.update(1)
   input.set('confirm', true)
   game.update(1)
   input.set('confirm', false)
@@ -210,6 +268,7 @@ describe('createGame — playing', () => {
     const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
     const p = game.player!
     // Forca a beira da morte: 1 life, 1 heart, sem i-frames, sem vy (nao e stomp).
     p.lives = 1
@@ -228,6 +287,7 @@ describe('createGame — playing', () => {
     const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
     const p = game.player!
     p.lives = 2
     p.hearts = 1
@@ -246,6 +306,7 @@ describe('createGame — playing', () => {
     const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
     const p = game.player!
     p.lives = 3
     p.hearts = 3
@@ -401,6 +462,7 @@ describe('createGame — reset', () => {
     const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
     const p = game.player!
     p.lives = 1; p.hearts = 1; p.iframes = 0; p.vy = 0
     p.x = 2 * TILE; p.y = 8 * TILE + (TILE - 34)
@@ -456,6 +518,7 @@ describe("createGame — reset limpa estado M2a (particulas/animacao/hwWasActive
     const game = createGame(renderer, input, level, makeStore())
 
     selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
     const p = game.player!
     p.lives = 1; p.hearts = 1; p.iframes = 0; p.vy = 0
     p.x = 2 * TILE; p.y = 8 * TILE + (TILE - 34)
@@ -663,21 +726,31 @@ describe('createGame — integracao M2a (animacao)', () => {
     expect(particles.drawParticlesWorld).not.toHaveBeenCalled()
   })
 
-  it("i-frames: piscar pula o desenho do sprite em frames alternados", () => {
+  it("i-frames: alpha 0.45 em frames alternados, NUNCA pula o draw, e restaura depois", () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     const game = createGame(renderer, input, makeLevel(), makeStore())
     selectArtur(game, input)
     const p = game.player!
-    // iframes com bit (iframes>>2)&1 == 1 -> NAO desenha
+    // Captura o globalAlpha NO MOMENTO do draw do sprite.
+    let alphaAtDraw = -1
+    vi.mocked(spriteDraw.drawAnimatedSprite).mockImplementation((r: Renderer) => {
+      alphaAtDraw = r.ctx.globalAlpha
+    })
+    // iframes com bit (iframes>>2)&1 == 1 -> desenha COM alpha 0.45
     p.iframes = 4 // (4>>2)&1 = 1
     game.render(0)
-    expect(spriteDraw.drawAnimatedSprite).not.toHaveBeenCalled()
-    // iframes com bit 0 -> desenha
+    expect(spriteDraw.drawAnimatedSprite).toHaveBeenCalledTimes(1)
+    expect(alphaAtDraw).toBeCloseTo(0.45, 5)
+    // alpha restaurado apos o draw (save/restore)
+    expect(renderer.ctx.globalAlpha).toBe(1)
+    // iframes com bit 0 -> desenha com alpha cheio
     vi.clearAllMocks()
     p.iframes = 8 // (8>>2)&1 = 0
     game.render(0)
     expect(spriteDraw.drawAnimatedSprite).toHaveBeenCalledTimes(1)
+    expect(alphaAtDraw).toBe(1)
+    vi.mocked(spriteDraw.drawAnimatedSprite).mockReset()
   })
 
   it("update no estado playing nao lanca com store presente", () => {
@@ -737,5 +810,283 @@ describe('createGame — arte por personagem (M2b)', () => {
     expect(game.state.get()).toBe('select')
     game.render(0)
     expect(renderer.ctx.drawImage).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ============================================================================
+// (M2 fase B) hurt separado, hitstop, shake, cast, victory, sombra, animator
+// ============================================================================
+
+describe('createGame — M2 fase B: updateAnimator recebe hurtTimer', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('updateAnimator e chamado com p.hurtTimer (e NAO com p.iframes)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel())
+    selectFirst(game, input)
+    const p = game.player!
+    p.hurtTimer = 7
+    p.iframes = 50 // valor diferente para flagrar regressao
+    vi.clearAllMocks()
+    game.update(1)
+    const spy = vi.mocked(animator.updateAnimator)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0][1]).toBe(p)
+    expect(spy.mock.calls[0][2]).toBe(7) // hurtTimer no momento da chamada
+    expect(spy.mock.calls[0][3]).toBe(1) // dt
+    // tickPlayerTimers decrementa DEPOIS da chamada
+    expect(p.hurtTimer).toBe(6)
+  })
+})
+
+describe('createGame — M2 fase B: hitstop', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('dano "hit" congela o mundo por HITSTOP_FRAMES updates e depois expira', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
+    const p = game.player!
+    p.lives = 3
+    p.hearts = 3
+    p.iframes = 0
+    p.vy = 0
+    p.x = 2 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1) // frame do dano -> hitstop armado
+    expect(game.state.get()).toBe('playing')
+    expect(p.hearts).toBe(2) // o hit conectou
+    expect(p.hurtTimer).toBe(HURT_FRAMES - 1) // setado no dano, 1 tick no mesmo frame
+
+    const e = game.enemies[0]
+    const ex = e.x
+    const px = p.x
+    // HITSTOP_FRAMES updates congelados: nada se move.
+    for (let i = 0; i < HITSTOP_FRAMES; i++) {
+      game.update(1)
+      expect(e.x).toBe(ex)
+      expect(p.x).toBe(px)
+    }
+    // Expirou: mundo volta a rodar (inimigo anda).
+    game.update(1)
+    expect(e.x).not.toBe(ex)
+  })
+})
+
+describe('createGame — M2 fase B: screen-shake', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('apos "hit", beginWorld recebe cam+offset deterministico; expira e volta a (0,0)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
+    const p = game.player!
+    p.lives = 3
+    p.hearts = 3
+    p.iframes = 0
+    p.vy = 0
+    p.x = 2 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1) // hit -> shakeT = SHAKE_FRAMES (cam fica em (0,0) perto do spawn)
+
+    vi.mocked(renderer.beginWorld).mockClear()
+    game.render(0)
+    const dx = Math.round(Math.sin(SHAKE_FRAMES * 2.7) * SHAKE_PX)
+    const dy = Math.round(Math.cos(SHAKE_FRAMES * 1.9) * SHAKE_PX * 0.6)
+    expect(Math.abs(dx) + Math.abs(dy)).toBeGreaterThan(0) // sanity: offset real
+    expect(renderer.beginWorld).toHaveBeenCalledWith(0 + dx, 0 + dy)
+
+    // Consome hitstop + shake; sem offset depois de expirar.
+    for (let i = 0; i < HITSTOP_FRAMES + SHAKE_FRAMES; i++) game.update(1)
+    vi.mocked(renderer.beginWorld).mockClear()
+    game.render(0)
+    expect(renderer.beginWorld).toHaveBeenCalledWith(0, 0)
+  })
+
+  it('resetToSelect zera shake/hitstop: nova rodada renderiza sem offset', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    // Inimigo LONGE do spawn (a nova rodada nao pode tomar dano de novo).
+    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.lives = 3
+    p.hearts = 3
+    p.iframes = 0
+    p.vy = 0
+    p.x = 20 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1) // hit -> shakeT/hitstop armados
+    for (let i = 0; i < HITSTOP_FRAMES; i++) game.update(1) // consome hitstop
+    // Vai ao goal com shake ainda ativo -> win.
+    p.x = level.goal.x
+    p.y = level.goal.y
+    p.vx = 0
+    p.vy = 0
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    // Confirm -> select -> nova rodada.
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    game.update(1)
+    expect(game.state.get()).toBe('select')
+    selectFirst(game, input)
+    game.update(1) // followCamera com player no spawn -> cam=(0,0)
+    vi.mocked(renderer.beginWorld).mockClear()
+    game.render(0)
+    expect(renderer.beginWorld).toHaveBeenCalledWith(0, 0)
+  })
+})
+
+describe('createGame — M2 fase B: cast one-shot', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('builder (artur): ativar a habilidade dispara triggerOneShot("cast", CAST_FRAMES) uma vez', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel())
+    selectArtur(game, input)
+    const spy = vi.mocked(animator.triggerOneShot)
+    vi.clearAllMocks()
+
+    game.update(1) // sem apertar: nada
+    expect(spy).not.toHaveBeenCalled()
+
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0][1]).toBe('cast')
+    expect(spy.mock.calls[0][2]).toBe(CAST_FRAMES)
+
+    // Reapertar em cooldown NAO redispara.
+    game.update(1)
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('dash (dante): dispara na ATIVACAO e nao redispara quando o dash termina', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel())
+    selectDante(game, input)
+    const spy = vi.mocked(animator.triggerOneShot)
+    vi.clearAllMocks()
+
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0][1]).toBe('cast')
+
+    // Dash dura dashFrames e ao terminar ARMA cooldown — nao pode redisparar cast.
+    for (let i = 0; i < 20; i++) game.update(1)
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('salto visionario (renan): pulo aereo dispara cast (sinal = airJumps consumido)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel())
+    selectFirst(game, input) // renan
+    const p = game.player!
+    // Poe o player no ar (longe do chao).
+    p.y = 5 * TILE
+    p.vy = 0
+    p.onGround = false
+    const spy = vi.mocked(animator.triggerOneShot)
+    vi.clearAllMocks()
+
+    input.set('ability', true)
+    game.update(1)
+    input.set('ability', false)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0][1]).toBe('cast')
+    expect(spy.mock.calls[0][2]).toBe(CAST_FRAMES)
+  })
+})
+
+describe('createGame — M2 fase B: victory one-shot', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('tocar o goal dispara triggerOneShot("victory", 9999) junto com state win', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel()
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.x = level.goal.x
+    p.y = level.goal.y
+    vi.clearAllMocks()
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    const spy = vi.mocked(animator.triggerOneShot)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0][1]).toBe('victory')
+    expect(spy.mock.calls[0][2]).toBe(9999)
+  })
+})
+
+describe('createGame — M2 fase B: sombra de contato', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('drawContactShadow e chamado ANTES do sprite (caminho procedural)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore())
+    selectArtur(game, input)
+    const p = game.player!
+    vi.clearAllMocks()
+    game.render(0)
+    const shadow = vi.mocked(spriteAnim.drawContactShadow)
+    expect(shadow).toHaveBeenCalledTimes(1)
+    const call = shadow.mock.calls[0]
+    // drawContactShadow(r, cx, footY, w, onGround)
+    expect(call[1]).toBe(p.x + p.w / 2)
+    expect(call[2]).toBe(p.y + p.h)
+    expect(call[3]).toBe(p.w)
+    expect(call[4]).toBe(p.onGround)
+    // Ordem: sombra antes do sprite.
+    expect(shadow.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(spriteDraw.drawAnimatedSprite).mock.invocationCallOrder[0],
+    )
+  })
+
+  it('drawContactShadow tambem no caminho placeholder (sem store)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel()) // sem store
+    selectFirst(game, input) // renan, sem arte
+    vi.clearAllMocks()
+    game.render(0)
+    const shadow = vi.mocked(spriteAnim.drawContactShadow)
+    expect(shadow).toHaveBeenCalledTimes(1)
+    expect(shadow.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(sprites.drawPlaceholder).mock.invocationCallOrder[0],
+    )
   })
 })
