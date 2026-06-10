@@ -6,7 +6,6 @@ import {
   abilityWorldScale,
   abilityHasShield,
   abilityConsumeShield,
-  abilityIFramesOnHit,
   abilityKillsEnemy,
   abilityBuilderTile,
   drawAbilityFx,
@@ -151,7 +150,8 @@ describe('updateAbility — dash_criativo', () => {
     expect(p.vx).toBeCloseTo(ABILITY_PARAMS.dash_criativo.dashSpeed ?? 0, 5)
     expect(p.ability.active).toBe(true)
     expect(p.ability.timer).toBeGreaterThan(0)
-    expect(abilityIFramesOnHit(p)).toBe(true)
+    // i-frames concedidos diretamente em player.iframes (abilityIFramesOnHit removido — A2)
+    expect(p.iframes).toBeGreaterThan(0)
     expect(abilityKillsEnemy(p)).toBe(true)
   })
 
@@ -161,7 +161,7 @@ describe('updateAbility — dash_criativo', () => {
     expect(p.vx).toBeCloseTo(-(ABILITY_PARAMS.dash_criativo.dashSpeed ?? 0), 5)
   })
 
-  it('ao terminar dashFrames: active=false e cooldown=24; depois i-frames/kill ficam false', () => {
+  it('ao terminar dashFrames: active=false e cooldown=24; depois kill fica false', () => {
     const p = makePlayer('dash_criativo')
     input.set('ability', true); updateAbility(p, input, 1, ctx); input.update()
     input.set('ability', false)
@@ -170,7 +170,6 @@ describe('updateAbility — dash_criativo', () => {
     for (let i = 0; i < frames; i++) { updateAbility(p, input, 1, ctx); input.update() }
     expect(p.ability.active).toBe(false)
     expect(p.ability.cooldown).toBe(ABILITY_PARAMS.dash_criativo.cooldown)
-    expect(abilityIFramesOnHit(p)).toBe(false)
     expect(abilityKillsEnemy(p)).toBe(false)
   })
 

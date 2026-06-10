@@ -6,6 +6,7 @@ import {
   emitBurst,
   updateParticles,
   drawParticles,
+  drawParticlesWorld,
   type ParticleSystem,
   type Particle,
 } from '../../src/engine/particles'
@@ -63,12 +64,30 @@ describe('emitBurst', () => {
     expect(ps.particles.length).toBe(5)
     for (const p of ps.particles) expect(typeof p.color).toBe('string')
   })
+
+  it('sem o parametro space, as particulas nascem em screen space (default)', () => {
+    const ps = createParticles()
+    emitBurst(ps, 0, 0, 6, [COLOR_MAGENTA])
+    for (const p of ps.particles) expect(p.space).toBe('screen')
+  })
+
+  it("com space='world', as particulas nascem em world space", () => {
+    const ps = createParticles()
+    emitBurst(ps, 0, 0, 6, [COLOR_MAGENTA], 'world')
+    for (const p of ps.particles) expect(p.space).toBe('world')
+  })
+
+  it("com space='screen' explicito, as particulas nascem em screen space", () => {
+    const ps = createParticles()
+    emitBurst(ps, 0, 0, 6, [COLOR_MAGENTA], 'screen')
+    for (const p of ps.particles) expect(p.space).toBe('screen')
+  })
 })
 
 describe('updateParticles', () => {
   it('integra posicao: x+=vx*dt, y+=vy*dt', () => {
     const ps = createParticles()
-    ps.particles.push({ x: 10, y: 20, vx: 4, vy: -2, life: 60, maxLife: 60, color: '#fff', size: 3 })
+    ps.particles.push({ x: 10, y: 20, vx: 4, vy: -2, life: 60, maxLife: 60, color: '#fff', size: 3, space: 'screen' })
     updateParticles(ps, 1)
     expect(ps.particles[0].x).toBeCloseTo(14, 5)
     expect(ps.particles[0].y).toBeCloseTo(18, 5)
@@ -76,7 +95,7 @@ describe('updateParticles', () => {
 
   it('escala o passo por dt (dt=0.5 move metade)', () => {
     const ps = createParticles()
-    ps.particles.push({ x: 0, y: 0, vx: 10, vy: 10, life: 60, maxLife: 60, color: '#fff', size: 3 })
+    ps.particles.push({ x: 0, y: 0, vx: 10, vy: 10, life: 60, maxLife: 60, color: '#fff', size: 3, space: 'world' })
     updateParticles(ps, 0.5)
     expect(ps.particles[0].x).toBeCloseTo(5, 5)
     expect(ps.particles[0].y).toBeCloseTo(5, 5)
@@ -84,15 +103,15 @@ describe('updateParticles', () => {
 
   it('decrementa life em dt', () => {
     const ps = createParticles()
-    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 10, maxLife: 10, color: '#fff', size: 3 })
+    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 10, maxLife: 10, color: '#fff', size: 3, space: 'screen' })
     updateParticles(ps, 3)
     expect(ps.particles[0].life).toBeCloseTo(7, 5)
   })
 
   it('remove particulas com life<=0', () => {
     const ps = createParticles()
-    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 2, maxLife: 10, color: '#fff', size: 3 })
-    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 9, maxLife: 10, color: '#fff', size: 3 })
+    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 2, maxLife: 10, color: '#fff', size: 3, space: 'screen' })
+    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 9, maxLife: 10, color: '#fff', size: 3, space: 'world' })
     updateParticles(ps, 2) // primeira chega a 0 -> removida; segunda fica em 7
     expect(ps.particles.length).toBe(1)
     expect(ps.particles[0].life).toBeCloseTo(7, 5)
@@ -137,6 +156,13 @@ describe('emitAmbient', () => {
       expect(p.maxLife).toBeGreaterThan(0)
     }
   })
+
+  it('poeira ambiente continua nascendo em screen space', () => {
+    const ps = createParticles()
+    for (let i = 0; i < 100; i++) emitAmbient(ps, 960, 528, 1)
+    expect(ps.particles.length).toBeGreaterThan(0)
+    for (const p of ps.particles) expect(p.space).toBe('screen')
+  })
 })
 
 function makeCtxStub() {
@@ -176,14 +202,14 @@ describe('drawParticles', () => {
 
   it('restaura globalAlpha para 1 ao terminar', () => {
     const ps = createParticles()
-    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 5, maxLife: 10, color: COLOR_LIME, size: 3 })
+    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 5, maxLife: 10, color: COLOR_LIME, size: 3, space: 'screen' })
     drawParticles(r, ps)
     expect(ctx.globalAlpha).toBe(1)
   })
 
   it('passa a cor da particula como 5o argumento de drawRect', () => {
     const ps = createParticles()
-    ps.particles.push({ x: 12, y: 34, vx: 0, vy: 0, life: 5, maxLife: 10, color: COLOR_MAGENTA, size: 4 })
+    ps.particles.push({ x: 12, y: 34, vx: 0, vy: 0, life: 5, maxLife: 10, color: COLOR_MAGENTA, size: 4, space: 'screen' })
     drawParticles(r, ps)
     const call = (r.drawRect as ReturnType<typeof vi.fn>).mock.calls[0]
     expect(call[4]).toBe(COLOR_MAGENTA)
@@ -191,7 +217,7 @@ describe('drawParticles', () => {
 
   it('ajusta globalAlpha = life/maxLife durante o desenho de cada particula', () => {
     const ps = createParticles()
-    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 5, maxLife: 10, color: COLOR_LIME, size: 3 })
+    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 5, maxLife: 10, color: COLOR_LIME, size: 3, space: 'screen' })
     const seen: number[] = []
     ;(r.drawRect as ReturnType<typeof vi.fn>).mockImplementation(() => {
       seen.push(ctx.globalAlpha)
@@ -199,6 +225,61 @@ describe('drawParticles', () => {
     drawParticles(r, ps)
     expect(seen[0]).toBeCloseTo(0.5, 5) // 5/10
     expect(ctx.globalAlpha).toBe(1) // restaurado no fim
+  })
+
+  it("desenha SOMENTE as particulas de space 'screen' (ignora world)", () => {
+    const ps = createParticles()
+    emitBurst(ps, 10, 10, 3, [COLOR_MAGENTA], 'screen')
+    emitBurst(ps, 20, 20, 5, [COLOR_LIME], 'world')
+    drawParticles(r, ps)
+    expect((r.drawRect as ReturnType<typeof vi.fn>).mock.calls.length).toBe(3)
+  })
+})
+
+describe('drawParticlesWorld', () => {
+  let ctx: ReturnType<typeof makeCtxStub>
+  let r: Renderer
+  beforeEach(() => {
+    ctx = makeCtxStub()
+    r = makeRenderer(ctx)
+  })
+
+  it("desenha SOMENTE as particulas de space 'world' (ignora screen)", () => {
+    const ps = createParticles()
+    emitBurst(ps, 10, 10, 3, [COLOR_MAGENTA], 'screen')
+    emitBurst(ps, 20, 20, 5, [COLOR_LIME], 'world')
+    drawParticlesWorld(r, ps)
+    expect((r.drawRect as ReturnType<typeof vi.fn>).mock.calls.length).toBe(5)
+  })
+
+  it('lista vazia: nenhum drawRect', () => {
+    const ps = createParticles()
+    drawParticlesWorld(r, ps)
+    expect(r.drawRect as ReturnType<typeof vi.fn>).not.toHaveBeenCalled()
+  })
+
+  it('desenha em coordenadas de MUNDO (sem subtrair camera) e restaura globalAlpha', () => {
+    const ps = createParticles()
+    ps.particles.push({ x: 500, y: 300, vx: 0, vy: 0, life: 5, maxLife: 10, color: COLOR_MAGENTA, size: 4, space: 'world' })
+    drawParticlesWorld(r, ps)
+    const call = (r.drawRect as ReturnType<typeof vi.fn>).mock.calls[0]
+    // centrado na particula: x - size/2, y - size/2
+    expect(call[0]).toBeCloseTo(500 - 2, 5)
+    expect(call[1]).toBeCloseTo(300 - 2, 5)
+    expect(call[4]).toBe(COLOR_MAGENTA)
+    expect(ctx.globalAlpha).toBe(1)
+  })
+
+  it('ajusta globalAlpha = life/maxLife durante o desenho', () => {
+    const ps = createParticles()
+    ps.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 5, maxLife: 10, color: COLOR_LIME, size: 3, space: 'world' })
+    const seen: number[] = []
+    ;(r.drawRect as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      seen.push(ctx.globalAlpha)
+    })
+    drawParticlesWorld(r, ps)
+    expect(seen[0]).toBeCloseTo(0.5, 5)
+    expect(ctx.globalAlpha).toBe(1)
   })
 })
 

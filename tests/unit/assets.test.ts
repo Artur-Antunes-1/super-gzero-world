@@ -63,8 +63,14 @@ class FakeImage {
   private _src = ''
   set src(v: string) {
     this._src = v
-    // resolve de forma assincrona, como o browser
-    queueMicrotask(() => this.onload && this.onload())
+    // resolve de forma assincrona, como o browser; URLs com "fail" disparam onerror
+    queueMicrotask(() => {
+      if (v.includes('fail')) {
+        this.onerror && this.onerror(new Error('404 simulado'))
+      } else {
+        this.onload && this.onload()
+      }
+    })
   }
   get src(): string {
     return this._src
@@ -150,5 +156,55 @@ describe('loadImage / loadAssets (Image mockada)', () => {
   it('store.get retorna null para chave ausente', async () => {
     const store = await loadAssets({ a: { url: '/assets/a.png' } })
     expect(store.get('zzz')).toBeNull()
+  })
+
+  // ---- Robustez: allSettled (falha isolada nao derruba o boot) ----
+
+  it('loadAssets resolve mesmo com 1 asset falhando; os outros ficam no store', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = await loadAssets({
+      ok: { url: '/assets/ok.png' },
+      ruim: { url: '/assets/fail.png' },
+      tambem: { url: '/assets/tambem.png', chromaKey: true },
+    })
+    expect(store.ready).toBe(true)
+    expect(store.get('ok')).not.toBeNull()
+    expect(store.get('tambem')).not.toBeNull()
+    // key que falhou fica ausente -> get retorna null
+    expect(store.get('ruim')).toBeNull()
+    // warn no formato do contrato
+    expect(warn).toHaveBeenCalledWith('[assets] falhou: ruim (/assets/fail.png)')
+  })
+
+  it('loadAssets NUNCA rejeita, mesmo com todos os assets falhando', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = await loadAssets({
+      a: { url: '/assets/fail-a.png' },
+      b: { url: '/assets/fail-b.png' },
+    })
+    expect(store.ready).toBe(true)
+    expect(store.get('a')).toBeNull()
+    expect(store.get('b')).toBeNull()
+  })
+
+  // ---- Robustez: excecao no chroma-key -> resolve com a Image crua ----
+
+  it('chroma-key com excecao em getImageData resolve com a Image crua', async () => {
+    createdCanvasCtx.getImageData.mockImplementation(() => {
+      throw new Error('SecurityError simulada (canvas tainted)')
+    })
+    const asset = await loadImage({ url: '/assets/x.png', chromaKey: true })
+    // fallback: src e a Image crua (sem chroma), nao o canvas
+    expect((asset.src as unknown) instanceof FakeImage).toBe(true)
+    expect(asset.w).toBe(4)
+    expect(asset.h).toBe(2)
+  })
+
+  it('chroma-key com excecao em drawImage resolve com a Image crua', async () => {
+    createdCanvasCtx.drawImage.mockImplementation(() => {
+      throw new Error('drawImage explodiu')
+    })
+    const asset = await loadImage({ url: '/assets/x.png', chromaKey: true })
+    expect((asset.src as unknown) instanceof FakeImage).toBe(true)
   })
 })

@@ -14,12 +14,14 @@ export interface Body {
 // Tiles sólidos por todos os lados.
 // Deliberadamente exclui 'spike' e 'goal': esses tipos disparam eventos de jogo
 // (dano / vitória), não paredes físicas, e são tratados pelo loop de lógica, não aqui.
-function isFullSolid(t: TileType): boolean {
+// Exportado: fonte única (enemy.ts importa daqui — A2).
+export function isFullSolid(t: TileType): boolean {
   return t === 'ground' || t === 'brick' || t === 'block'
 }
 
 // Lê o tile em coordenadas de grade; fora dos limites => 'empty'.
-function tileAt(level: ParsedLevel, tx: number, ty: number): TileType {
+// Exportado: fonte única (enemy.ts importa daqui — A2).
+export function tileAt(level: ParsedLevel, tx: number, ty: number): TileType {
   if (tx < 0 || ty < 0 || tx >= level.widthTiles || ty >= level.heightTiles) {
     return 'empty'
   }

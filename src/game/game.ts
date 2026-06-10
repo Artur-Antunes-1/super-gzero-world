@@ -72,6 +72,7 @@ import {
   emitBurst,
   updateParticles,
   drawParticles,
+  drawParticlesWorld,
 } from '../engine/particles'
 import { drawParallax } from '../engine/parallax'
 import { drawAnimatedSprite } from '../engine/spriteDraw'
@@ -90,8 +91,7 @@ function tileColor(t: TileType): string {
       return COLOR_SURFACE
     case 'platform':
       return '#2a2a32'
-    case 'goal':
-      return COLOR_MAGENTA
+    // (A2) case 'goal' removido: inalcancavel — o parser mapeia G para empty.
     default:
       return COLOR_BG
   }
@@ -113,6 +113,8 @@ export interface Game {
   state: ReturnType<typeof createStateMachine>
   player: Player | null
   enemies: Enemy[]
+  // (A2) estado interno do Humanware — contrato com A1 (main.ts le game.humanware).
+  humanware: HumanwareState
 }
 
 interface CoinEntity {
@@ -218,7 +220,13 @@ export function createGame(
     state.set('select')
   }
 
+  // (A2) update = corpo (updateInner) + input.update() UMA unica vez no fim.
   function update(dt: number): void {
+    updateInner(dt)
+    input.update()
+  }
+
+  function updateInner(dt: number): void {
     if (state.is('select')) {
       const picked = updateSelect(sel, input, chars)
       if (picked) {
@@ -230,7 +238,6 @@ export function createGame(
         coinCount = 0
         state.set('playing')
       }
-      input.update()
       return
     }
 
@@ -250,10 +257,10 @@ export function createGame(
       updateAnimator(playerAnim, p, p.iframes, dt)
       emitAmbient(ps, VIEW_W, VIEW_H, dt)
       // Burst no frame em que o Humanware ACABOU de ativar (borda de subida).
-      // Usa coordenadas de TELA (screen space) para consistencia com drawParticles.
+      // (A2) Emitido em COORDENADAS DE MUNDO — desenhado por drawParticlesWorld.
       const hwActiveNow = isActive(hw)
       if (hwActiveNow && !hwWasActive) {
-        emitBurst(ps, p.x - cam.x, (p.y - 30) - cam.y, 24, [COLOR_MAGENTA, COLOR_LIME])
+        emitBurst(ps, p.x + p.w / 2, p.y - 30, 24, [COLOR_MAGENTA, COLOR_LIME], 'world')
       }
       hwWasActive = hwActiveNow
       updateParticles(ps, dt)
@@ -286,8 +293,8 @@ export function createGame(
           const livesBefore = p.lives
           const result = damagePlayer(p, e.x)
           if (result === 'death') {
-            // Sai limpo no frame da morte: input consumido uma vez, sem continuar o frame.
-            state.set('over'); input.update(); return
+            // Sai limpo no frame da morte (input.update() acontece em update()).
+            state.set('over'); return
           } else if (result === 'hit' && p.lives < livesBefore) {
             respawnPlayer(p, level.playerSpawn)
           }
@@ -324,7 +331,6 @@ export function createGame(
         state.set('win')
       }
 
-      input.update()
       return
     }
 
@@ -332,12 +338,10 @@ export function createGame(
       if (input.pressed('confirm')) {
         resetToSelect()
       }
-      input.update()
       return
     }
 
-    // Qualquer outro estado: consome edges.
-    input.update()
+    // Qualquer outro estado: nada a fazer (edges consumidos em update()).
   }
 
   function render(_alpha: number): void {
@@ -444,6 +448,9 @@ export function createGame(
       }
     }
 
+    // (A2) particulas em WORLD SPACE (ex.: burst do Humanware), depois do player.
+    drawParticlesWorld(renderer, ps)
+
     renderer.endWorld()
 
     // M2a: particulas em SCREEN SPACE, por cima do mundo, antes do HUD.
@@ -500,6 +507,9 @@ export function createGame(
     },
     get enemies() {
       return enemies
+    },
+    get humanware() {
+      return hw
     },
   }
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { GRAVITY, MAX_FALL, TILE } from '../../src/engine/constants'
 import type { ParsedLevel, TileType } from '../../src/data/schema'
-import { stepBody, collideTiles, type Body } from '../../src/engine/physics'
+import { stepBody, collideTiles, isFullSolid, tileAt, type Body } from '../../src/engine/physics'
 
 // Constrói um ParsedLevel mínimo a partir de um mapa ASCII só com os tiles
 // que esta task exercita: '#'=ground, 'B'=brick, '?'=block, '='=platform, '.'/' '=empty.
@@ -119,6 +119,39 @@ describe('stepBody — gravityScale (weightMul)', () => {
     for (let i = 0; i < 1000; i++) stepBody(body, level, 1, 1.08)
 
     expect(body.vy).toBeCloseTo(MAX_FALL, 5)
+  })
+})
+
+// A2: isFullSolid e tileAt agora exportados (fonte única; enemy.ts importa daqui).
+describe('isFullSolid (exportado)', () => {
+  it('true para ground/brick/block', () => {
+    expect(isFullSolid('ground')).toBe(true)
+    expect(isFullSolid('brick')).toBe(true)
+    expect(isFullSolid('block')).toBe(true)
+  })
+
+  it('false para empty/platform/spike/goal', () => {
+    expect(isFullSolid('empty')).toBe(false)
+    expect(isFullSolid('platform')).toBe(false)
+    expect(isFullSolid('spike')).toBe(false)
+    expect(isFullSolid('goal')).toBe(false)
+  })
+})
+
+describe('tileAt (exportado)', () => {
+  it('le o tile em coordenadas de grade', () => {
+    const level = makeLevel(['.B', '##'])
+    expect(tileAt(level, 0, 0)).toBe('empty')
+    expect(tileAt(level, 1, 0)).toBe('brick')
+    expect(tileAt(level, 0, 1)).toBe('ground')
+  })
+
+  it("fora dos limites => 'empty' (nas 4 direcoes)", () => {
+    const level = makeLevel(['##', '##'])
+    expect(tileAt(level, -1, 0)).toBe('empty')
+    expect(tileAt(level, 0, -1)).toBe('empty')
+    expect(tileAt(level, 2, 0)).toBe('empty')
+    expect(tileAt(level, 0, 2)).toBe('empty')
   })
 })
 

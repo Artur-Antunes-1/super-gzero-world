@@ -1,7 +1,9 @@
 // src/game/enemy.ts
 import type { Body } from '../engine/physics'
-import { stepBody } from '../engine/physics'
-import type { ParsedLevel, TileType } from '../data/schema'
+// isFullSolid/tileAt: fonte única no physics.ts (A2 — duplicatas locais removidas).
+// Nota: platform e one-way e NAO conta como piso para deteccao de borda do tolo.
+import { stepBody, isFullSolid, tileAt } from '../engine/physics'
+import type { ParsedLevel } from '../data/schema'
 import type { Renderer } from '../engine/render'
 import type { Player } from './player'
 import {
@@ -19,20 +21,6 @@ export interface Enemy extends Body {
   dir: 1 | -1
   alive: boolean
   frozen: boolean
-}
-
-// Solidos M0 (mesma definicao do physics.ts): ground/brick/block.
-// platform e one-way e NAO conta como piso para deteccao de borda do tolo.
-function isFullSolid(t: TileType): boolean {
-  return t === 'ground' || t === 'brick' || t === 'block'
-}
-
-// Le o tile em coordenadas de grade; fora dos limites => 'empty'.
-function tileAt(level: ParsedLevel, tx: number, ty: number): TileType {
-  if (tx < 0 || ty < 0 || tx >= level.widthTiles || ty >= level.heightTiles) {
-    return 'empty'
-  }
-  return level.tiles[ty][tx]
 }
 
 // Cria os inimigos a partir de level.enemies. fool|enemy -> Enemy kind 'tolo'.

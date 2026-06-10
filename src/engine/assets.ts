@@ -40,6 +40,8 @@ export function chromaKeyPixels(data: Uint8ClampedArray): void {
 
 // Carrega UMA entrada. Se chromaKey, desenha num canvas offscreen e torna os
 // pixels off-white transparentes; ImageAsset.src = esse canvas. Senao, src = a Image.
+// Se o chroma-key lancar (ex.: canvas tainted), resolve com a Image crua —
+// nenhuma promise fica pendurada.
 export function loadImage(entry: AssetEntry): Promise<ImageAsset> {
   return new Promise<ImageAsset>((resolve, reject) => {
     const img = new Image()
@@ -52,20 +54,25 @@ export function loadImage(entry: AssetEntry): Promise<ImageAsset> {
         return
       }
 
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        // Sem canvas 2d (ambiente sem suporte): usa a Image crua como fallback.
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          // Sem canvas 2d (ambiente sem suporte): usa a Image crua como fallback.
+          resolve({ src: img, w, h })
+          return
+        }
+        ctx.drawImage(img, 0, 0, w, h)
+        const imageData = ctx.getImageData(0, 0, w, h)
+        chromaKeyPixels(imageData.data)
+        ctx.putImageData(imageData, 0, 0)
+        resolve({ src: canvas, w, h })
+      } catch {
+        // Chroma-key falhou: mesmo fallback do caminho sem ctx (Image crua).
         resolve({ src: img, w, h })
-        return
       }
-      ctx.drawImage(img, 0, 0, w, h)
-      const imageData = ctx.getImageData(0, 0, w, h)
-      chromaKeyPixels(imageData.data)
-      ctx.putImageData(imageData, 0, 0)
-      resolve({ src: canvas, w, h })
     }
     img.onerror = () => reject(new Error(`loadImage: falha ao carregar ${entry.url}`))
     img.src = entry.url
@@ -73,7 +80,8 @@ export function loadImage(entry: AssetEntry): Promise<ImageAsset> {
 }
 
 // Carrega todas as entradas em paralelo, cacheia por chave. get retorna null se
-// faltar; ready=true apos todas resolverem.
+// faltar; ready=true apos todas assentarem. Falha isolada NAO derruba o boot:
+// vira console.warn e a key fica ausente. loadAssets NUNCA rejeita.
 export async function loadAssets(
   manifest: Record<string, AssetEntry>,
 ): Promise<AssetStore> {
@@ -81,12 +89,15 @@ export async function loadAssets(
   let ready = false
 
   const keys = Object.keys(manifest)
-  await Promise.all(
-    keys.map(async (key) => {
-      const asset = await loadImage(manifest[key])
-      cache.set(key, asset)
-    }),
-  )
+  const results = await Promise.allSettled(keys.map((key) => loadImage(manifest[key])))
+  results.forEach((res, i) => {
+    const key = keys[i]
+    if (res.status === 'fulfilled') {
+      cache.set(key, res.value)
+    } else {
+      console.warn('[assets] falhou: ' + key + ' (' + manifest[key].url + ')')
+    }
+  })
   ready = true
 
   return {

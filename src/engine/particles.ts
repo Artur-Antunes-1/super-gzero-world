@@ -1,10 +1,11 @@
 // src/engine/particles.ts
 // Sistema de particulas do M2a (DONO).
-// - emitAmbient: poeira de gravidade-zero, sobe devagar, rate-limited + cap.
-// - emitBurst: explosao radial (Humanware / FX de habilidade).
+// - emitAmbient: poeira de gravidade-zero, sobe devagar, rate-limited + cap (screen).
+// - emitBurst: explosao radial (Humanware / FX de habilidade); space opcional.
 // - updateParticles: integracao pura (x+=vx*dt, y+=vy*dt), life-=dt, remove mortas.
-// - drawParticles: desenha cada particula via r.drawRect; alpha = life/maxLife
-//   atraves de r.ctx.globalAlpha (restaurado para 1 no fim).
+// - drawParticles: desenha SOMENTE as particulas 'screen' via r.drawRect;
+//   alpha = life/maxLife via r.ctx.globalAlpha (restaurado para 1 no fim).
+// - drawParticlesWorld: idem, mas SOMENTE as 'world' (chamador garante beginWorld/endWorld).
 import type { Renderer } from './render'
 
 export interface Particle {
@@ -16,6 +17,8 @@ export interface Particle {
   maxLife: number
   color: string
   size: number
+  // Espaco de coordenadas: 'screen' (HUD/overlay) ou 'world' (segue a camera).
+  space: 'world' | 'screen'
 }
 
 // E2: ambientAcc e opcional para que literais { particles: [] } ainda compilem.
@@ -54,6 +57,7 @@ export function emitAmbient(ps: ParticleSystem, w: number, h: number, dt: number
     maxLife,
     color: AMBIENT_COLOR,
     size: 1 + Math.floor(Math.random() * 2), // 1-2 px
+    space: 'screen',
   })
 }
 
@@ -63,6 +67,7 @@ export function emitBurst(
   y: number,
   n: number,
   colors: string[],
+  space: 'world' | 'screen' = 'screen',
 ): void {
   const palette = colors.length > 0 ? colors : ['#ffffff']
   for (let i = 0; i < n; i++) {
@@ -79,6 +84,7 @@ export function emitBurst(
       maxLife,
       color: palette[i % palette.length],
       size: 2 + Math.floor(Math.random() * 3), // 2-4 px
+      space,
     })
   }
 }
@@ -94,9 +100,11 @@ export function updateParticles(ps: ParticleSystem, dt: number): void {
   ps.particles = out
 }
 
-export function drawParticles(r: Renderer, ps: ParticleSystem): void {
+// Desenha as particulas de um unico espaco de coordenadas.
+function drawParticlesIn(r: Renderer, ps: ParticleSystem, space: 'world' | 'screen'): void {
   const ctx = r.ctx
   for (const p of ps.particles) {
+    if (p.space !== space) continue
     const a = p.maxLife > 0 ? p.life / p.maxLife : 0
     ctx.globalAlpha = Math.max(0, Math.min(1, a))
     // Centra o quadradinho na posicao da particula.
@@ -105,4 +113,14 @@ export function drawParticles(r: Renderer, ps: ParticleSystem): void {
   }
   // Restaura para nao vazar alpha para o resto do frame.
   ctx.globalAlpha = 1
+}
+
+// SOMENTE as 'screen' (HUD/overlay; coordenadas de tela).
+export function drawParticles(r: Renderer, ps: ParticleSystem): void {
+  drawParticlesIn(r, ps, 'screen')
+}
+
+// SOMENTE as 'world' — o chamador garante estar entre beginWorld/endWorld.
+export function drawParticlesWorld(r: Renderer, ps: ParticleSystem): void {
+  drawParticlesIn(r, ps, 'world')
 }

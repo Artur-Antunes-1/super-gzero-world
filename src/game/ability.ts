@@ -56,10 +56,8 @@ export function abilityConsumeShield(player: Player): void {
   player.ability.shieldTimer = 0
 }
 
-// Dash ativo concede i-frames (consumido por damagePlayer via game).
-export function abilityIFramesOnHit(player: Player): boolean {
-  return player.ability.id === 'dash_criativo' && player.ability.active && player.ability.timer > 0
-}
+// (A2) abilityIFramesOnHit removido: sem consumidores — o dash concede i-frames
+// diretamente via player.iframes na ativacao (dashIFrames).
 
 // Dash ativo mata tolo por contato (consumido pelo game).
 export function abilityKillsEnemy(player: Player): boolean {

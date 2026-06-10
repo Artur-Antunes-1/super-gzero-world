@@ -3,17 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Super Gzero World</title>
+    <title>Gravidade Zero — O Jogo</title>
+    <meta name="description" content="Plataforma 2D pixel-art da Gravidade Zero: corra, salte e ative o Humanware para reparar o mundo." />
+    <meta name="theme-color" content="#ff0055" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <style>
       html, body {
         margin: 0;
         height: 100%;
         background: #09090b;
+      }
+      body {
         display: flex;
         align-items: center;
         justify-content: center;
       }
       #game {
+        image-rendering: crisp-edges; /* fallback p/ browsers sem pixelated */
         image-rendering: pixelated;
         background: #09090b;
       }

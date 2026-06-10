@@ -6,7 +6,15 @@ import { createGame } from '../../src/game/game'
 import type { Renderer } from '../../src/engine/render'
 import type { Input, InputAction } from '../../src/engine/input'
 import type { ParsedLevel, TileType } from '../../src/data/schema'
-import { TILE, FIXED_DT, TIME_START, STOMP_BOUNCE } from '../../src/engine/constants'
+import {
+  TILE,
+  FIXED_DT,
+  TIME_START,
+  STOMP_BOUNCE,
+  COLOR_MAGENTA,
+  COLOR_LIME,
+  HW_METER_MAX,
+} from '../../src/engine/constants'
 
 // (M2a Task 6) — imports adicionais
 import type { AssetStore, ImageAsset } from '../../src/engine/assets'
@@ -25,7 +33,13 @@ vi.mock('../../src/engine/parallax', () => ({
 }))
 vi.mock('../../src/engine/particles', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/engine/particles')>()
-  return { ...actual, drawParticles: vi.fn() }
+  return {
+    ...actual,
+    drawParticles: vi.fn(),
+    drawParticlesWorld: vi.fn(),
+    // passthrough-spy: preserva o comportamento real, mas permite inspecionar args
+    emitBurst: vi.fn(actual.emitBurst),
+  }
 })
 // drawPlaceholder vira spy com passthrough (comportamento real preservado).
 vi.mock('../../src/game/sprites', async (importOriginal) => {
@@ -293,6 +307,78 @@ describe('createGame — Humanware congela inimigos', () => {
   })
 })
 
+// A2: getter `humanware` expoe o HumanwareState interno (contrato com A1/main.ts).
+describe('createGame — getter humanware', () => {
+  it('expoe o estado do Humanware com meter inicial 0 e active false', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel())
+    expect(game.humanware).toBeDefined()
+    expect(game.humanware.meter).toBe(0)
+  })
+
+  it('reflete o estado VIVO: coletar uma coin soma +8 no meter visto pelo getter', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([], [{ x: 5 * TILE, y: 8 * TILE }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.x = 5 * TILE
+    p.y = 8 * TILE
+    p.vy = 0
+    game.update(1)
+    expect(game.humanware.meter).toBe(8)
+  })
+})
+
+// A2: burst do Humanware emitido em COORDENADAS DE MUNDO (space 'world').
+describe('createGame — burst do Humanware em world space', () => {
+  it("na borda de ativacao emite emitBurst(ps, p.x+p.w/2, p.y-30, 24, [...], 'world')", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    // 125 coins (=1000=HW_METER_MAX) para encher o medidor.
+    const coins = Array.from({ length: 125 }, (_, i) => ({
+      x: (3 + (i % 30)) * TILE,
+      y: 8 * TILE,
+    }))
+    const level = makeLevel([], coins)
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    for (const c of level.coins) {
+      p.x = c.x
+      p.y = c.y
+      p.vy = 0
+      game.update(1)
+    }
+    expect(game.humanware.meter).toBe(HW_METER_MAX)
+
+    vi.clearAllMocks()
+    p.x = 2 * TILE
+    p.y = 8 * TILE
+    input.set('humanware', true)
+    game.update(1) // tryActivate ocorre no passo 4 deste frame
+    input.set('humanware', false)
+    game.update(1) // borda de subida detectada no passo 2b -> burst
+
+    const spy = vi.mocked(particles.emitBurst)
+    expect(spy).toHaveBeenCalledTimes(1)
+    const call = spy.mock.calls[0]
+    // emitBurst(ps, x, y, count, colors, space)
+    expect(call[1]).toBeCloseTo(p.x + p.w / 2, 5) // x em MUNDO (sem subtrair cam)
+    expect(call[2]).toBeCloseTo(p.y - 30, 5) // y em MUNDO
+    expect(call[3]).toBe(24)
+    expect(call[4]).toEqual([COLOR_MAGENTA, COLOR_LIME])
+    expect(call[5]).toBe('world')
+
+    // Frames seguintes (Modo ja ativo): sem novo burst (so na borda de subida).
+    game.update(1)
+    game.update(1)
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('createGame — reset', () => {
   it('confirm em "win" volta para "select"', () => {
     const renderer = makeRenderer()
@@ -549,6 +635,32 @@ describe('createGame — integracao M2a (animacao)', () => {
     // clear acontece antes do parallax (fundo coberto por cima do COLOR_BG)
     expect(renderer.clear).toHaveBeenCalled()
     expect(particles.drawParticles).toHaveBeenCalledTimes(1)
+  })
+
+  it("render chama drawParticlesWorld DENTRO do bloco beginWorld/endWorld", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore())
+    selectFirst(game, input)
+    game.render(0)
+    expect(particles.drawParticlesWorld).toHaveBeenCalledTimes(1)
+    // Ordem: beginWorld -> drawParticlesWorld -> endWorld (mundo), drawParticles depois (tela).
+    const beginOrder = vi.mocked(renderer.beginWorld).mock.invocationCallOrder[0]
+    const worldOrder = vi.mocked(particles.drawParticlesWorld).mock.invocationCallOrder[0]
+    const endOrder = vi.mocked(renderer.endWorld).mock.invocationCallOrder[0]
+    const screenOrder = vi.mocked(particles.drawParticles).mock.invocationCallOrder[0]
+    expect(beginOrder).toBeLessThan(worldOrder)
+    expect(worldOrder).toBeLessThan(endOrder)
+    expect(endOrder).toBeLessThan(screenOrder)
+  })
+
+  it("render no select NAO chama drawParticlesWorld", () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel(), makeStore())
+    expect(game.state.get()).toBe('select')
+    game.render(0)
+    expect(particles.drawParticlesWorld).not.toHaveBeenCalled()
   })
 
   it("i-frames: piscar pula o desenho do sprite em frames alternados", () => {
