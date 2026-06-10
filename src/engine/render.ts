@@ -6,6 +6,7 @@ export interface Renderer {
   beginWorld(camX: number, camY: number): void
   endWorld(): void
   drawRect(x: number, y: number, w: number, h: number, color: string): void
+  drawSprite(img: CanvasImageSource, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void
   present(): void
 }
 
@@ -43,6 +44,21 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     drawRect(x: number, y: number, w: number, h: number, color: string): void {
       ctx.fillStyle = color
       ctx.fillRect(x, y, w, h)
+    },
+
+    // Wrapper fino de drawImage com recorte (sx,sy,sw,sh) e destino (dx,dy,dw,dh).
+    drawSprite(
+      img: CanvasImageSource,
+      sx: number,
+      sy: number,
+      sw: number,
+      sh: number,
+      dx: number,
+      dy: number,
+      dw: number,
+      dh: number,
+    ): void {
+      ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh)
     },
 
     present(): void {

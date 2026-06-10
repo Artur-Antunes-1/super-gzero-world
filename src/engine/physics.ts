@@ -28,16 +28,29 @@ export function tileAt(level: ParsedLevel, tx: number, ty: number): TileType {
   return level.tiles[ty][tx]
 }
 
+// C3b: célula sólida que zerou vy<0 (batida de cabeça) no passo de física.
+export interface CeilHit {
+  col: number
+  row: number
+}
+
 // Aplica gravidade (até MAX_FALL) e integra posição pela velocidade.
 // dt está em frames (E1: convenção por-frame). Em runtime dt=1; testes usam dt=1.
 // gravityScale escala só a aceleração (weightMul do personagem); MAX_FALL não escala.
-export function stepBody(body: Body, level: ParsedLevel, dt: number, gravityScale = 1): void {
+// Retorna { ceil }: célula sólida que zerou vy<0 nesta chamada, ou null.
+export function stepBody(
+  body: Body,
+  level: ParsedLevel,
+  dt: number,
+  gravityScale = 1,
+): { ceil: CeilHit | null } {
   body.vy = Math.min(body.vy + GRAVITY * gravityScale * dt, MAX_FALL)
   body.x += body.vx * dt
   resolveAxisX(body, level)
   body.onGround = false
   body.y += body.vy * dt
-  resolveAxisY(body, level)
+  const ceil = resolveAxisY(body, level)
+  return { ceil }
 }
 
 // Resolve colisão contra tiles sólidos: primeiro eixo X, depois eixo Y.
@@ -79,7 +92,8 @@ function resolveAxisX(body: Body, level: ParsedLevel): void {
   }
 }
 
-function resolveAxisY(body: Body, level: ParsedLevel): void {
+// Retorna a célula que zerou vy<0 (teto), ou null nos demais casos.
+function resolveAxisY(body: Body, level: ParsedLevel): CeilHit | null {
   const left = body.x
   const right = body.x + body.w
   const txStart = Math.floor(left / TILE)
@@ -109,8 +123,9 @@ function resolveAxisY(body: Body, level: ParsedLevel): void {
       if (isFullSolid(tileAt(level, tx, ty))) {
         body.y = (ty + 1) * TILE
         body.vy = 0
-        break
+        return { col: tx, row: ty }
       }
     }
   }
+  return null
 }

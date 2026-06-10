@@ -13,6 +13,7 @@ function makeCtxStub() {
     translate: vi.fn(),
     fillRect: vi.fn(),
     clearRect: vi.fn(),
+    drawImage: vi.fn(),
   }
 }
 
@@ -68,6 +69,13 @@ describe('createRenderer', () => {
     r.drawRect(10, 20, 30, 40, '#ff0055')
     expect(ctx.fillStyle).toBe('#ff0055')
     expect(ctx.fillRect).toHaveBeenCalledWith(10, 20, 30, 40)
+  })
+
+  it('drawSprite repassa os 9 args para ctx.drawImage (recorte + destino)', () => {
+    const r = createRenderer(canvas)
+    const img = { fake: true } as unknown as CanvasImageSource
+    r.drawSprite(img, 16, 32, 16, 16, 240, 432, 48, 48)
+    expect(ctx.drawImage).toHaveBeenCalledWith(img, 16, 32, 16, 16, 240, 432, 48, 48)
   })
 
   it('present existe e nao lanca (no-op no canvas direto)', () => {

@@ -122,6 +122,53 @@ describe('stepBody — gravityScale (weightMul)', () => {
   })
 })
 
+// C3b: stepBody retorna { ceil } — célula sólida que zerou vy<0 (batida de cabeça).
+describe('stepBody — retorno { ceil } (C3b)', () => {
+  it('subindo contra tile sólido: retorna a célula que zerou vy', () => {
+    // Blocks na linha 0; corpo logo abaixo subindo.
+    const level = makeLevel(['???', '...'])
+    // x=TILE: corpo (w=16) cobre só a coluna 1. y=50, vy=-6 -> apos gravidade
+    // vy=-5.2, topo em 44.8 (linha 0) -> colide e encosta em y=TILE.
+    const body = makeBody({ x: TILE, y: 50, w: 16, h: 16, vx: 0, vy: -6 })
+
+    const ret = stepBody(body, level, 1)
+
+    expect(body.vy).toBe(0)
+    expect(body.y).toBeCloseTo(TILE, 5)
+    expect(ret.ceil).toEqual({ col: 1, row: 0 })
+  })
+
+  it('queda livre: ceil é null', () => {
+    const level = makeLevel(['....', '....', '....'])
+    const body = makeBody({ x: 24, y: 0, vx: 0, vy: 0 })
+
+    const ret = stepBody(body, level, 1)
+
+    expect(ret.ceil).toBeNull()
+  })
+
+  it('pousando no chão (vy>0 zerado): ceil é null', () => {
+    const level = makeLevel(['....', '....', '####'])
+    const body = makeBody({ x: 24, y: 90, w: 16, h: 16, vx: 0, vy: 6 })
+
+    const ret = stepBody(body, level, 1)
+
+    expect(body.onGround).toBe(true)
+    expect(body.vy).toBe(0)
+    expect(ret.ceil).toBeNull()
+  })
+
+  it('subindo sem teto por perto: ceil é null mesmo com vy<0', () => {
+    const level = makeLevel(['....', '....', '....'])
+    const body = makeBody({ x: 24, y: 100, w: 16, h: 16, vx: 0, vy: -8 })
+
+    const ret = stepBody(body, level, 1)
+
+    expect(body.vy).toBeLessThan(0)
+    expect(ret.ceil).toBeNull()
+  })
+})
+
 // A2: isFullSolid e tileAt agora exportados (fonte única; enemy.ts importa daqui).
 describe('isFullSolid (exportado)', () => {
   it('true para ground/brick/block', () => {
