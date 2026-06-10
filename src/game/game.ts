@@ -3,7 +3,7 @@ import type { Renderer } from '../engine/render'
 import type { Input } from '../engine/input'
 import type { ParsedLevel, TileType } from '../data/schema'
 import { createStateMachine } from '../engine/state'
-import { createCamera, followCamera } from '../engine/camera'
+import { createCamera, followCamera, snapCamera } from '../engine/camera'
 import {
   createPlayer,
   updatePlayer,
@@ -398,6 +398,9 @@ export function createGame(
         // E1: stats da rodada nova.
         stompCount = 0
         resultTimer = 0
+        // FINAL (revisão): camera corta direto pro spawn (sem sweep da rodada
+        // anterior — cam/lookX persistiam entre rodadas).
+        snapCamera(cam, player, level)
         state.set('playing')
       }
       return
@@ -441,6 +444,23 @@ export function createGame(
 
       // 1) Player: SEMPRE dt (escala 1).
       updatePlayer(p, input, level, dt)
+
+      // FINAL (revisão): KILL-PLANE — queda no abismo custa 1 vida (corações
+      // restaurados pelo respawn); sem vidas restantes => game over. Sem isso
+      // o player cai para sempre e o jogo trava em 'playing' até o timer.
+      if (p.y > level.heightPx + TILE) {
+        p.lives -= 1
+        if (p.lives <= 0) {
+          pushEvent('over')
+          resultTimer = 0
+          state.set('over')
+          return
+        }
+        pushEvent('hurt')
+        respawnPlayer(p, { x: lastCheckpointX, y: level.playerSpawn.y })
+        snapCamera(cam, p, level)
+        shakeT = SHAKE_FRAMES
+      }
 
       // 1a) D4: pulo real disparou dentro do updatePlayer (buffer consumido,
       // saiu do chao subindo) -> SFX 'jump' + poeira nos pes.
@@ -534,7 +554,9 @@ export function createGame(
         emitBurst(ps, p.x + p.w / 2, p.y - 30, 24, [COLOR_MAGENTA, COLOR_LIME], 'world')
       }
       hwWasActive = hwActiveNow
-      updateParticles(ps, dt)
+      // FINAL (revisão): particulas seguem o worldScale — slow-mo do Modo
+      // Humanware/emc2 fica perceptivel tambem na poeira/bursts.
+      updateParticles(ps, dt * ws)
 
       // 3) Bloco temporario do Builder -> level.tiles (sem 2o sistema de colisao).
       syncBuilderTile()
@@ -582,6 +604,8 @@ export function createGame(
             // C3b: respawn no ultimo checkpoint cruzado (y do spawn original).
             if (p.lives < livesBefore) {
               respawnPlayer(p, { x: lastCheckpointX, y: level.playerSpawn.y })
+              // FINAL (revisão): corta a camera pro respawn (sem sweep).
+              snapCamera(cam, p, level)
             }
           }
         }
@@ -647,6 +671,9 @@ export function createGame(
       if (state.is('playing') && checkGoal(p, level)) {
         // M2 fase B: pose de vitoria mantida na tela de win (duracao "infinita").
         triggerOneShot(playerAnim, 'victory', 9999)
+        // FINAL (revisão): transfere o one-shot pro estado AGORA — updateAnimator
+        // nao roda no estado 'win', entao sem isso a pose nunca aparecia.
+        updateAnimator(playerAnim, p, 0, dt)
         pushEvent('win') // D4
         resultTimer = 0 // E1: arma o delay anti-skip do resultado
         state.set('win')
@@ -706,9 +733,11 @@ export function createGame(
     if (store) drawParallax(renderer, SKY_LAYERS, store, cam)
 
     // M2 fase B: screen-shake deterministico enquanto shakeT>0 (offset na camera).
+    // FINAL (revisão): sem shake no pause — shakeT nao decai em 'paused' e o
+    // offset constante parecia bug de render.
     let shakeDx = 0
     let shakeDy = 0
-    if (shakeT > 0) {
+    if (shakeT > 0 && !state.is('paused')) {
       shakeDx = Math.round(Math.sin(shakeT * 2.7) * SHAKE_PX)
       shakeDy = Math.round(Math.cos(shakeT * 1.9) * SHAKE_PX * 0.6)
     }
@@ -970,6 +999,8 @@ export function createGame(
         coins: coinCount,
         hwMeter: hw.meter,
         hearts: player ? player.hearts : 0,
+        // FINAL (revisão): sem maxHearts os coracoes vazios nunca apareciam.
+        maxHearts: player ? player.char.hearts : 0,
         hwActive: isActive(hw),
         hwReady: hw.meter >= HW_METER_MAX,
       })

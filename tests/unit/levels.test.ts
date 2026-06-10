@@ -10,9 +10,9 @@ import {
 import { W1_1 } from '../../src/data/levels/w1-1'
 
 describe('registry de fases (data/levels/index)', () => {
-  it('DEFAULT_LEVEL_ID e "w1-1" e o registry contem w1-1 e zona1', () => {
+  it('DEFAULT_LEVEL_ID e "w1-1" e o registry contem w1-1, zona1 e hw-test', () => {
     expect(DEFAULT_LEVEL_ID).toBe('w1-1')
-    expect(Object.keys(LEVELS).sort()).toEqual(['w1-1', 'zona1'])
+    expect(Object.keys(LEVELS).sort()).toEqual(['hw-test', 'w1-1', 'zona1'])
   })
 
   it('validateLevel passa em TODOS os LEVELS', () => {

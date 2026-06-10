@@ -2251,3 +2251,41 @@ describe('createGame — E1: resultado over (painel + score parcial + delay)', (
     expect(textsOf(renderer)).toContain('TOLOS x2')
   })
 })
+
+// ---------------------------------------------------------------------------
+// FINAL (revisão): KILL-PLANE — queda no abismo custa 1 vida com respawn no
+// checkpoint; sem vidas restantes vira game over.
+// ---------------------------------------------------------------------------
+describe('createGame — kill-plane (queda no abismo)', () => {
+  it('cair abaixo do nivel custa 1 vida e respawna no ultimo checkpoint', () => {
+    const { renderer } = makeRenderer()
+    const input = new FakeInput()
+    const level = makeLevel([], [], { checkpoints: [10] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    // Cruza o checkpoint da col 10 e depois "cai" abaixo do kill-plane.
+    p.x = 11 * TILE
+    game.update(1)
+    p.y = level.heightPx + TILE + 1
+    game.update(1)
+    expect(p.lives).toBe(2)
+    expect(p.x).toBe(10 * TILE) // respawn no checkpoint
+    expect(p.hearts).toBe(p.char.hearts) // coracoes restaurados
+    expect(game.state.get()).toBe('playing')
+    expect(game.events).toContain('hurt')
+  })
+
+  it('cair sem vidas restantes vira game over', () => {
+    const { renderer } = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel())
+    selectFirst(game, input)
+    const p = game.player!
+    p.lives = 1
+    p.y = makeLevel().heightPx + TILE + 1
+    game.update(1)
+    expect(game.state.get()).toBe('over')
+    expect(game.events).toContain('over')
+  })
+})

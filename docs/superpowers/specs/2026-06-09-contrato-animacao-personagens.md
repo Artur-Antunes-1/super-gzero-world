@@ -28,7 +28,7 @@ _Define o conjunto CANÔNICO de animações de personagem jogável. O Artur estr
 |---|---|---|---|---|---|---|
 | `land` | land.png (opcional) | 2–3 | 15 | ~10f | tocar o chão vindo do ar | squash procedural sobre `idle` |
 | `skid` | skid.png (opcional) | 1–2 | 12 | ~8f | inverter direção em `run` | lean procedural sobre `run` |
-| `cast` | ataque.png | 3 | 12 | ~18f | usar habilidade (J) | flash procedural sobre `idle` |
+| `cast` | ataque.png | 4 | 12 | ~18f | usar habilidade (J) | flash procedural sobre `idle` |
 | `hurt` | danificado.png | 3 | 8 | ~24f (**separado dos i-frames de 90f**) | tomar dano | — (obrigatório) |
 | `victory` | vitoria.png (opcional) | 1–2 | 6 | mantido na tela de vitória | atravessar o portal | frame 2 do pulo, mantido |
 | `death` | morte.png (opcional) | 2–3 | 8 | ~30f antes do respawn/over | perder vida/morrer | `hurt` + rotação/fade procedural |
@@ -55,5 +55,11 @@ _Define o conjunto CANÔNICO de animações de personagem jogável. O Artur estr
 ## 5. Fonte dos frames do Artur
 
 - Sheet original: `C:\Users\artur\Downloads\hf_20260609_024357_facae4a1-deac-4981-a8fd-588b0124f0ae.png` (apresentação; extração via `%TEMP%\gz_build_artur.py`).
-- Frames extraídos e curados: `%TEMP%\gz_artur_anim\` — **inclui `ataque.png` (3f) ainda não integrado** (vira o `cast`).
-- Integrados no jogo: `public/assets/chars/artur/{idle,corrida,pulo,queda,danificado}.png` + `meta.json`.
+- Frames extraídos e curados: `%TEMP%\gz_artur_anim\`.
+- Integrados no jogo: `public/assets/chars/artur/{idle,corrida,pulo,queda,danificado,ataque}.png` + `meta.json` (ataque = 4 frames reais do sheet, integrado como `cast` na Fase B).
+
+## 6. Decisões registradas (2026-06-10, pós-revisão adversarial)
+
+- **Hitbox × corpo visual:** hitbox do player MANTIDA em 34×42 sob corpo de ~78px (1,86×) — generosidade deliberada PRÓ-jogador (inimigo "acerta o joelho" = mais difícil de ser atingido), testada e aprovada na W1-1; mexer na hitbox invalidaria os gaps/clearances da fase desenhada no §8.3. Revisitar apenas se o feel incomodar em playtest humano. Mesma lógica vale para o Tolo (56px sobre 38×34).
+- **`death` e `skid`:** estados definidos no contrato com fallbacks procedurais já implementados no engine (ONE_SHot_FALLBACK + transforms); os GATILHOS (sub-estado dying de ~30f antes do over; skid na inversão em corrida) ficam como backlog registrado — não bloqueiam os 4 personagens futuros.
+- **`victory`:** disparada no goal e transferida para o estado no mesmo frame (fallback = frame de pulo mantido).

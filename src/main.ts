@@ -24,10 +24,11 @@ const renderer = createRenderer(canvas)
 const input = createInput()
 input.attach(window)
 
-// 3b. Audio procedural (D2): cria o bus e desbloqueia o contexto no PRIMEIRO
-//     keydown (autoplay policy dos navegadores exige gesto do usuario).
+// 3b. Audio procedural (D2): cria o bus e desbloqueia o contexto a cada
+//     keydown (autoplay policy; resume() em contexto rodando e no-op —
+//     listener persistente cobre suspensoes do iOS/Safari pos-unlock).
 const audio = createAudio()
-window.addEventListener('keydown', () => audio.unlock(), { once: true })
+window.addEventListener('keydown', () => audio.unlock())
 
 // 4. Selecao de fase via URL: /?level=<id>. Id desconhecido (ou ausente)
 //    cai no DEFAULT_LEVEL_ID — parseLevelById re-parseia FRESCO (contrato C3a).

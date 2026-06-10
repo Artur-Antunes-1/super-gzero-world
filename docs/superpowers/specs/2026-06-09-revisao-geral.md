@@ -144,3 +144,14 @@ A convergência entre os 6 revisores é altíssima nos temas Artur/tiles/Humanwa
 4. **F4 (tileset & W1-1)** — o maior salto visual; a fase já está desenhada no spec §8.3.
 5. **F5 → F6 → F7** — elementos, juice/áudio, HUD/telas.
 6. **Outros 4 personagens** — DEPOIS, pipeline já discutido (kitbash do corpo-base + Higgsfield p/ identidade, PixelLab como plano B).
+
+---
+
+## Decisões pós-execução (2026-06-10, após revisão adversarial das Fases A-E)
+
+1. **Kill-plane implementado** (HIGH da revisão): queda no abismo custa 1 vida + respawn no checkpoint (game over sem vidas). Antes, cair no gap da W1-1 soft-lockava até o timer.
+2. **Câmera com snap** (HIGH): `snapCamera` corta a câmera no início de rodada e em respawns — cam/lookX não vazam mais entre rodadas.
+3. **Humanware no currículo** (HIGH de compliance — decisão): a economia da W1-1 segue o cânone §8.3 (máx ~387/1000) e o **Modo pleno entra no currículo em W1-2/W1-3** (spec §8.2). O item da F4 que pedia economia ≥1000 na W1-1 fica **supersedido**; o gate automatizado da mecânica vive na fase de teste **`?level=hw-test`** (130 moedas; e2e encher→ativar).
+4. **Hitbox 34×42 mantida** (MEDIUM — decisão): generosidade pró-jogador; registrada no contrato de animação §6.
+5. Aplicados também: pose de vitória visível, maxHearts no HUD (corações vazios), partículas em slow-mo (dt·ws), guard de áudio suspenso + unlock persistente, shake zerado no pause.
+6. **Backlog registrado** (não bloqueante): animação de morte (sub-estado dying ~30f), gatilho do skid, spike com dano+desenho (ou rejeitar '^' no validateLevel), drenagem visual do medidor durante o Modo, bump do '?' via `ceil` exato do stepBody, grace de stomp no mesmo frame, blink do TIME baseado em clock (congela com timer pausado), pulos condicionais no e2e da zona1.

@@ -80,3 +80,18 @@ export function followCamera(
   cam.x = clamp(cam.x + (desiredX - cam.x) * CAM_EASE, 0, Math.max(0, maxX))
   cam.y = clamp(cam.y + (desiredY - cam.y) * CAM_EASE, 0, Math.max(0, maxY))
 }
+
+// Corta a camera direto para o alvo (sem ease/deadzone): usado em inicio de
+// rodada e respawn — evita o "sweep" pelo nivel inteiro vindo da posicao velha.
+export function snapCamera(
+  cam: Camera,
+  target: CameraTarget,
+  level: ParsedLevel
+): void {
+  const facing = target.facing ?? 1
+  cam.lookX = CAM_LOOKAHEAD_X * facing
+  const focusX = target.x + target.w / 2 + cam.lookX
+  const centerY = target.y + target.h / 2
+  cam.x = clamp(focusX - VIEW_W / 2, 0, Math.max(0, level.widthPx - VIEW_W))
+  cam.y = clamp(centerY - VIEW_H / 2, 0, Math.max(0, level.heightPx - VIEW_H))
+}

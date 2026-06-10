@@ -59,7 +59,9 @@ class FakeAudioContext {
   static instances: FakeAudioContext[] = []
   sampleRate = 48000
   currentTime = 0
-  state = 'suspended'
+  // 'running' = contexto ja desbloqueado (fluxo normal pos-keydown). O guard
+  // de contexto suspenso tem teste dedicado que seta 'suspended' na mao.
+  state = 'running'
   destination = { eDestino: true }
   resumeCalls = 0
   oscillators: FakeOscillator[] = []
@@ -239,6 +241,18 @@ describe('createAudio com AudioContext', () => {
     bus.unlock()
     expect(ctx.resumeCalls).toBe(1)
     expect(() => bus.unlock()).not.toThrow()
+  })
+
+  it('contexto suspenso: play() nao agenda nada (guard da revisão final)', () => {
+    const { bus, ctx } = setup()
+    ctx.state = 'suspended'
+    bus.play('jump')
+    expect(ctx.oscillators).toHaveLength(0)
+    expect(ctx.bufferSources).toHaveLength(0)
+    // resume (unlock) reabilita o play normalmente.
+    bus.unlock()
+    bus.play('jump')
+    expect(ctx.oscillators).toHaveLength(1)
   })
 
   it('evento desconhecido e bus desabilitado nao criam fontes', () => {

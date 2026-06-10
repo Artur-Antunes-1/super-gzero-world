@@ -147,6 +147,10 @@ export function createAudio(): AudioBus {
     enabled: true,
     play(name: string): void {
       if (!bus.enabled) return
+      // FINAL (revisão): contexto suspenso nao agenda nada — fontes num
+      // contexto parado nunca disparam onended (cap travaria) e tocariam
+      // todas de uma vez quando o contexto resumisse.
+      if (ctx.state && ctx.state !== 'running') return
       const rec = RECEITAS[name]
       if (!rec) return
       if (vozes >= VOICE_CAP) return // cap de vozes atingido
