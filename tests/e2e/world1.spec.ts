@@ -1,13 +1,15 @@
 // tests/e2e/world1.spec.ts
-// E2E M2a — fluxo completo: tela SELECT -> escolher 1o personagem (Renan) ->
+// E2E E1 — fluxo completo: TITLE -> Enter -> SELECT -> confirmar personagem ->
 // andar para a direita ate vencer a fase (estado 'win').
 //
-// Contexto M2a (CONTRATO):
-//  - O jogo INICIA em 'select' apos precarregar os assets reais (public/assets).
+// Contexto E1 (CONTRATO):
+//  - O jogo INICIA em 'title' apos precarregar os assets reais (public/assets);
+//    Enter (acao 'confirm') leva ao 'select'.
 //  - main.ts faz await loadAssets(ASSET_MANIFEST) antes de createGame/loop.start().
 //  - O timeout do teste e estendido para 60s para acomodar o preload de assets.
-//  - Selecao: cursor comeca em index 0 (Renan). Enter (acao 'confirm') ou
-//    Space/ArrowUp (acao 'jump') confirmam o personagem -> estado 'playing'.
+//  - Selecao: cursor comeca em SELECT_START_INDEX (Artur, contrato E2). Enter
+//    (acao 'confirm') ou Space/ArrowUp (acao 'jump') confirmam -> 'playing'.
+//    Qualquer personagem vence este nivel andando para a direita.
 //  - world1-zona1 continua 40x11 com chao continuo (sem buracos) e ganhou
 //    2-3 tolos ('F'). O caminho permanece VENCIVEL andando a direita: os tolos
 //    sao lentos (ENEMY_SPEED 1.25) e stompaveis; o teste pula periodicamente
@@ -22,7 +24,7 @@ import { test, expect } from '@playwright/test'
 // M2a: preload de assets (loadAssets) atrasa o boot; 60s cobre o carregamento + jogabilidade.
 test.setTimeout(60000)
 
-test('World 1 Zona 1 (M1): select -> escolher personagem -> andar ate vencer', async ({
+test('World 1 Zona 1 (E1): title -> select -> escolher personagem -> andar ate vencer', async ({
   page,
 }) => {
   // C3b: a fase plana legacy agora vive no registry como 'zona1'
@@ -41,24 +43,30 @@ test('World 1 Zona 1 (M1): select -> escolher personagem -> andar ate vencer', a
     { timeout: 5000 },
   )
 
-  // 1) Deve comecar na tela de selecao
+  // 1) E1: deve comecar no TITLE.
   await page.waitForFunction(
     () =>
       typeof (window as any).__GAME_STATE === 'function' &&
-      (window as any).__GAME_STATE() === 'select',
+      (window as any).__GAME_STATE() === 'title',
     { timeout: 5000 },
   )
 
-  // 2) Escolher o 1o personagem (Renan, index 0). 'confirm' = Enter.
-  //    Pressionamos Enter; se por algum motivo nao confirmar, jump (Space)
-  //    tambem confirma (updateSelect aceita pressed('jump') || pressed('confirm')).
+  // 2) Enter sai do title para a tela de selecao.
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(
+    () => (window as any).__GAME_STATE() === 'select',
+    { timeout: 5000 },
+  )
+
+  // 3) Confirmar o personagem do cursor inicial (SELECT_START_INDEX = Artur).
+  //    'confirm' = Enter; jump (Space) tambem confirmaria.
   await page.keyboard.press('Enter')
   await page.waitForFunction(
     () => (window as any).__GAME_STATE() === 'playing',
     { timeout: 5000 },
   )
 
-  // 3) Andar para a direita ate vencer. Pulos periodicos para stompar/desviar
+  // 4) Andar para a direita ate vencer. Pulos periodicos para stompar/desviar
   //    dos tolos. Mantemos ArrowRight pressionado o tempo todo; injetamos
   //    pulsos de ArrowUp (jump) em intervalos curtos.
   await page.keyboard.down('ArrowRight')
@@ -88,7 +96,7 @@ test('World 1 Zona 1 (M1): select -> escolher personagem -> andar ate vencer', a
 
   await page.keyboard.up('ArrowRight')
 
-  // 4) Assercao final
+  // 5) Assercao final
   const finalState = await page.evaluate(() => (window as any).__GAME_STATE())
   expect(won, 'esperava alcancar o estado win dentro do orcamento de tempo').toBe(
     true,
@@ -113,12 +121,18 @@ test('W1-1 (default): entrar com Enter e andar ~1s avanca X mantendo playing', a
     () => typeof (window as any).__GAME === 'function',
     { timeout: 5000 },
   )
+  // E1: boot no TITLE; Enter leva ao select.
+  await page.waitForFunction(
+    () => (window as any).__GAME().state === 'title',
+    { timeout: 5000 },
+  )
+  await page.keyboard.press('Enter')
   await page.waitForFunction(
     () => (window as any).__GAME().state === 'select',
     { timeout: 5000 },
   )
 
-  // Confirma o 1o personagem (Renan).
+  // Confirma o personagem do cursor inicial (SELECT_START_INDEX, contrato E2).
   await page.keyboard.press('Enter')
   await page.waitForFunction(
     () => (window as any).__GAME().state === 'playing',

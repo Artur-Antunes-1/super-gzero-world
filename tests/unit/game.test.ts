@@ -1,8 +1,11 @@
 // tests/unit/game.test.ts
-// Integracao M1: select -> playing -> win/over; worldScale; colisoes stomp/dash/damage;
-// Humanware congela inimigos e pausa timer. dt=1 (convencao por-frame, E1).
+// Integracao M1: title -> select -> playing -> paused/win/over; worldScale;
+// colisoes stomp/dash/damage; Humanware congela inimigos e pausa timer.
+// dt=1 (convencao por-frame, E1).
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createGame } from '../../src/game/game'
+// E1: contrato E2 — cursor inicial do select (fallback 0 ate o E2 landar).
+import { SELECT_START_INDEX } from '../../src/ui/selectScreen'
 import type { Renderer } from '../../src/engine/render'
 import type { Input, InputAction } from '../../src/engine/input'
 import type { ParsedLevel, TileType } from '../../src/data/schema'
@@ -118,6 +121,8 @@ function makeRenderer(): Renderer {
     beginPath: vi.fn(),
     arc: vi.fn(),
     stroke: vi.fn(),
+    // E3: HUD desenha a moeda dourada com ctx.fill().
+    fill: vi.fn(),
     imageSmoothingEnabled: false,
     globalAlpha: 1,
     font: '',
@@ -184,24 +189,53 @@ function makeLevel(
   } as ParsedLevel
 }
 
-// Avanca o estado 'select' ate selecionar o personagem (index 0 = renan) com 'confirm'.
-function selectFirst(game: ReturnType<typeof createGame>, input: FakeInput): void {
+// E1: boot agora comeca em 'title' — confirm (Enter) leva ao select.
+function enterSelect(game: ReturnType<typeof createGame>, input: FakeInput): void {
   input.set('confirm', true)
   game.update(1)
   input.set('confirm', false)
   game.update(1)
 }
 
-// Navega para 'artur' (index 3 em SELECT_ORDER) e confirma.
-function selectArtur(game: ReturnType<typeof createGame>, input: FakeInput): void {
-  // Pressiona 'right' tres vezes para chegar ao index 3 (artur).
-  for (let i = 0; i < 3; i++) {
+// E1: cursor inicial do select (contrato E2; ?? 0 cobre a janela ate o E2 landar).
+const START_INDEX = SELECT_START_INDEX ?? 0
+// Ordem canonica do roster (§0.4): renan, dante, julio, artur, einstein.
+const SELECT_ORDER = ['renan', 'dante', 'julio', 'artur', 'einstein']
+const N_CHARS = SELECT_ORDER.length
+
+// Sai do title (se preciso), navega do cursor inicial ate `target` (wrap) e confirma.
+function selectIndex(
+  game: ReturnType<typeof createGame>,
+  input: FakeInput,
+  target: number,
+): void {
+  if (game.state.is('title')) enterSelect(game, input)
+  const steps = (((target - START_INDEX) % N_CHARS) + N_CHARS) % N_CHARS
+  for (let i = 0; i < steps; i++) {
     input.set('right', true)
     game.update(1)
     input.set('right', false)
     game.update(1)
   }
-  // Confirma a selecao.
+  input.set('confirm', true)
+  game.update(1)
+  input.set('confirm', false)
+  game.update(1)
+}
+
+// Seleciona 'renan' (index 0 na ordem canonica) com 'confirm'.
+function selectFirst(game: ReturnType<typeof createGame>, input: FakeInput): void {
+  selectIndex(game, input, 0)
+}
+
+// Navega para 'artur' (index 3 em SELECT_ORDER) e confirma.
+function selectArtur(game: ReturnType<typeof createGame>, input: FakeInput): void {
+  selectIndex(game, input, 3)
+}
+
+// E1: o resultado (win/over) so aceita Enter apos 45 frames — drena e confirma.
+function confirmResult(game: ReturnType<typeof createGame>, input: FakeInput): void {
+  for (let i = 0; i < 45; i++) game.update(1)
   input.set('confirm', true)
   game.update(1)
   input.set('confirm', false)
@@ -217,14 +251,7 @@ function drainHitstop(game: ReturnType<typeof createGame>): void {
 
 // Navega para 'dante' (index 1, dash_criativo) e confirma.
 function selectDante(game: ReturnType<typeof createGame>, input: FakeInput): void {
-  input.set('right', true)
-  game.update(1)
-  input.set('right', false)
-  game.update(1)
-  input.set('confirm', true)
-  game.update(1)
-  input.set('confirm', false)
-  game.update(1)
+  selectIndex(game, input, 1)
 }
 
 describe('createGame — selecao', () => {
@@ -236,8 +263,10 @@ describe('createGame — selecao', () => {
     input = new FakeInput()
   })
 
-  it('comeca no estado "select"', () => {
+  it('comeca no estado "title" (E1) e confirm leva ao "select"', () => {
     const game = createGame(renderer, input, makeLevel())
+    expect(game.state.get()).toBe('title')
+    enterSelect(game, input)
     expect(game.state.get()).toBe('select')
   })
 
@@ -249,9 +278,11 @@ describe('createGame — selecao', () => {
     expect(game.player!.char.id).toBe('renan')
   })
 
-  it('render nao lanca no estado select', () => {
+  it('render nao lanca nos estados title e select', () => {
     const game = createGame(renderer, input, makeLevel())
-    expect(() => game.render(0)).not.toThrow()
+    expect(() => game.render(0)).not.toThrow() // title
+    enterSelect(game, input)
+    expect(() => game.render(0)).not.toThrow() // select
   })
 })
 
@@ -470,7 +501,7 @@ describe('createGame — burst do Humanware em world space', () => {
 })
 
 describe('createGame — reset', () => {
-  it('confirm em "win" volta para "select"', () => {
+  it('confirm em "win" (apos o delay de 45f) volta para "select"', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     const level = makeLevel()
@@ -480,12 +511,11 @@ describe('createGame — reset', () => {
     game.player!.y = level.goal.y
     game.update(1)
     expect(game.state.get()).toBe('win')
-    input.set('confirm', true)
-    game.update(1)
+    confirmResult(game, input)
     expect(game.state.get()).toBe('select')
   })
 
-  it('confirm em "over" volta para "select"', () => {
+  it('confirm em "over" (apos o delay de 45f) volta para "select"', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
@@ -497,8 +527,7 @@ describe('createGame — reset', () => {
     p.x = 2 * TILE; p.y = 8 * TILE + (TILE - 34)
     game.update(1)
     expect(game.state.get()).toBe('over')
-    input.set('confirm', true)
-    game.update(1)
+    confirmResult(game, input)
     expect(game.state.get()).toBe('select')
   })
 })
@@ -520,11 +549,8 @@ describe("createGame — reset limpa estado M2a (particulas/animacao/hwWasActive
     game.update(1)
     expect(game.state.get()).toBe("win")
 
-    // Confirma: deve voltar para select (e resetToSelect deve limpar ps/playerAnim/hwWasActive).
-    input.set("confirm", true)
-    game.update(1)
-    input.set("confirm", false)
-    game.update(1)
+    // Confirma (apos o delay E1): volta ao select (resetToSelect limpa ps/playerAnim/hwWasActive).
+    confirmResult(game, input)
     expect(game.state.get()).toBe("select")
 
     // Inicia nova rodada.
@@ -554,10 +580,7 @@ describe("createGame — reset limpa estado M2a (particulas/animacao/hwWasActive
     game.update(1)
     expect(game.state.get()).toBe("over")
 
-    input.set("confirm", true)
-    game.update(1)
-    input.set("confirm", false)
-    game.update(1)
+    confirmResult(game, input)
     expect(game.state.get()).toBe("select")
 
     // Nova rodada.
@@ -644,11 +667,8 @@ describe('createGame — builder tile restore', () => {
     for (let i = 0; i < exhaust; i++) game.update(1)
     expect(game.state.get()).toBe('over')
 
-    // Confirma volta ao select: resetToSelect deve ter restaurado o bloco.
-    input.set('confirm', true)
-    game.update(1)
-    input.set('confirm', false)
-    game.update(1)
+    // Confirma volta ao select (delay E1): resetToSelect deve ter restaurado o bloco.
+    confirmResult(game, input)
     expect(game.state.get()).toBe('select')
 
     // Nenhum vazamento de bloco no level.
@@ -750,6 +770,7 @@ describe('createGame — integracao M2a (animacao)', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     const game = createGame(renderer, input, makeLevel(), makeStore())
+    enterSelect(game, input) // E1: boot em title
     expect(game.state.get()).toBe('select')
     game.render(0)
     expect(particles.drawParticlesWorld).not.toHaveBeenCalled()
@@ -836,6 +857,7 @@ describe('createGame — arte por personagem (M2b)', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     const game = createGame(renderer, input, makeLevel(), makeStore(['char.artur.idle']))
+    enterSelect(game, input) // E1: boot em title
     expect(game.state.get()).toBe('select')
     game.render(0)
     expect(renderer.ctx.drawImage).toHaveBeenCalledTimes(1)
@@ -968,11 +990,9 @@ describe('createGame — M2 fase B: screen-shake', () => {
     p.vy = 0
     game.update(1)
     expect(game.state.get()).toBe('win')
-    // Confirm -> select -> nova rodada.
-    input.set('confirm', true)
-    game.update(1)
-    input.set('confirm', false)
-    game.update(1)
+    // Confirm (delay E1) -> select -> nova rodada. Os 45 frames extras passam
+    // no estado WIN (update retorna cedo): shake/hitstop NAO decaem la.
+    confirmResult(game, input)
     expect(game.state.get()).toBe('select')
     selectFirst(game, input)
     // C4 (camera com easing): a cam converge ao spawn em poucos frames e o
@@ -1300,10 +1320,7 @@ describe('createGame — checkpoints (C3b)', () => {
     p.y = level.goal.y
     game.update(1)
     expect(game.state.get()).toBe('win')
-    input.set('confirm', true)
-    game.update(1)
-    input.set('confirm', false)
-    game.update(1)
+    confirmResult(game, input) // delay E1
     expect(game.state.get()).toBe('select')
 
     // Rodada 2: perde vida SEM cruzar o checkpoint -> respawn no spawn original.
@@ -1629,16 +1646,13 @@ describe('createGame — clock global e arte de objetos (D4)', () => {
     moeda = findMoeda(renderer)
     expect(moeda![1]).toBe(128)
 
-    // win -> confirm -> select -> nova rodada: clock zerado -> sx=0 de novo
+    // win -> confirm (delay E1) -> select -> nova rodada: clock zerado -> sx=0 de novo
     const p = game.player!
     p.x = level.goal.x
     p.y = level.goal.y
     game.update(1)
     expect(game.state.get()).toBe('win')
-    input.set('confirm', true)
-    game.update(1)
-    input.set('confirm', false)
-    game.update(1)
+    confirmResult(game, input)
     expect(game.state.get()).toBe('select')
     selectFirst(game, input)
     vi.mocked(renderer.drawSprite).mockClear()
@@ -1871,5 +1885,369 @@ describe('createGame — vinheta do Humanware (D4)', () => {
     expect(fills.filter((f) => f.style === COLOR_OBJETIVO && f.alpha === 0.15)).toHaveLength(4)
     expect(fills.filter((f) => f.style === COLOR_OBJETIVO && f.alpha === 0.07)).toHaveLength(4)
     expect(fills.filter((f) => f.style === '#000' && f.alpha === 0.06)).toHaveLength(1)
+  })
+})
+
+// ============================================================================
+// (E1) fluxo de telas: title, pause e resultado win/over com score canonico
+// ============================================================================
+
+// Todos os textos desenhados via ctx.fillText desde o ultimo mockClear.
+function textsOf(renderer: Renderer): string[] {
+  return vi.mocked(renderer.ctx.fillText).mock.calls.map((c) => String(c[0]))
+}
+
+describe('createGame — E1: title', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it("jump tambem sai do title para 'select'", () => {
+    const game = createGame(renderer, input, makeLevel())
+    expect(game.state.get()).toBe('title')
+    input.set('jump', true)
+    game.update(1)
+    expect(game.state.get()).toBe('select')
+  })
+
+  it('render do title: wordmark + subtitulo + PRESS ENTER piscando; SEM HUD', () => {
+    const game = createGame(renderer, input, makeLevel())
+    game.render(0) // uiClock=0 -> (floor(0/30)&1)===0 -> visivel
+    let texts = textsOf(renderer)
+    expect(texts).toContain('GRAVIDADE ZERO')
+    expect(texts).toContain('O JOGO')
+    expect(texts).toContain('PRESS ENTER')
+    // HUD nao aparece no title.
+    expect(texts.some((t) => t.startsWith('TIME'))).toBe(false)
+    // Particulas ambiente desenhadas em screen space no title.
+    expect(particles.drawParticles).toHaveBeenCalled()
+
+    // 30 frames de title: fase de blink oculta (floor(30/30)&1 === 1).
+    for (let i = 0; i < 30; i++) game.update(1)
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    texts = textsOf(renderer)
+    expect(texts).toContain('GRAVIDADE ZERO')
+    expect(texts).not.toContain('PRESS ENTER')
+
+    // +30 frames: visivel de novo (floor(60/30)&1 === 0).
+    for (let i = 0; i < 30; i++) game.update(1)
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    expect(textsOf(renderer)).toContain('PRESS ENTER')
+  })
+})
+
+describe('createGame — E1: pause', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('ESC alterna playing->paused e congela TUDO (inimigo e player imoveis)', () => {
+    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    expect(game.state.get()).toBe('playing')
+
+    input.set('pause', true)
+    game.update(1)
+    input.set('pause', false)
+    expect(game.state.get()).toBe('paused')
+
+    const e = game.enemies[0]
+    const ex = e.x
+    const px = game.player!.x
+    for (let i = 0; i < 30; i++) game.update(1)
+    expect(game.state.get()).toBe('paused')
+    expect(e.x).toBe(ex) // mundo congelado
+    expect(game.player!.x).toBe(px)
+  })
+
+  it('ESC de novo volta ao playing (mundo anda); confirm tambem despausa', () => {
+    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+
+    // Pausa.
+    input.set('pause', true)
+    game.update(1)
+    input.set('pause', false)
+    game.update(1)
+    expect(game.state.get()).toBe('paused')
+
+    // ESC despausa; o mundo volta a andar.
+    input.set('pause', true)
+    game.update(1)
+    input.set('pause', false)
+    expect(game.state.get()).toBe('playing')
+    const e = game.enemies[0]
+    const ex = e.x
+    game.update(1)
+    expect(e.x).not.toBe(ex)
+
+    // Pausa de novo e despausa com confirm.
+    input.set('pause', true)
+    game.update(1)
+    input.set('pause', false)
+    game.update(1)
+    expect(game.state.get()).toBe('paused')
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    expect(game.state.get()).toBe('playing')
+  })
+
+  it('render do paused: veu 0.6 + titulo PAUSA + lista de controles + HUD mantido', () => {
+    const game = createGame(renderer, input, makeLevel())
+    selectFirst(game, input)
+    input.set('pause', true)
+    game.update(1)
+    input.set('pause', false)
+    expect(game.state.get()).toBe('paused')
+
+    const fills = recordFills(renderer)
+    fills.length = 0
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+
+    // Veu escuro alpha 0.6 por cima do mundo.
+    expect(fills.some((f) => f.style === '#000' && f.alpha === 0.6)).toBe(true)
+    const texts = textsOf(renderer)
+    expect(texts).toContain('PAUSA')
+    expect(texts).toContain('←/→  ANDAR')
+    expect(texts).toContain('SHIFT  CORRER')
+    expect(texts).toContain('ESPAÇO  PULAR')
+    expect(texts).toContain('J  HABILIDADE')
+    expect(texts).toContain('H  HUMANWARE (medidor cheio)')
+    expect(texts).toContain('ESC  CONTINUAR')
+    // HUD se MANTEM no pause (so some em win/over).
+    expect(texts.some((t) => t.startsWith('TIME'))).toBe(true)
+  })
+})
+
+describe('createGame — E1: resultado win (painel + score + delay)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  // Leva o jogo ao win com 2 moedas coletadas e 1 stomp (stats conhecidos).
+  function winWithStats(): ReturnType<typeof createGame> {
+    const level = makeLevel(
+      [{ x: 20 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [
+        { x: 4 * TILE, y: 8 * TILE },
+        { x: 5 * TILE, y: 8 * TILE },
+      ],
+    )
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    // Stomp no tolo (na posicao ATUAL dele).
+    const e = game.enemies[0]
+    p.x = e.x
+    p.y = e.y - p.h + 4
+    p.vy = 5
+    game.update(1)
+    expect(e.alive).toBe(false)
+    // Coleta as 2 moedas.
+    for (const c of level.coins) {
+      p.x = c.x
+      p.y = c.y
+      p.vy = 0
+      game.update(1)
+    }
+    // Goal.
+    p.x = level.goal.x
+    p.y = level.goal.y
+    p.vy = 0
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    return game
+  }
+
+  it('painel mostra MOEDAS/TOLOS/TEMPO/SCORE com os valores canonicos (100/200/1000/50s)', () => {
+    const game = winWithStats()
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    const texts = textsOf(renderer)
+    expect(texts).toContain('ZONA CONCLUÍDA')
+    expect(texts).toContain('MOEDAS x2')
+    expect(texts).toContain('TOLOS x1')
+    const tempoLine = texts.find((t) => /^TEMPO RESTANTE \d+s$/.test(t))
+    expect(tempoLine).toBeDefined()
+    const tempo = Number(/(\d+)/.exec(tempoLine!)![1])
+    expect(tempo).toBeGreaterThan(0)
+    const scoreLine = texts.find((t) => /^SCORE \d+$/.test(t))
+    expect(scoreLine).toBeDefined()
+    const score = Number(/SCORE (\d+)/.exec(scoreLine!)![1])
+    // SCORE canonico: 2 moedas x100 + 1 stomp x200 + fase 1000 + tempo x50
+    // (RulesConfig §3.8 + §9.6.1/§9.6.4 do spec mestre).
+    expect(score).toBe(2 * 100 + 1 * 200 + 1000 + tempo * 50)
+    // HUD oculto no win.
+    expect(texts.some((t) => t.startsWith('TIME '))).toBe(false)
+  })
+
+  it('painel do win tem borda 4px em COLOR_OBJETIVO', () => {
+    const game = winWithStats()
+    vi.mocked(renderer.drawRect).mockClear()
+    game.render(0)
+    // Bordas horizontais do painel: 520x4 na cor do resultado.
+    const horiz = vi
+      .mocked(renderer.drawRect)
+      .mock.calls.filter((c) => c[2] === 520 && c[3] === 4 && c[4] === COLOR_OBJETIVO)
+    expect(horiz).toHaveLength(2)
+  })
+
+  it('ENTER PARA CONTINUAR so aparece apos 45 frames no win', () => {
+    const game = winWithStats()
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    expect(textsOf(renderer)).not.toContain('ENTER PARA CONTINUAR')
+    for (let i = 0; i < 45; i++) game.update(1)
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    expect(textsOf(renderer)).toContain('ENTER PARA CONTINUAR')
+  })
+
+  it('Enter antes de 45f e ignorado (estado segue win); apos 45f volta ao select', () => {
+    const game = winWithStats()
+    // Frame 1 no estado win: ignorado.
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    game.update(1) // resultTimer=2
+    expect(game.state.get()).toBe('win')
+    // Ate 43 frames: ainda ignorado.
+    for (let i = 0; i < 40; i++) game.update(1) // resultTimer=42
+    input.set('confirm', true)
+    game.update(1) // resultTimer=43 < 45 -> ignorado
+    expect(game.state.get()).toBe('win')
+    input.set('confirm', false)
+    game.update(1) // resultTimer=44
+    // 45: aceita e reseta pro select.
+    input.set('confirm', true)
+    game.update(1) // resultTimer=45 -> select
+    input.set('confirm', false)
+    expect(game.state.get()).toBe('select')
+  })
+
+  it('resetToSelect posiciona o cursor no inicio canonico (SELECT_START_INDEX)', () => {
+    const game = winWithStats()
+    confirmResult(game, input)
+    expect(game.state.get()).toBe('select')
+    // Confirm imediato escolhe o personagem do cursor inicial.
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    game.update(1)
+    expect(game.state.get()).toBe('playing')
+    expect(game.player!.char.id).toBe(SELECT_ORDER[START_INDEX])
+  })
+})
+
+describe('createGame — E1: resultado over (painel + score parcial + delay)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  // Coleta 1 moeda e morre no tolo (score parcial conhecido = 100, sem bonus).
+  function loseWithStats(): ReturnType<typeof createGame> {
+    const level = makeLevel(
+      [{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [{ x: 6 * TILE, y: 8 * TILE }],
+    )
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    drainHitstop(game) // hit incidental no select arma hitstop
+    const p = game.player!
+    // Moeda longe do tolo.
+    p.x = 6 * TILE
+    p.y = 8 * TILE
+    p.vy = 0
+    game.update(1)
+    // Morte: 1 vida, 1 coracao, sem i-frames, overlap lateral no tolo.
+    p.lives = 1
+    p.hearts = 1
+    p.iframes = 0
+    p.vy = 0
+    p.x = 2 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1)
+    expect(game.state.get()).toBe('over')
+    return game
+  }
+
+  it('painel GAME OVER com borda PERIGO + stats parciais; HUD oculto', () => {
+    const game = loseWithStats()
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    vi.mocked(renderer.drawRect).mockClear()
+    game.render(0)
+    const texts = textsOf(renderer)
+    expect(texts).toContain('GAME OVER')
+    expect(texts).toContain('MOEDAS x1')
+    // Score parcial: so 1 moeda x100 (sem bonus de fase/tempo no over).
+    expect(texts).toContain('SCORE 100')
+    expect(texts.some((t) => t.startsWith('TIME '))).toBe(false) // HUD oculto
+    const horiz = vi
+      .mocked(renderer.drawRect)
+      .mock.calls.filter((c) => c[2] === 520 && c[3] === 4 && c[4] === COLOR_PERIGO)
+    expect(horiz).toHaveLength(2)
+  })
+
+  it('over ignora Enter antes de 45f; apos o delay volta ao select', () => {
+    const game = loseWithStats()
+    input.set('confirm', true)
+    game.update(1)
+    input.set('confirm', false)
+    game.update(1)
+    expect(game.state.get()).toBe('over') // cedo demais
+    confirmResult(game, input)
+    expect(game.state.get()).toBe('select')
+  })
+
+  it('stompCount conta stomps da rodada (TOLOS x2 no painel do win)', () => {
+    // 2 tolos afastados; stompa os dois e vence.
+    const level = makeLevel([
+      { x: 18 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+      { x: 24 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+    ])
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    for (const e of game.enemies) {
+      p.x = e.x
+      p.y = e.y - p.h + 4
+      p.vy = 5
+      game.update(1)
+      expect(e.alive).toBe(false)
+    }
+    p.x = level.goal.x
+    p.y = level.goal.y
+    p.vy = 0
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    expect(textsOf(renderer)).toContain('TOLOS x2')
   })
 })

@@ -22,6 +22,7 @@ import {
   createSelect,
   updateSelect,
   drawSelect,
+  SELECT_START_INDEX,
   type SelectState,
 } from '../ui/selectScreen'
 import {
@@ -67,6 +68,7 @@ import {
   COLOR_TECH,
   COLOR_PERIGO,
   COLOR_COLETAVEL,
+  HW_METER_MAX,
   VIEW_W,
   VIEW_H,
 } from '../engine/constants'
@@ -108,6 +110,21 @@ const HW_GAIN_HEART_ORB = 25
 
 // C3b: lado do heart-orb (quadrado magenta placeholder até a Fase D).
 const HEART_SIZE = 20
+
+// E1: SCORE canônico (spec mestre: RulesConfig §3.8 + tabela §9.6.1/§9.6.4).
+// moeda=100 · stomp=200 · conclusão de fase=1000 · bônus de tempo=50/s restante.
+// (O §6.2.2 é a tabela do MEDIDOR Humanware — moeda 8 / stomp 60 — não é score.)
+const SCORE_COIN = 100
+const SCORE_STOMP = 200
+const SCORE_GOAL = 1000
+const SCORE_TIME_PER_SEC = 50
+
+// E1: frames mínimos no resultado (win/over) antes de aceitar Enter (anti-skip).
+const RESULT_DELAY_FRAMES = 45
+
+// E1: cursor inicial do select (contrato E2). O ?? 0 cobre a janela de
+// integração até o E2 exportar SELECT_START_INDEX.
+const SELECT_START = SELECT_START_INDEX ?? 0
 
 // C3b: véu escuro sobre bloco '?' já usado.
 const QBLOCK_USED_VEIL = 'rgba(0,0,0,0.35)'
@@ -186,7 +203,8 @@ export function createGame(
   level: ParsedLevel,
   store?: AssetStore,
 ): Game {
-  const state = createStateMachine('select')
+  // E1: boot inicia no TITLE (Enter/confirm → select).
+  const state = createStateMachine('title')
   const cam = createCamera()
   const chars = selectableChars()
   const sel: SelectState = createSelect()
@@ -244,6 +262,12 @@ export function createGame(
   // C3b/D4: relogio GLOBAL de frames (anima objetos e pulso dos heart-orbs).
   // Congela no hitstop; NAO reseta no respawn; reseta ao voltar pro select.
   let clock = 0
+  // E1: relogio das telas de UI (blink do title + idle do card do select).
+  let uiClock = 0
+  // E1: tolos stompados na rodada (painel de resultado + score).
+  let stompCount = 0
+  // E1: frames decorridos no estado win/over (delay anti-skip do Enter).
+  let resultTimer = 0
 
   // D4: fila de SFX (referencia VIVA exposta em game.events; main drena via splice).
   const events: string[] = []
@@ -331,8 +355,11 @@ export function createGame(
     Object.assign(playerAnim, createAnimator())
     ps.particles = []
     ps.ambientAcc = 0
-    // Reseta o cursor do select para o primeiro personagem em uma nova rodada.
-    sel.index = 0
+    // E1: zera stats do resultado e o delay anti-skip.
+    stompCount = 0
+    resultTimer = 0
+    // E1: cursor do select volta ao inicial canonico (contrato E2).
+    sel.index = SELECT_START
     state.set('select')
   }
 
@@ -343,7 +370,18 @@ export function createGame(
   }
 
   function updateInner(dt: number): void {
+    // E1: TITLE — particulas ambiente continuam rodando; Enter/confirm (ou jump)
+    // leva ao select.
+    if (state.is('title')) {
+      uiClock += dt
+      emitAmbient(ps, VIEW_W, VIEW_H, dt)
+      updateParticles(ps, dt)
+      if (input.pressed('confirm') || input.pressed('jump')) state.set('select')
+      return
+    }
+
     if (state.is('select')) {
+      uiClock += dt // E1: anima o idle do card selecionado (drawSelect)
       const picked = updateSelect(sel, input, chars)
       if (picked) {
         player = createPlayer(CHARACTERS[picked], level.playerSpawn)
@@ -357,12 +395,27 @@ export function createGame(
         heartEnts = spawnHearts()
         lastCheckpointX = level.playerSpawn.x
         clock = 0
+        // E1: stats da rodada nova.
+        stompCount = 0
+        resultTimer = 0
         state.set('playing')
       }
       return
     }
 
+    // E1: PAUSED — update congelado (nada do mundo avanca); ESC ou confirm despausa.
+    if (state.is('paused')) {
+      if (input.pressed('pause') || input.pressed('confirm')) state.set('playing')
+      return
+    }
+
     if (state.is('playing') && player) {
+      // E1: ESC alterna para o pause (vale mesmo durante o hitstop).
+      if (input.pressed('pause')) {
+        state.set('paused')
+        return
+      }
+
       const p = player
 
       // M2 fase B: HITSTOP — mundo congelado; nada mais atualiza neste frame.
@@ -505,6 +558,7 @@ export function createGame(
           e.alive = false
           p.vy = STOMP_BOUNCE
           addMeter(hw, 60)
+          stompCount++ // E1: conta tolos pro painel de resultado/score
           // D4: feedback do stomp — SFX + burst PERIGO + shake curto (menor que o de dano).
           pushEvent('stomp')
           emitBurst(ps, e.x + e.w / 2, e.y + e.h / 2, 12, [COLOR_PERIGO], 'world')
@@ -518,6 +572,7 @@ export function createGame(
           if (result === 'death') {
             // Sai limpo no frame da morte (input.update() acontece em update()).
             pushEvent('over') // D4
+            resultTimer = 0 // E1: arma o delay anti-skip do resultado
             state.set('over'); return
           } else if (result === 'hit') {
             // M2 fase B: dano que conecta congela o mundo e chacoalha a camera.
@@ -578,6 +633,7 @@ export function createGame(
         time = Math.max(0, time - dt * FIXED_DT)
         if (time <= 0) {
           pushEvent('over') // D4
+          resultTimer = 0 // E1: arma o delay anti-skip do resultado
           state.set('over')
         }
       }
@@ -592,6 +648,7 @@ export function createGame(
         // M2 fase B: pose de vitoria mantida na tela de win (duracao "infinita").
         triggerOneShot(playerAnim, 'victory', 9999)
         pushEvent('win') // D4
+        resultTimer = 0 // E1: arma o delay anti-skip do resultado
         state.set('win')
       }
 
@@ -599,7 +656,9 @@ export function createGame(
     }
 
     if (state.is('win') || state.is('over')) {
-      if (input.pressed('confirm')) {
+      // E1: delay anti-skip — Enter so conta apos RESULT_DELAY_FRAMES no estado.
+      resultTimer += dt
+      if (resultTimer >= RESULT_DELAY_FRAMES && input.pressed('confirm')) {
         resetToSelect()
       }
       return
@@ -611,8 +670,33 @@ export function createGame(
   function render(_alpha: number): void {
     renderer.clear(COLOR_BG)
 
+    // E1: TITLE — wordmark + particulas ambiente em screen space; SEM HUD.
+    if (state.is('title')) {
+      drawParticles(renderer, ps)
+      const ctx = renderer.ctx
+      ctx.save()
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = 'bold 56px monospace'
+      ctx.fillStyle = COLOR_TEXT
+      ctx.fillText('GRAVIDADE ZERO', VIEW_W / 2, VIEW_H / 2 - 48)
+      ctx.font = 'bold 20px monospace'
+      ctx.fillStyle = COLOR_OBJETIVO
+      ctx.fillText('O JOGO', VIEW_W / 2, VIEW_H / 2 + 8)
+      // Pisca: visivel quando (floor(uiClock/30)&1)===0.
+      if ((Math.floor(uiClock / 30) & 1) === 0) {
+        ctx.font = 'bold 16px monospace'
+        ctx.fillStyle = COLOR_LIME
+        ctx.fillText('PRESS ENTER', VIEW_W / 2, VIEW_H / 2 + 88)
+      }
+      ctx.restore()
+      void _alpha
+      return
+    }
+
     if (state.is('select')) {
-      drawSelect(renderer, sel, chars, store)
+      // E1: uiClock anima o idle do card SELECIONADO (contrato E2).
+      drawSelect(renderer, sel, chars, store, uiClock)
       void _alpha
       return
     }
@@ -875,39 +959,108 @@ export function createGame(
     // M2a: particulas em SCREEN SPACE, por cima do mundo, antes do HUD.
     drawParticles(renderer, ps)
 
-    // HUD em screen space (hwMeter do Humanware; hearts/lives do player).
-    // Task 9 vai estender drawHud com hearts; por agora usa a assinatura M0 + hwMeter.
-    drawHud(renderer, {
-      time: Math.ceil(time),
-      lives: player ? player.lives : 0,
-      coins: coinCount,
-      hwMeter: hw.meter,
-      hearts: player ? player.hearts : 0,
-    })
+    // HUD em screen space — oculto SOMENTE nos overlays win/over (paused mantem).
+    // E1: hwActive/hwReady sao campos OPCIONAIS do contrato E3 (hud.ts).
+    if (!state.is('win') && !state.is('over')) {
+      drawHud(renderer, {
+        // time FRACIONARIO cru: drawHud formata (ceil+pad) e usa a fracao como
+        // base deterministica do blink de aviso (<50s) e do hwReady.
+        time,
+        lives: player ? player.lives : 0,
+        coins: coinCount,
+        hwMeter: hw.meter,
+        hearts: player ? player.hearts : 0,
+        hwActive: isActive(hw),
+        hwReady: hw.meter >= HW_METER_MAX,
+      })
+    }
 
-    // Overlays win/over.
-    if (state.is('win') || state.is('over')) {
+    // E1: overlay de PAUSA — mundo + HUD continuam desenhados por baixo do veu.
+    if (state.is('paused')) {
       const ctx = renderer.ctx
       ctx.save()
-      ctx.fillStyle = 'rgba(9,9,11,0.88)'
+      ctx.globalAlpha = 0.6
+      ctx.fillStyle = '#000'
       ctx.fillRect(0, 0, VIEW_W, VIEW_H)
+      ctx.globalAlpha = 1
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      if (state.is('win')) {
-        ctx.font = 'bold 22px monospace'
-        ctx.fillStyle = COLOR_MAGENTA
-        ctx.fillText('VOCE TAMBEM ACREDITA QUE PODEMOS', VIEW_W / 2, VIEW_H / 2 - 24)
-        ctx.fillText('MUDAR O MUNDO? BORA JUNTOS.', VIEW_W / 2, VIEW_H / 2 + 12)
-        ctx.fillStyle = COLOR_TEXT
-        ctx.font = '14px monospace'
-        ctx.fillText('ENTER PARA VOLTAR -- GRAVIDADE ZERO', VIEW_W / 2, VIEW_H / 2 + 56)
-      } else {
-        ctx.font = 'bold 28px monospace'
-        ctx.fillStyle = COLOR_MAGENTA
-        ctx.fillText('GAME OVER', VIEW_W / 2, VIEW_H / 2 - 12)
-        ctx.fillStyle = COLOR_TEXT
-        ctx.font = '14px monospace'
-        ctx.fillText('ENTER PARA RECOMECAR', VIEW_W / 2, VIEW_H / 2 + 32)
+      ctx.font = 'bold 32px monospace'
+      ctx.fillStyle = COLOR_TEXT
+      ctx.fillText('PAUSA', VIEW_W / 2, VIEW_H / 2 - 116)
+      ctx.font = 'bold 16px monospace'
+      const controls = [
+        '←/→  ANDAR',
+        'SHIFT  CORRER',
+        'ESPAÇO  PULAR',
+        'J  HABILIDADE',
+        'H  HUMANWARE (medidor cheio)',
+        'ESC  CONTINUAR',
+      ]
+      let cy = VIEW_H / 2 - 56
+      for (const line of controls) {
+        ctx.fillText(line, VIEW_W / 2, cy)
+        cy += 28
+      }
+      ctx.restore()
+    }
+
+    // E1: painel de RESULTADO (win/over). A frase de marca que vivia aqui SAIU
+    // da vitoria de zona — reservada para o final do jogo (spec §9.7,
+    // Consciencia Unificada).
+    if (state.is('win') || state.is('over')) {
+      const ctx = renderer.ctx
+      const won = state.is('win')
+      const accent = won ? COLOR_OBJETIVO : COLOR_PERIGO
+      ctx.save()
+      // Veu escuro 0.7.
+      ctx.globalAlpha = 0.7
+      ctx.fillStyle = '#000'
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H)
+      ctx.globalAlpha = 1
+
+      // Painel central com borda 4px na cor do resultado.
+      const pw = 520
+      const ph = 320
+      const px = (VIEW_W - pw) / 2
+      const py = (VIEW_H - ph) / 2
+      ctx.fillStyle = COLOR_BG
+      ctx.fillRect(px, py, pw, ph)
+      renderer.drawRect(px, py, pw, 4, accent)
+      renderer.drawRect(px, py + ph - 4, pw, 4, accent)
+      renderer.drawRect(px, py, 4, ph, accent)
+      renderer.drawRect(px + pw - 4, py, 4, ph, accent)
+
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = 'bold 32px monospace'
+      ctx.fillStyle = accent
+      ctx.fillText(won ? 'ZONA CONCLUÍDA' : 'GAME OVER', VIEW_W / 2, py + 52)
+
+      // Stats + SCORE canonico (moeda 100 · stomp 200 · fase 1000 · 50/s).
+      const timeLeft = Math.ceil(time)
+      const baseScore = coinCount * SCORE_COIN + stompCount * SCORE_STOMP
+      const lines = won
+        ? [
+            `MOEDAS x${coinCount}`,
+            `TOLOS x${stompCount}`,
+            `TEMPO RESTANTE ${timeLeft}s`,
+            `SCORE ${baseScore + SCORE_GOAL + timeLeft * SCORE_TIME_PER_SEC}`,
+          ]
+        : [`MOEDAS x${coinCount}`, `SCORE ${baseScore}`]
+      ctx.font = 'bold 16px monospace'
+      ctx.fillStyle = COLOR_TEXT
+      let ly = py + 116
+      for (const line of lines) {
+        ctx.fillText(line, VIEW_W / 2, ly)
+        ly += 32
+      }
+
+      // Enter so APARECE (e so funciona, ver update) apos o delay anti-skip.
+      if (resultTimer >= RESULT_DELAY_FRAMES) {
+        ctx.font = 'bold 14px monospace'
+        ctx.fillStyle = COLOR_LIME
+        ctx.fillText('ENTER PARA CONTINUAR', VIEW_W / 2, py + ph - 36)
       }
       ctx.restore()
     }

@@ -32,6 +32,8 @@ describe('CHARACTERS registry', () => {
     expect(c.id).toBe('renan')
     expect(c.name).toBe('Renan')
     expect(c.abilityId).toBe('salto_visionario')
+    expect(c.abilityName).toBe('Salto Visionário')
+    expect(c.abilityDesc).toBe('Pulo duplo no ar')
     expect(c.jumpVelMul).toBe(1.06)
     expect(c.walkMul).toBe(1.0)
     expect(c.runMul).toBe(1.0)
@@ -46,6 +48,8 @@ describe('CHARACTERS registry', () => {
     expect(c.id).toBe('dante')
     expect(c.name).toBe('Dante')
     expect(c.abilityId).toBe('dash_criativo')
+    expect(c.abilityName).toBe('Dash Criativo')
+    expect(c.abilityDesc).toBe('Investida rápida e invencível')
     expect(c.jumpVelMul).toBe(1.0)
     expect(c.walkMul).toBe(1.06)
     expect(c.runMul).toBe(1.08)
@@ -60,6 +64,8 @@ describe('CHARACTERS registry', () => {
     expect(c.id).toBe('julio')
     expect(c.name).toBe('Julio')
     expect(c.abilityId).toBe('escudo_governanca')
+    expect(c.abilityName).toBe('Escudo de Governança')
+    expect(c.abilityDesc).toBe('Bloqueia dano enquanto durar')
     expect(c.jumpVelMul).toBe(1.0)
     expect(c.walkMul).toBe(1.0)
     expect(c.runMul).toBe(1.0)
@@ -74,6 +80,8 @@ describe('CHARACTERS registry', () => {
     expect(c.id).toBe('artur')
     expect(c.name).toBe('Artur')
     expect(c.abilityId).toBe('builder')
+    expect(c.abilityName).toBe('Builder')
+    expect(c.abilityDesc).toBe('Constrói um bloco temporário')
     expect(c.jumpVelMul).toBe(1.0)
     expect(c.walkMul).toBe(1.0)
     expect(c.runMul).toBe(1.0)
@@ -88,6 +96,8 @@ describe('CHARACTERS registry', () => {
     expect(c.id).toBe('einstein')
     expect(c.name).toBe('Einstein')
     expect(c.abilityId).toBe('emc2')
+    expect(c.abilityName).toBe('E=mc²')
+    expect(c.abilityDesc).toBe('Desacelera o tempo do mundo')
     expect(c.jumpVelMul).toBe(0.94)
     expect(c.walkMul).toBe(0.92)
     expect(c.runMul).toBe(1.0)
@@ -95,6 +105,13 @@ describe('CHARACTERS registry', () => {
     expect(c.hearts).toBe(2)
     expect(c.color).toBe(COLOR_TEXT)
     expect(c.accent).toBe(COLOR_MAGENTA2)
+  })
+
+  it('todos os 5 tem abilityName e abilityDesc nao vazios (Fase E2)', () => {
+    for (const c of Object.values(CHARACTERS)) {
+      expect(c.abilityName.length).toBeGreaterThan(0)
+      expect(c.abilityDesc.length).toBeGreaterThan(0)
+    }
   })
 
   it('cada char aponta para um abilityId valido', () => {

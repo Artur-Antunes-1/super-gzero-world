@@ -28,11 +28,13 @@ describe('schema', () => {
     expect(new Set(abilities).size).toBe(6)
   })
 
-  it('um CharacterDef de exemplo satisfaz o tipo', () => {
+  it('um CharacterDef de exemplo satisfaz o tipo (com abilityName/abilityDesc)', () => {
     const renan: CharacterDef = {
       id: 'renan',
       name: 'Renan',
       abilityId: 'salto_visionario',
+      abilityName: 'Salto Visionário',
+      abilityDesc: 'Pulo duplo no ar',
       color: '#ff0055',
       accent: '#0099ff',
       hearts: 3,
@@ -42,6 +44,8 @@ describe('schema', () => {
       weightMul: 0.96,
     }
     expect(renan.abilityId).toBe('salto_visionario')
+    expect(renan.abilityName).toBe('Salto Visionário')
+    expect(renan.abilityDesc).toBe('Pulo duplo no ar')
     expect(renan.hearts).toBe(3)
   })
 

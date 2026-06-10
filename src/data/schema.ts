@@ -36,6 +36,9 @@ export interface CharacterDef {
   id: string
   name: string
   abilityId: AbilityId
+  // Fase E2: nome legivel + descricao curta da habilidade (tela de selecao).
+  abilityName: string
+  abilityDesc: string
   color: string
   accent: string
   hearts: number
