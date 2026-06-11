@@ -95,4 +95,6 @@ export const W1_1: LevelDef = {
   entities: W1_1_ENTITIES,
   checkpoints: [72],
   timeStart: 250,
+  // Progressao (2026-06-11): apos a W1-1, segue para a W1-2 real (spec §8.3).
+  next: 'w1-2',
 }

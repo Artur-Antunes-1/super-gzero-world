@@ -19,6 +19,9 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   'char.artur.queda': { url: '/assets/chars/artur/queda.png' },
   'char.artur.danificado': { url: '/assets/chars/artur/danificado.png' },
   'char.artur.ataque': { url: '/assets/chars/artur/ataque.png' },
+  // G3: poses extras do sheet original (vitoria = coleta/comemoracao; skid = vista 3/4).
+  'char.artur.vitoria': { url: '/assets/chars/artur/vitoria.png' },
+  'char.artur.skid': { url: '/assets/chars/artur/skid.png' },
   'bg.sky': { url: '/assets/bg/sky.png' },
   'bg.cosmic': { url: '/assets/bg/cosmic.png' },
   // C2: atlases de tiles Wang (PixelLab) ja transparentes -> sem chromaKey.

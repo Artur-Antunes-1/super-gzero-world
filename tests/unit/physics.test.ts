@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { GRAVITY, MAX_FALL, TILE } from '../../src/engine/constants'
+import { GRAVITY, MAX_FALL, TILE, JUMP_VEL } from '../../src/engine/constants'
 import type { ParsedLevel, TileType } from '../../src/data/schema'
 import { stepBody, collideTiles, isFullSolid, tileAt, type Body } from '../../src/engine/physics'
 
@@ -78,6 +78,45 @@ describe('stepBody (gravidade + integração)', () => {
     stepBody(body, level, 1)
 
     expect(body.x).toBeCloseTo(3, 5)
+  })
+})
+
+// Errata de fisica (2026-06-11): JUMP_VEL -18.0. Apex CONTINUO 18^2/1.6 ≈ 202px
+// (4,2 tiles); a simulacao DISCRETA (gravidade antes da integracao) da ~193.6px.
+describe('pulo recalibrado — apex por simulacao de stepBody', () => {
+  // Sobe com vy0 ate o apex em level vazio; retorna a subida total em px.
+  function simulateApex(vy0: number, gravityScale = 1): number {
+    const level = makeLevel(Array(12).fill('....'))
+    const body = makeBody({ x: 24, y: 480, vx: 0, vy: vy0 })
+    const startY = body.y
+    let minY = startY
+    let guard = 0
+    while (body.vy < 0 && guard < 100) {
+      stepBody(body, level, 1, gravityScale)
+      if (body.y < minY) minY = body.y
+      guard++
+    }
+    return startY - minY
+  }
+
+  it('JUMP_VEL base: apex >= 4 tiles (~193.6px discreto; ~202px continuo)', () => {
+    const apex = simulateApex(JUMP_VEL)
+    expect(apex).toBeGreaterThanOrEqual(4 * TILE) // >= 192px
+    expect(apex).toBeLessThan(4.3 * TILE) // sanidade (< 206.4px)
+    expect(apex).toBeCloseTo(193.6, 1)
+  })
+
+  it('pior saltador (jumpVelMul 0.94, Einstein): apex ~170px — alcanca moedas row 4 (150px)', () => {
+    const apex = simulateApex(JUMP_VEL * 0.94)
+    expect(apex).toBeGreaterThan(150) // exigencia das moedas row 4
+    expect(apex).toBeLessThan(180)
+    expect(apex).toBeCloseTo(170.5, 1) // = piso usado por REACH_MAX (170)
+  })
+
+  it('melhor saltador (Renan: jumpVelMul 1.06, weightMul 0.96): apex ~227px', () => {
+    const apex = simulateApex(JUMP_VEL * 1.06, 0.96)
+    expect(apex).toBeGreaterThan(220)
+    expect(apex).toBeLessThan(235)
   })
 })
 

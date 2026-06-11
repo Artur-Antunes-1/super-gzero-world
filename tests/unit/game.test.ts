@@ -14,6 +14,7 @@ import {
   FIXED_DT,
   TIME_START,
   STOMP_BOUNCE,
+  SPRING_VEL,
   COLOR_MAGENTA,
   COLOR_LIME,
   COLOR_OBJETIVO,
@@ -158,6 +159,16 @@ interface LevelExtras {
   hearts?: Array<{ col: number; row: number }>
   checkpoints?: number[]
   timeStart?: number
+  // G4: molas, plataformas moveis e progressao por next.
+  springs?: Array<{ col: number; row: number }>
+  movers?: Array<{
+    col: number
+    row: number
+    axis: 'x' | 'y'
+    amplitude: number
+    speed: number
+  }>
+  next?: string
 }
 function makeLevel(
   enemies: Array<{ x: number; y: number; kind: string }> = [],
@@ -186,6 +197,9 @@ function makeLevel(
     checkpoints: extras.checkpoints ?? [],
     timeStart: extras.timeStart ?? TIME_START,
     foolSpawns: [],
+    springs: extras.springs ?? [],
+    movers: extras.movers ?? [],
+    next: extras.next,
   } as ParsedLevel
 }
 
@@ -247,6 +261,13 @@ function confirmResult(game: ReturnType<typeof createGame>, input: FakeInput): v
 // Drena o hitstop incidental antes de configurar o cenario.
 function drainHitstop(game: ReturnType<typeof createGame>): void {
   for (let i = 0; i < HITSTOP_FRAMES; i++) game.update(1)
+}
+
+// (G4) Hit LETAL agora passa pelo subestado DYING (36 frames com o corpo em
+// cena) antes do 'over' — drena ate o estado virar.
+const DYING_FRAMES = 36
+function drainDying(game: ReturnType<typeof createGame>): void {
+  for (let i = 0; i < DYING_FRAMES; i++) game.update(1)
 }
 
 // Navega para 'dante' (index 1, dash_criativo) e confirma.
@@ -321,7 +342,7 @@ describe('createGame — playing', () => {
     expect(p.vy).toBe(STOMP_BOUNCE)
   })
 
-  it('dano sem hearts/lives leva a "over"', () => {
+  it('dano sem hearts/lives entra no DYING e leva a "over" apos 36 frames (G4)', () => {
     // Inimigo colado ao player; player sem i-frames; reduz lives/hearts ao minimo.
     const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
     const game = createGame(renderer, input, level)
@@ -337,8 +358,12 @@ describe('createGame — playing', () => {
     p.x = 2 * TILE
     p.y = 8 * TILE + (TILE - 34) // alinhado verticalmente ao inimigo => overlap, nao stomp
     game.update(1)
+    // G4: frame do hit letal NAO encerra — subestado DYING segura 36 frames.
+    expect(game.state.get()).toBe('playing')
+    expect(game.events).not.toContain('over')
+    drainDying(game)
     expect(game.state.get()).toBe('over')
-    // D4: morte empilha o SFX 'over'.
+    // D4: morte empilha o SFX 'over' (agora ao expirar o dying).
     expect(game.events).toContain('over')
   })
 
@@ -526,6 +551,7 @@ describe('createGame — reset', () => {
     p.lives = 1; p.hearts = 1; p.iframes = 0; p.vy = 0
     p.x = 2 * TILE; p.y = 8 * TILE + (TILE - 34)
     game.update(1)
+    drainDying(game) // G4: hit letal passa pelo DYING antes do over
     expect(game.state.get()).toBe('over')
     confirmResult(game, input)
     expect(game.state.get()).toBe('select')
@@ -578,6 +604,7 @@ describe("createGame — reset limpa estado M2a (particulas/animacao/hwWasActive
     p.lives = 1; p.hearts = 1; p.iframes = 0; p.vy = 0
     p.x = 2 * TILE; p.y = 8 * TILE + (TILE - 34)
     game.update(1)
+    drainDying(game) // G4: hit letal passa pelo DYING antes do over
     expect(game.state.get()).toBe("over")
 
     confirmResult(game, input)
@@ -952,6 +979,10 @@ describe('createGame — M2 fase B: screen-shake', () => {
     p.x = 2 * TILE
     p.y = 8 * TILE + (TILE - 34)
     game.update(1) // hit -> shakeT = SHAKE_FRAMES (cam fica em (0,0) perto do spawn)
+    // G4: com o jump-cut (G1), o arco do knockback mudou e o player caia em cima
+    // do tolo (stomp incidental re-armava shakeT=4). Mata o tolo: o teste mede
+    // SO o decaimento do shake do dano.
+    game.enemies[0].alive = false
 
     vi.mocked(renderer.beginWorld).mockClear()
     game.render(0)
@@ -2193,6 +2224,7 @@ describe('createGame — E1: resultado over (painel + score parcial + delay)', (
     p.x = 2 * TILE
     p.y = 8 * TILE + (TILE - 34)
     game.update(1)
+    drainDying(game) // G4: hit letal passa pelo DYING antes do over
     expect(game.state.get()).toBe('over')
     return game
   }
@@ -2287,5 +2319,439 @@ describe('createGame — kill-plane (queda no abismo)', () => {
     game.update(1)
     expect(game.state.get()).toBe('over')
     expect(game.events).toContain('over')
+  })
+})
+
+// ============================================================================
+// (G4) molas, plataformas moveis, dying, skid e progressao por level.next
+// ============================================================================
+
+describe('createGame — molas (G4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('aterrissar (vy>0) na metade superior da celula da mola lanca com SPRING_VEL', () => {
+    // Mola na celula (col 5, row 8), apoiada no chao da row 9.
+    const level = makeLevel([], [], { springs: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    game.events.length = 0
+    // Caindo: pes 2px acima do topo da celula; gravidade leva pes a ~390 (<408).
+    p.x = 5 * TILE
+    p.y = 8 * TILE - p.h + 2
+    p.vx = 0
+    p.vy = 5
+    p.onGround = false
+    game.update(1)
+    expect(p.vy).toBe(SPRING_VEL)
+    // D4/G4: o lancamento soa como 'jump'.
+    expect(game.events).toContain('jump')
+  })
+
+  it('andar no chao por cima da celula da mola NAO lanca (pes fora da metade superior)', () => {
+    const level = makeLevel([], [], { springs: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    // Em pe no chao (pes na row 9 = 432 > 408): atravessa sem acionar.
+    p.x = 5 * TILE
+    p.y = 9 * TILE - p.h
+    p.vx = 0
+    p.vy = 0
+    game.update(1)
+    expect(p.vy).toBe(0)
+    expect(p.onGround).toBe(true)
+  })
+
+  it('subindo (vy<0) atraves da celula NAO lanca', () => {
+    const level = makeLevel([], [], { springs: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    // Pes entram na metade superior vindos de baixo, mas subindo.
+    p.x = 5 * TILE
+    p.y = 8 * TILE + 16 - p.h
+    p.vx = 0
+    p.vy = -10
+    p.onGround = false
+    game.update(1)
+    expect(p.vy).toBeLessThan(0)
+    expect(p.vy).not.toBe(SPRING_VEL)
+  })
+
+  it('render desenha a mola (corpo COLOR_TECH 48px de largura na celula)', () => {
+    const level = makeLevel([], [], { springs: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    vi.mocked(renderer.drawRect).mockClear()
+    game.render(0)
+    const body = vi
+      .mocked(renderer.drawRect)
+      .mock.calls.find(
+        (c) =>
+          c[4] === COLOR_TECH &&
+          c[0] === 5 * TILE &&
+          c[2] === TILE &&
+          (c[1] as number) >= 8 * TILE &&
+          (c[1] as number) < 9 * TILE,
+      )
+    expect(body).toBeDefined()
+    // Corpo apoiado no chao: base em (row+1)*TILE.
+    expect((body![1] as number) + (body![3] as number)).toBeCloseTo(9 * TILE, 5)
+  })
+})
+
+describe('createGame — plataformas moveis (G4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  // Mover horizontal padrao: origem (col 6, row 7), amplitude 3 tiles, 1.2 px/f.
+  const MOVER_X = { col: 6, row: 7, axis: 'x' as const, amplitude: 3, speed: 1.2 }
+
+  it('pouso one-way: caindo, os pes cruzam o topo e o player gruda (vy=0, onGround)', () => {
+    const level = makeLevel([], [], { movers: [MOVER_X] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    // Caindo 2px acima do topo do mover (top = 7*TILE), com overlap horizontal.
+    p.x = 6 * TILE + 20
+    p.y = 7 * TILE - p.h - 2
+    p.vx = 0
+    p.vy = 5
+    p.onGround = false
+    game.update(1)
+    expect(p.y).toBe(7 * TILE - p.h)
+    expect(p.vy).toBe(0)
+    expect(p.onGround).toBe(true)
+  })
+
+  it('carry: em pe no mover horizontal, o player herda o delta (x acompanha)', () => {
+    const level = makeLevel([], [], { movers: [MOVER_X] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    // Pousa primeiro.
+    p.x = 6 * TILE + 20
+    p.y = 7 * TILE - p.h - 2
+    p.vx = 0
+    p.vy = 5
+    p.onGround = false
+    game.update(1)
+    expect(p.onGround).toBe(true)
+    const x0 = p.x
+    // 20 frames em pe (sem input): o seno sobe no inicio do clock -> x cresce.
+    for (let i = 0; i < 20; i++) game.update(1)
+    expect(p.x).toBeGreaterThan(x0)
+    // Pes continuam grudados no topo (top constante: eixo x).
+    expect(p.y).toBe(7 * TILE - p.h)
+    expect(p.onGround).toBe(true)
+  })
+
+  it('carry vertical: mover eixo y desce e o player acompanha o topo', () => {
+    const level = makeLevel([], [], {
+      movers: [{ col: 6, row: 5, axis: 'y', amplitude: 2, speed: 1.0 }],
+    })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.x = 6 * TILE + 20
+    p.y = 5 * TILE - p.h - 2
+    p.vx = 0
+    p.vy = 5
+    p.onGround = false
+    game.update(1)
+    expect(p.onGround).toBe(true)
+    const y0 = p.y
+    // Seno crescente no inicio: topo desce -> player desce junto, sempre em pe.
+    for (let i = 0; i < 20; i++) {
+      game.update(1)
+      expect(p.onGround).toBe(true)
+    }
+    expect(p.y).toBeGreaterThan(y0)
+  })
+
+  it('one-way: subindo por baixo NAO bloqueia nem pousa', () => {
+    const level = makeLevel([], [], { movers: [MOVER_X] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.x = 6 * TILE + 20
+    p.y = 7 * TILE + 10
+    p.vx = 0
+    p.vy = -10
+    p.onGround = false
+    game.update(1)
+    expect(p.vy).toBeLessThan(0)
+    expect(p.onGround).toBe(false)
+  })
+
+  it('render com atlas: 2 celulas terra variant 14 (sx=144) lado a lado', () => {
+    const level = makeLevel([], [], { movers: [MOVER_X] })
+    const game = createGame(renderer, input, level, makeStore(['tiles.terra']))
+    selectFirst(game, input)
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    // Recorte do variant 14 ([3,0] no atlas -> sx 144, sy 0), destino TILE x TILE.
+    const cells = vi
+      .mocked(renderer.drawSprite)
+      .mock.calls.filter((c) => c[1] === 144 && c[2] === 0 && c[7] === TILE && c[8] === TILE)
+    expect(cells.length).toBeGreaterThanOrEqual(2)
+    // Lado a lado: dx separados por exatamente TILE, mesma altura.
+    const xs = cells.map((c) => c[5] as number).sort((a, b) => a - b)
+    expect(xs[1] - xs[0]).toBe(TILE)
+    expect(cells[0][6]).toBe(cells[1][6])
+  })
+
+  it('render sem atlas: fallback rect ciano-escuro 96x12 na posicao do mover', () => {
+    const level = makeLevel([], [], { movers: [MOVER_X] })
+    const game = createGame(renderer, input, level) // sem store
+    selectFirst(game, input)
+    vi.mocked(renderer.drawRect).mockClear()
+    game.render(0)
+    const rect = vi
+      .mocked(renderer.drawRect)
+      .mock.calls.find((c) => c[2] === 2 * TILE && c[3] === 12)
+    expect(rect).toBeDefined()
+    // Topo na row do mover (origem row 7; offset senoidal so no eixo x).
+    expect(rect![1]).toBe(7 * TILE)
+  })
+})
+
+describe('createGame — DYING (G4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  // Mata o player no tolo da col 2 (1 vida, 1 coracao) e retorna o game.
+  function lethalHit(level = makeLevel([
+    { x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+    { x: 30 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+  ])): ReturnType<typeof createGame> {
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    drainHitstop(game)
+    const p = game.player!
+    p.lives = 1
+    p.hearts = 1
+    p.iframes = 0
+    p.vy = 0
+    p.x = 2 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1) // frame do hit letal -> entra no DYING
+    return game
+  }
+
+  it('hit letal dispara o one-shot death(36) e congela o player ignorando input', () => {
+    const game = lethalHit()
+    expect(game.state.get()).toBe('playing')
+    const spy = vi.mocked(animator.triggerOneShot)
+    expect(spy.mock.calls.some((c) => c[1] === 'death' && c[2] === 36)).toBe(true)
+    const p = game.player!
+    const px = p.x
+    const py = p.y
+    // Input segurado durante o dying: player nao se move.
+    input.set('right', true)
+    input.set('jump', true)
+    for (let i = 0; i < 10; i++) game.update(1)
+    input.set('right', false)
+    input.set('jump', false)
+    expect(p.x).toBe(px)
+    expect(p.y).toBe(py)
+    expect(p.vx).toBe(0)
+    expect(p.vy).toBe(0)
+    expect(game.state.get()).toBe('playing')
+  })
+
+  it('o mundo continua durante o dying (tolo distante segue patrulhando)', () => {
+    const game = lethalHit()
+    const walker = game.enemies[1]
+    const ex = walker.x
+    for (let i = 0; i < 10; i++) game.update(1)
+    expect(walker.x).not.toBe(ex)
+  })
+
+  it('dying expira em 36 frames -> over (com evento "over" so no fim)', () => {
+    const game = lethalHit()
+    game.events.length = 0
+    for (let i = 0; i < 35; i++) game.update(1)
+    expect(game.state.get()).toBe('playing')
+    expect(game.events).not.toContain('over')
+    game.update(1) // 36o frame
+    expect(game.state.get()).toBe('over')
+    expect(game.events).toContain('over')
+  })
+
+  it('alpha do sprite cai 1.0 -> 0.4 ao longo do dying (0.7 na metade)', () => {
+    const level = makeLevel([
+      { x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+      { x: 30 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+    ])
+    const game = createGame(renderer, input, level, makeStore(['char.renan']))
+    selectFirst(game, input)
+    drainHitstop(game)
+    const p = game.player!
+    p.lives = 1
+    p.hearts = 1
+    p.iframes = 0
+    p.vy = 0
+    p.x = 2 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1) // dyingT = 36
+    for (let i = 0; i < 18; i++) game.update(1) // dyingT = 18 (metade)
+    let alphaAtDraw = -1
+    vi.mocked(spriteDraw.drawAnimatedSprite).mockImplementation((r: Renderer) => {
+      alphaAtDraw = r.ctx.globalAlpha
+    })
+    game.render(0)
+    expect(alphaAtDraw).toBeCloseTo(0.7, 5)
+    // Alpha restaurado depois do draw.
+    expect(renderer.ctx.globalAlpha).toBe(1)
+    vi.mocked(spriteDraw.drawAnimatedSprite).mockReset()
+  })
+})
+
+describe('createGame — skid (G4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('correndo acima de WALK_MAX com input oposto dispara triggerOneShot("skid", 8)', () => {
+    const game = createGame(renderer, input, makeLevel())
+    selectFirst(game, input)
+    // Assenta no chao.
+    for (let i = 0; i < 10; i++) game.update(1)
+    const p = game.player!
+    expect(p.onGround).toBe(true)
+    const spy = vi.mocked(animator.triggerOneShot)
+    vi.clearAllMocks()
+    // Correndo para a direita acima de WALK_MAX; vira para a esquerda.
+    p.vx = 8
+    input.set('left', true)
+    game.update(1)
+    input.set('left', false)
+    expect(spy.mock.calls.some((c) => c[1] === 'skid' && c[2] === 8)).toBe(true)
+  })
+
+  it('sem input oposto (desacelerando solto) NAO dispara skid', () => {
+    const game = createGame(renderer, input, makeLevel())
+    selectFirst(game, input)
+    for (let i = 0; i < 10; i++) game.update(1)
+    const p = game.player!
+    const spy = vi.mocked(animator.triggerOneShot)
+    vi.clearAllMocks()
+    p.vx = 8 // rapido, mas sem segurar a direcao oposta
+    game.update(1)
+    expect(spy.mock.calls.some((c) => c[1] === 'skid')).toBe(false)
+  })
+})
+
+describe('createGame — progressao por level.next (G4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('win com next: Enter carrega a proxima fase MANTENDO o personagem (sem select)', () => {
+    const level = makeLevel([], [], { next: 'w1-2' })
+    const game = createGame(renderer, input, level)
+    selectArtur(game, input)
+    expect(game.player!.char.id).toBe('artur')
+    // Vence.
+    game.player!.x = level.goal.x
+    game.player!.y = level.goal.y
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    // Enter (apos o delay anti-skip) -> direto pra w1-2, mesmo char.
+    confirmResult(game, input)
+    expect(game.state.get()).toBe('playing')
+    expect(game.player).not.toBeNull()
+    expect(game.player!.char.id).toBe('artur')
+    // Spawn da W1-2: col 2 row 8 (1 frame de gravidade ja correu no confirm).
+    expect(game.player!.x).toBe(2 * TILE)
+    expect(game.player!.y).toBeGreaterThanOrEqual(8 * TILE)
+    expect(game.player!.y).toBeLessThan(8 * TILE + 2)
+    // A zona nova roda sem crash (update + render).
+    expect(() => {
+      for (let i = 0; i < 10; i++) game.update(1)
+      game.render(0)
+    }).not.toThrow()
+  })
+
+  it('win SEM next: Enter volta ao select (fluxo atual)', () => {
+    const level = makeLevel()
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.player!.x = level.goal.x
+    game.player!.y = level.goal.y
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    confirmResult(game, input)
+    expect(game.state.get()).toBe('select')
+  })
+
+  it('over com next NAO progride: Enter volta ao select', () => {
+    const level = makeLevel(
+      [{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [],
+      { next: 'w1-2' },
+    )
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    drainHitstop(game)
+    const p = game.player!
+    p.lives = 1
+    p.hearts = 1
+    p.iframes = 0
+    p.vy = 0
+    p.x = 2 * TILE
+    p.y = 8 * TILE + (TILE - 34)
+    game.update(1)
+    drainDying(game)
+    expect(game.state.get()).toBe('over')
+    confirmResult(game, input)
+    expect(game.state.get()).toBe('select')
+  })
+
+  it('rodape do painel de win vira "ENTER PARA PRÓXIMA ZONA" quando ha next', () => {
+    const level = makeLevel([], [], { next: 'w1-2' })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.player!.x = level.goal.x
+    game.player!.y = level.goal.y
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    for (let i = 0; i < 45; i++) game.update(1)
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    const texts = textsOf(renderer)
+    expect(texts).toContain('ENTER PARA PRÓXIMA ZONA')
+    expect(texts).not.toContain('ENTER PARA CONTINUAR')
   })
 })

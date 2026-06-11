@@ -15,6 +15,8 @@ describe('ASSET_MANIFEST', () => {
         'char.artur.queda',
         'char.artur.danificado',
         'char.artur.ataque',
+        'char.artur.vitoria',
+        'char.artur.skid',
         'tiles.terra',
         'tiles.tijolo',
         'obj.moeda',
@@ -34,6 +36,13 @@ describe('ASSET_MANIFEST', () => {
     )
     expect(ASSET_MANIFEST['char.artur.ataque'].url).toBe(
       '/assets/chars/artur/ataque.png',
+    )
+    // G3: poses extras extraidas do sheet original (vitoria/skid)
+    expect(ASSET_MANIFEST['char.artur.vitoria'].url).toBe(
+      '/assets/chars/artur/vitoria.png',
+    )
+    expect(ASSET_MANIFEST['char.artur.skid'].url).toBe(
+      '/assets/chars/artur/skid.png',
     )
     expect(ASSET_MANIFEST['tiles.terra'].url).toBe('/assets/tiles/terra.png')
     expect(ASSET_MANIFEST['tiles.tijolo'].url).toBe('/assets/tiles/tijolo.png')
@@ -59,6 +68,9 @@ describe('ASSET_MANIFEST', () => {
       'char.artur.queda',
       'char.artur.danificado',
       'char.artur.ataque',
+      // G3: poses extras tambem ja vem com alpha
+      'char.artur.vitoria',
+      'char.artur.skid',
       // C2: atlases de tiles tambem ja vem com alpha
       'tiles.terra',
       'tiles.tijolo',

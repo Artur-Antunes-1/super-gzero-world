@@ -17,6 +17,7 @@ export type AnimState =
   | 'skid'
   | 'cast'
   | 'victory'
+  | 'death'
 
 export interface Animator {
   state: AnimState
@@ -186,6 +187,16 @@ export function getFrameTransform(an: Animator, body: AnimBody): SpriteTransform
     case 'cast':
       // alongamento horizontal breve durante o cast
       return { scaleX: 1.05, scaleY: 1, rotation: 0, offsetY: 0 }
+    case 'death': {
+      // tombamento: rotacao POSITIVA progressiva ate 0.5 rad + squash leve.
+      // Deterministico em t; o game (DYING) congela o resto do movimento.
+      return {
+        scaleX: 1,
+        scaleY: 0.96,
+        rotation: Math.min(t * 0.03, 0.5),
+        offsetY: 0,
+      }
+    }
     case 'hurt':
     case 'victory':
       // identidade: o pisca dos i-frames/pose de vitoria ficam no draw

@@ -8,6 +8,7 @@ import {
   type SpawnPoint,
   type ParsedLevel,
   type AbilityParams,
+  type EntitySpawn,
 } from '../../src/data/schema'
 
 describe('schema', () => {
@@ -84,6 +85,66 @@ describe('schema', () => {
     expect(parsed.widthTiles).toBe(2)
     expect(parsed.tiles[1][0]).toBe('ground')
     expect(parsed.playerSpawn).toEqual({ x: 0, y: 48 })
+  })
+
+  // --- 2026-06-11: mola, plataforma movel e progressao por next ---
+
+  it('EntitySpawn aceita type "spring" e "mover" com axis/amplitude/speed', () => {
+    const spring: EntitySpawn = { type: 'spring', col: 5, row: 8 }
+    const mover: EntitySpawn = {
+      type: 'mover',
+      col: 10,
+      row: 6,
+      axis: 'y',
+      amplitude: 2, // em TILES
+      speed: 0.8, // px/frame
+    }
+    expect(spring.type).toBe('spring')
+    expect(mover.type).toBe('mover')
+    expect(mover.axis).toBe('y')
+    expect(mover.amplitude).toBe(2)
+    expect(mover.speed).toBe(0.8)
+  })
+
+  it('LevelDef aceita next (id da proxima fase) opcional', () => {
+    const level: LevelDef = {
+      id: 'a',
+      world: 1,
+      zone: 1,
+      rows: ['S.G', '###'],
+      next: 'b',
+    }
+    expect(level.next).toBe('b')
+    const semNext: LevelDef = { id: 'b', world: 1, zone: 2, rows: ['S.G', '###'] }
+    expect(semNext.next).toBeUndefined()
+  })
+
+  it('ParsedLevel aceita springs, movers e next', () => {
+    const parsed: ParsedLevel = {
+      widthTiles: 2,
+      heightTiles: 2,
+      widthPx: 96,
+      heightPx: 96,
+      tiles: [
+        ['empty', 'empty'],
+        ['ground', 'ground'],
+      ],
+      playerSpawn: { x: 0, y: 0 },
+      goal: { x: 48, y: 0 },
+      coins: [],
+      enemies: [],
+      qBlocks: [],
+      hearts: [],
+      checkpoints: [],
+      timeStart: 250,
+      foolSpawns: [],
+      springs: [{ col: 1, row: 0 }],
+      movers: [{ col: 0, row: 0, axis: 'x', amplitude: 3, speed: 1.2 }],
+      next: 'zona1',
+    }
+    expect(parsed.springs).toEqual([{ col: 1, row: 0 }])
+    expect(parsed.movers[0].axis).toBe('x')
+    expect(parsed.next).toBe('zona1')
   })
 
   it('AbilityParams aceita os campos canonicos do CONTRATO', () => {

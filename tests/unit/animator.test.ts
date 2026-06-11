@@ -216,6 +216,7 @@ describe('updateAnimator — one-shots (prioridade/expiracao)', () => {
 describe('getFrameTransform (overlay sutil sobre os frames)', () => {
   const ALL: AnimState[] = [
     'idle', 'walk', 'run', 'jump', 'fall', 'hurt', 'land', 'skid', 'cast', 'victory',
+    'death',
   ]
 
   it('100% deterministico: mesmas entradas -> mesmo transform', () => {
@@ -341,11 +342,49 @@ describe('getFrameTransform (overlay sutil sobre os frames)', () => {
       expect(tf).toEqual({ scaleX: 1, scaleY: 1, rotation: 0, offsetY: 0 })
     }
   })
+
+  it('death: rotacao progressiva min(t*0.03, 0.5) + scaleY 0.96 (contrato)', () => {
+    const an = createAnimator()
+    an.state = 'death'
+    // t=0: sem rotacao ainda, squash leve constante
+    an.t = 0
+    let tf = getFrameTransform(an, body())
+    expect(tf.rotation).toBeCloseTo(0, 10)
+    expect(tf.scaleY).toBeCloseTo(0.96, 10)
+    expect(tf.scaleX).toBe(1)
+    expect(tf.offsetY).toBe(0)
+    // t=10: rotacao cresce linear (0.3)
+    an.t = 10
+    tf = getFrameTransform(an, body())
+    expect(tf.rotation).toBeCloseTo(0.3, 10)
+    // t=17: 0.51 clampa em 0.5
+    an.t = 17
+    expect(getFrameTransform(an, body()).rotation).toBeCloseTo(0.5, 10)
+    // t grande: segue clampado (nao gira infinito)
+    an.t = 999
+    expect(getFrameTransform(an, body()).rotation).toBeCloseTo(0.5, 10)
+  })
+
+  it('death: monotonicamente nao-decrescente em t (deterministico, sem facing)', () => {
+    const an = createAnimator()
+    an.state = 'death'
+    let prev = -1
+    for (let t = 0; t <= 40; t += 4) {
+      an.t = t
+      // rotacao POSITIVA fixa: nao depende do sinal de vx
+      const rDir = getFrameTransform(an, body({ vx: 5 })).rotation
+      const rEsq = getFrameTransform(an, body({ vx: -5 })).rotation
+      expect(rDir).toBe(rEsq)
+      expect(rDir).toBeGreaterThanOrEqual(prev)
+      prev = rDir
+    }
+  })
 })
 
 describe('getTransform (procedural M2a — fallback do spriteDraw)', () => {
   const STATES: AnimState[] = [
     'idle', 'walk', 'run', 'jump', 'fall', 'hurt', 'land', 'skid', 'cast', 'victory',
+    'death',
   ]
 
   it('retorna sempre valores finitos para todos os estados em varios t', () => {
@@ -375,7 +414,7 @@ describe('getTransform (procedural M2a — fallback do spriteDraw)', () => {
 
   it('hurt e estados novos: transform "flat" (1,1,0,0)', () => {
     const an = createAnimator()
-    for (const st of ['hurt', 'land', 'skid', 'cast', 'victory'] as const) {
+    for (const st of ['hurt', 'land', 'skid', 'cast', 'victory', 'death'] as const) {
       an.state = st
       an.t = 42
       expect(getTransform(an, body())).toEqual({

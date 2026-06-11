@@ -54,6 +54,8 @@ import {
   TIME_START,
   COIN_SIZE,
   STOMP_BOUNCE,
+  SPRING_VEL,
+  WALK_MAX,
   CAST_FRAMES,
   HITSTOP_FRAMES,
   SHAKE_FRAMES,
@@ -102,6 +104,9 @@ import { OBJECT_ANIMS } from '../data/objects'
 import { TILE_ATLASES } from '../data/tiles'
 import { computeTileVariants, drawTile } from '../engine/tilemap'
 
+// --- G4: progressao por level.next (registry re-parseia FRESCO) ---
+import { parseLevelById } from '../data/levels'
+
 // C3b: ganhos canônicos do medidor Humanware (spec mestre §0.2; estrela em §6.2.2).
 // moeda=8 · stomp=60 (já usado no passo 6) · heart-orb=25 · estrela=30.
 const HW_GAIN_COIN = 8
@@ -137,6 +142,18 @@ const DUST_COLOR = '#cfcfd6'
 
 // D4: janela final do TTL do builder em que o holograma pisca.
 const BUILDER_BLINK_FRAMES = 60
+
+// G4: morte com corpo presente — frames do subestado DYING (hit LETAL).
+const DYING_FRAMES = 36
+// G4: one-shot de freada (skid) ao inverter a direcao em alta velocidade.
+const SKID_FRAMES = 8
+// G4: mola — caixa 48x24 apoiada no chao da celula; compressao visual ~10f.
+const SPRING_H = 24
+const SPRING_SQUASH_FRAMES = 10
+// G4: plataforma movel — 2 tiles de largura; corpo fino (one-way pelo topo).
+const MOVER_W = TILE * 2
+const MOVER_H = 12
+const MOVER_FALLBACK_COLOR = '#0b5e75' // ciano-escuro (sem atlas)
 
 // D4: coracao pixel desenhado por codigo (2 "lobos" no topo + corpo + ponta
 // que estreita — quadrados/linhas via fillRect), centrado em (cx, cy), lado s.
@@ -200,9 +217,11 @@ interface CoinEntity {
 export function createGame(
   renderer: Renderer,
   input: Input,
-  level: ParsedLevel,
+  initialLevel: ParsedLevel,
   store?: AssetStore,
 ): Game {
+  // G4: level e MUTAVEL — a progressao por level.next troca a fase em jogo.
+  let level: ParsedLevel = initialLevel
   // E1: boot inicia no TITLE (Enter/confirm → select).
   const state = createStateMachine('title')
   const cam = createCamera()
@@ -228,10 +247,31 @@ export function createGame(
   // C3b: blocos '?' — mapa 'col,row' -> payload (contrato C3a: level.qBlocks).
   // Fallback ?? []: levels legados (testes antigos) ainda nao tem o campo.
   const qBlockMap = new Map<string, 'coin' | 'item' | 'star'>()
-  for (const qb of level.qBlocks ?? []) {
-    qBlockMap.set(qb.col + ',' + qb.row, qb.payload)
-  }
   let usedQBlocks = new Set<string>()
+
+  // G4: mola viva — squashT anima a compressao do acionamento (~10f).
+  interface SpringEnt {
+    col: number
+    row: number
+    squashT: number
+  }
+  let springEnts: SpringEnt[] = []
+
+  // G4: plataforma movel kinematica one-way — pos = origem + sin(fase)*amp;
+  // dx/dy = delta do frame (player "em pe" herda; ver passo 1e do update).
+  interface MoverEnt {
+    originX: number
+    originY: number
+    axis: 'x' | 'y'
+    ampPx: number
+    speed: number
+    x: number
+    y: number
+    dx: number
+    dy: number
+    prevOffset: number
+  }
+  let moverEnts: MoverEnt[] = []
 
   // C3b: heart-orbs — caixa fixa HEART_SIZE centrada na celula (colisao estavel;
   // o pulso e so visual).
@@ -262,6 +302,61 @@ export function createGame(
   // C3b/D4: relogio GLOBAL de frames (anima objetos e pulso dos heart-orbs).
   // Congela no hitstop; NAO reseta no respawn; reseta ao voltar pro select.
   let clock = 0
+  // G4: subestado DYING — >0 = morte em curso (player congelado, mundo segue).
+  let dyingT = 0
+
+  // G4: (re)constroi TODO o estado derivado do level atual — usado no confirm
+  // do select, no resetToSelect e na progressao por level.next.
+  function initLevelState(): void {
+    variants = computeTileVariants(level)
+    qBlockMap.clear()
+    for (const qb of level.qBlocks ?? []) {
+      qBlockMap.set(qb.col + ',' + qb.row, qb.payload)
+    }
+    usedQBlocks = new Set<string>()
+    enemies = spawnEnemies(level)
+    coins = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
+    heartEnts = spawnHearts()
+    lastCheckpointX = level.playerSpawn.x
+    springEnts = (level.springs ?? []).map((s) => ({
+      col: s.col,
+      row: s.row,
+      squashT: 0,
+    }))
+    moverEnts = (level.movers ?? []).map((m) => ({
+      originX: m.col * TILE,
+      originY: m.row * TILE,
+      axis: m.axis,
+      ampPx: m.amplitude * TILE,
+      speed: m.speed,
+      x: m.col * TILE,
+      y: m.row * TILE,
+      dx: 0,
+      dy: 0,
+      prevOffset: 0,
+    }))
+    clock = 0
+    dyingT = 0
+  }
+  initLevelState()
+
+  // G4: avanca os movers pelo clock e deriva o delta do frame (dx/dy).
+  function updateMovers(): void {
+    for (const m of moverEnts) {
+      const offset = Math.sin(clock * m.speed * 0.02) * m.ampPx
+      const d = offset - m.prevOffset
+      m.prevOffset = offset
+      if (m.axis === 'x') {
+        m.dx = d
+        m.dy = 0
+        m.x = m.originX + offset
+      } else {
+        m.dx = 0
+        m.dy = d
+        m.y = m.originY + offset
+      }
+    }
+  }
   // E1: relogio das telas de UI (blink do title + idle do card do select).
   let uiClock = 0
   // E1: tolos stompados na rodada (painel de resultado + score).
@@ -337,15 +432,11 @@ export function createGame(
     builderWritten = null
     player = null
     hw = createHumanware()
-    enemies = spawnEnemies(level)
     time = level.timeStart ?? TIME_START
-    coins = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
     coinCount = 0
-    // C3b: re-zera blocos '?', heart-orbs, checkpoint e clock.
-    usedQBlocks = new Set<string>()
-    heartEnts = spawnHearts()
-    lastCheckpointX = level.playerSpawn.x
-    clock = 0
+    // G4: re-zera TODO o estado derivado do level (inclui '?', hearts,
+    // checkpoint, molas, movers, clock e dyingT).
+    initLevelState()
     // D4: descarta SFX pendentes da rodada anterior.
     events.length = 0
     // Reseta o estado M2a para que uma nova rodada comece limpa.
@@ -361,6 +452,32 @@ export function createGame(
     // E1: cursor do select volta ao inicial canonico (contrato E2).
     sel.index = SELECT_START
     state.set('select')
+  }
+
+  // G4: PROGRESSAO — carrega a fase `id` mantendo o MESMO personagem, sem
+  // voltar pro select. O level antigo e descartado inteiro (parse fresco),
+  // entao o bloco do builder nao precisa ser restaurado.
+  function startNextZone(id: string): void {
+    const char = player!.char
+    builderWritten = null
+    level = parseLevelById(id)
+    initLevelState()
+    player = createPlayer(char, level.playerSpawn)
+    // hw NAO reseta: o medidor Humanware atravessa zonas (curriculo W1-2/W1-3).
+    time = level.timeStart ?? TIME_START
+    coinCount = 0
+    stompCount = 0
+    resultTimer = 0
+    // Estado M2a/M2b zerado: pose de vitoria nao vaza pra zona nova.
+    hwWasActive = false
+    hitstop = 0
+    shakeT = 0
+    Object.assign(playerAnim, createAnimator())
+    ps.particles = []
+    ps.ambientAcc = 0
+    events.length = 0
+    snapCamera(cam, player, level)
+    state.set('playing')
   }
 
   // (A2) update = corpo (updateInner) + input.update() UMA unica vez no fim.
@@ -385,16 +502,11 @@ export function createGame(
       const picked = updateSelect(sel, input, chars)
       if (picked) {
         player = createPlayer(CHARACTERS[picked], level.playerSpawn)
-        enemies = spawnEnemies(level)
         hw = createHumanware()
         time = level.timeStart ?? TIME_START
-        coins = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
         coinCount = 0
-        // C3b: rodada nova comeca com blocos '?' fechados e hearts no lugar.
-        usedQBlocks = new Set<string>()
-        heartEnts = spawnHearts()
-        lastCheckpointX = level.playerSpawn.x
-        clock = 0
+        // G4: rodada nova re-deriva tudo do level ('?', hearts, molas, movers).
+        initLevelState()
         // E1: stats da rodada nova.
         stompCount = 0
         resultTimer = 0
@@ -432,11 +544,40 @@ export function createGame(
       // C3b: relogio de jogo (congela junto com o hitstop, acima).
       clock += dt
 
+      // G4: movers avancam pelo clock ANTES do player (delta do frame pronto).
+      updateMovers()
+
+      // G4: subestado DYING — player congelado (sem input/fisica), mundo segue;
+      // ao expirar -> 'over'. Kill-plane/timer continuam instantaneos.
+      if (dyingT > 0) {
+        dyingT = Math.max(0, dyingT - dt)
+        // Animator avanca o one-shot 'death' (hurtFrames=0: nao cancelar).
+        updateAnimator(playerAnim, p, 0, dt)
+        emitAmbient(ps, VIEW_W, VIEW_H, dt)
+        updateParticles(ps, dt)
+        // Inimigos seguem patrulhando (mundo vivo atras do corpo).
+        const wsDying = Math.min(humanwareWorldScale(hw), 1)
+        const frozen = isActive(hw)
+        for (const e of enemies) {
+          e.frozen = frozen
+          updateEnemy(e, level, dt * wsDying)
+        }
+        updateHumanware(hw, dt)
+        if (dyingT <= 0) {
+          pushEvent('over')
+          resultTimer = 0
+          state.set('over')
+        }
+        return
+      }
+
       // §0.6 worldScale: sempre Math.min (nunca multiplicar). Player roda em escala 1.
       const ws = Math.min(humanwareWorldScale(hw), abilityWorldScale(p), 1)
 
       // C3b: vy ANTES da fisica — deteccao deterministica de batida de cabeca.
       const prevVy = p.vy
+      // G4: y ANTES da fisica — pouso one-way nos movers (pes cruzaram o topo).
+      const prevPlayerY = p.y
 
       // D4: estado pre-fisica para detectar o PULO REAL (intencao + apto).
       const wasJumpable = p.onGround || p.coyote > 0
@@ -518,6 +659,64 @@ export function createGame(
         }
       }
 
+      // 1d) G4: MOLAS — pes do player aterrissando (vy>0) na metade superior
+      // da celula da mola, com overlap horizontal real -> lanca (SPRING_VEL).
+      // Tolos NAO acionam molas (so o player passa por aqui).
+      for (const s of springEnts) {
+        if (s.squashT > 0) s.squashT = Math.max(0, s.squashT - dt)
+        const cellX = s.col * TILE
+        const cellTop = s.row * TILE
+        const feet = p.y + p.h
+        if (
+          p.vy > 0 &&
+          feet >= cellTop &&
+          feet <= cellTop + TILE / 2 &&
+          p.x < cellX + TILE &&
+          p.x + p.w > cellX
+        ) {
+          p.vy = SPRING_VEL
+          // Mola da o quique PLENO sem segurar pulo: janela em que o jump-cut
+          // nao se aplica (~ate vy chegar naturalmente a JUMP_CUT_VY: 16/0.8).
+          p.noCutT = 20
+          s.squashT = SPRING_SQUASH_FRAMES
+          pushEvent('jump')
+          emitBurst(ps, p.x + p.w / 2, feet, 8, [DUST_COLOR], 'world')
+        }
+      }
+
+      // 1e) G4: PLATAFORMAS MOVEIS — one-way pelo topo + carry do delta.
+      for (const m of moverEnts) {
+        const top = m.y
+        const topPrev = top - m.dy
+        if (p.x >= m.x + MOVER_W || p.x + p.w <= m.x) continue // sem overlap X
+        if (p.vy < 0) continue // one-way: subindo atravessa livre
+        const feet = p.y + p.h
+        const feetPrev = prevPlayerY + p.h
+        // Em pe = pes grudados no topo no fim do frame ANTERIOR (snap exato).
+        const wasStanding = Math.abs(feetPrev - topPrev) <= 1
+        // Pouso = os pes cruzaram o topo NESTE frame, caindo.
+        const crossed = feetPrev <= topPrev && feet >= top
+        // Banda de tolerancia (mover descendo mais rapido que a gravidade).
+        const inBand = feet >= top - 4 && feet <= top + 2
+        if (!wasStanding && !crossed && !inBand) continue
+        if (wasStanding) p.x += m.dx // carry: herda o delta horizontal
+        p.y = top - p.h
+        p.vy = 0
+        p.onGround = true
+      }
+
+      // 1f) G4: SKID — correndo acima de WALK_MAX com input na direcao OPOSTA
+      // ao movimento, no chao e sem one-shot ativo -> freada (8f).
+      if (
+        p.onGround &&
+        Math.abs(p.vx) > WALK_MAX &&
+        playerAnim.oneShot === null &&
+        ((p.vx > 0 && input.isDown('left') && !input.isDown('right')) ||
+          (p.vx < 0 && input.isDown('right') && !input.isDown('left')))
+      ) {
+        triggerOneShot(playerAnim, 'skid', SKID_FRAMES)
+      }
+
       // 2) Habilidade: tempo do player (dt, escala 1).
       // M2 fase B (CAST): detecta ativacao REAL comparando antes/depois — dash liga
       // `active`; salto gasta `airJumps`; escudo/builder/emc2 ARMAM `cooldown`
@@ -592,10 +791,15 @@ export function createGame(
           const livesBefore = p.lives
           const result = damagePlayer(p, e.x)
           if (result === 'death') {
-            // Sai limpo no frame da morte (input.update() acontece em update()).
-            pushEvent('over') // D4
-            resultTimer = 0 // E1: arma o delay anti-skip do resultado
-            state.set('over'); return
+            // G4: DYING — corpo presente ~36f (fisica congelada, mundo segue);
+            // o 'over' (evento + estado) so dispara quando dyingT expira.
+            dyingT = DYING_FRAMES
+            p.vx = 0
+            p.vy = 0
+            p.hurtTimer = 0 // 'hurt' cancelaria o one-shot de morte
+            triggerOneShot(playerAnim, 'death', DYING_FRAMES)
+            pushEvent('hurt') // o hit letal ainda soa como dano
+            return
           } else if (result === 'hit') {
             // M2 fase B: dano que conecta congela o mundo e chacoalha a camera.
             pushEvent('hurt') // D4: dano CONECTADO
@@ -686,7 +890,13 @@ export function createGame(
       // E1: delay anti-skip — Enter so conta apos RESULT_DELAY_FRAMES no estado.
       resultTimer += dt
       if (resultTimer >= RESULT_DELAY_FRAMES && input.pressed('confirm')) {
-        resetToSelect()
+        // G4: vitoria com level.next -> proxima zona com o MESMO personagem;
+        // sem next (ou game over) -> fluxo atual (select).
+        if (state.is('win') && level.next !== undefined && player) {
+          startNextZone(level.next)
+        } else {
+          resetToSelect()
+        }
       }
       return
     }
@@ -810,6 +1020,40 @@ export function createGame(
       renderer.drawRect(bx + TILE - 2, by + TILE - L, 2, L, COLOR_TECH)
     }
 
+    // G4: MOLAS — caixa 48x24 apoiada no chao da celula; corpo COLOR_TECH com
+    // topo claro; squash senoidal leve pelo clock + compressao no acionamento.
+    for (const s of springEnts) {
+      const x = s.col * TILE
+      const baseY = (s.row + 1) * TILE
+      const wob = Math.sin(clock * 0.15) * 1.5
+      const press = s.squashT > 0 ? (s.squashT / SPRING_SQUASH_FRAMES) * 9 : 0
+      const h = Math.max(8, SPRING_H - press + wob)
+      renderer.drawRect(x, baseY - h, TILE, h, COLOR_TECH)
+      renderer.drawRect(x, baseY - h, TILE, 4, COLOR_TEXT)
+    }
+
+    // G4: PLATAFORMAS MOVEIS — 2 celulas do atlas terra variant 14 lado a lado
+    // (drawTile nao serve: a celula esta fora do grid); fallback rect ciano-escuro.
+    const terraSet = TILE_ATLASES.ground
+    const terraImg = store && terraSet ? store.get(terraSet.assetKey) : null
+    for (const m of moverEnts) {
+      if (terraImg && terraSet) {
+        const cell = terraSet.cells[14]
+        const sx = cell[0] * terraSet.tile
+        const sy = cell[1] * terraSet.tile
+        renderer.drawSprite(
+          terraImg.src, sx, sy, terraSet.tile, terraSet.tile,
+          m.x, m.y, TILE, TILE,
+        )
+        renderer.drawSprite(
+          terraImg.src, sx, sy, terraSet.tile, terraSet.tile,
+          m.x + TILE, m.y, TILE, TILE,
+        )
+      } else {
+        renderer.drawRect(m.x, m.y, MOVER_W, MOVER_H, MOVER_FALLBACK_COLOR)
+      }
+    }
+
     // Goal: portal animado (96x96, base no chao do tile, centrado na col);
     // fallback = rect magenta (token OBJETIVO) de antes.
     const portalAnim = OBJECT_ANIMS.portal
@@ -891,11 +1135,17 @@ export function createGame(
 
       // M2 fase B: i-frames = ALPHA alternado (0.45) — NUNCA pular o draw
       // (a animacao de dano precisa ser vista; contrato §2 regras de exibicao).
+      // G4: durante o DYING o alpha cai 1.0 -> 0.4 (sem pisca de i-frames).
       const ctx = renderer.ctx
-      const dimmed = player.iframes > 0 && ((player.iframes >> 2) & 1) === 1
+      const dying = dyingT > 0
+      const dimmed =
+        !dying && player.iframes > 0 && ((player.iframes >> 2) & 1) === 1
       if (dimmed) {
         ctx.save()
         ctx.globalAlpha = 0.45
+      } else if (dying) {
+        ctx.save()
+        ctx.globalAlpha = 0.4 + 0.6 * (dyingT / DYING_FRAMES)
       }
 
       // M2b: frame-a-frame com a arte ORIGINAL do personagem (Artur), se houver.
@@ -945,7 +1195,7 @@ export function createGame(
         }
       }
 
-      if (dimmed) ctx.restore()
+      if (dimmed || dying) ctx.restore()
     }
 
     // (A2) particulas em WORLD SPACE (ex.: burst do Humanware), depois do player.
@@ -1088,10 +1338,17 @@ export function createGame(
       }
 
       // Enter so APARECE (e so funciona, ver update) apos o delay anti-skip.
+      // G4: com level.next na vitoria, o rodape anuncia a PROXIMA ZONA.
       if (resultTimer >= RESULT_DELAY_FRAMES) {
         ctx.font = 'bold 14px monospace'
         ctx.fillStyle = COLOR_LIME
-        ctx.fillText('ENTER PARA CONTINUAR', VIEW_W / 2, py + ph - 36)
+        ctx.fillText(
+          won && level.next !== undefined
+            ? 'ENTER PARA PRÓXIMA ZONA'
+            : 'ENTER PARA CONTINUAR',
+          VIEW_W / 2,
+          py + ph - 36,
+        )
       }
       ctx.restore()
     }

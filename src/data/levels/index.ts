@@ -1,12 +1,14 @@
 import type { LevelDef, ParsedLevel } from '../schema'
 import { parseLevel } from '../../game/levelParser'
 import { W1_1 } from './w1-1'
+import { W1_2 } from './w1-2'
 import { world1Zona1 } from './world1-zona1'
 import { hwTest } from './hw-test'
 
 // Registry canonico de fases (CONTRATO C3a).
 export const LEVELS: Record<string, LevelDef> = {
   'w1-1': W1_1,
+  'w1-2': W1_2,
   zona1: world1Zona1,
   // Fase de TESTE (gate e2e do Humanware) — fora do fluxo normal do jogo.
   'hw-test': hwTest,

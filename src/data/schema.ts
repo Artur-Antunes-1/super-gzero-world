@@ -50,12 +50,17 @@ export interface CharacterDef {
 
 // Spawn declarativo de entidade (CONTRATO C3a): col/row em tiles.
 // patrol em colunas (convertido p/ px no spawn); payload so para 'block'.
+// 'spring' e 'mover' (2026-06-11): axis/amplitude/speed so para 'mover'
+// (amplitude em TILES, speed em px/frame); sobrescrevem defaults do '~'.
 export interface EntitySpawn {
-  type: 'fool' | 'block' | 'heart'
+  type: 'fool' | 'block' | 'heart' | 'spring' | 'mover'
   col: number
   row: number
   patrol?: [number, number]
   payload?: 'coin' | 'item' | 'star'
+  axis?: 'x' | 'y'
+  amplitude?: number
+  speed?: number
 }
 
 export interface LevelDef {
@@ -66,6 +71,8 @@ export interface LevelDef {
   entities?: EntitySpawn[]
   checkpoints?: number[]
   timeStart?: number
+  // Id da proxima fase (progressao); ausente = fim do fluxo.
+  next?: string
 }
 
 export interface SpawnPoint {
@@ -89,4 +96,9 @@ export interface ParsedLevel {
   checkpoints: number[]
   timeStart: number
   foolSpawns: { col: number; row: number; patrol?: [number, number] }[]
+  // 2026-06-11: '^' = MOLA (tile empty); '~' = plataforma movel (tile empty).
+  springs: { col: number; row: number }[]
+  movers: { col: number; row: number; axis: 'x' | 'y'; amplitude: number; speed: number }[]
+  // Copiado de LevelDef.next (progressao por fase).
+  next?: string
 }

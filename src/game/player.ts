@@ -13,6 +13,7 @@ import {
   GROUND_DECEL,
   AIR_DECEL,
   JUMP_VEL,
+  JUMP_CUT_VY,
   COYOTE_FRAMES,
   JUMP_BUFFER_FRAMES,
   START_LIVES,
@@ -34,6 +35,9 @@ export interface Player extends Body {
   iframes: number
   // M2 fase B: timer do estado VISUAL 'hurt' (curto), separado dos i-frames (90f).
   hurtTimer: number
+  // G4 fix: janela em que o jump-cut NAO se aplica (impulsos de mola dao o
+  // quique pleno sem precisar segurar pulo). Setada pelo game ao acionar mola.
+  noCutT: number
   ability: AbilityState
 }
 
@@ -54,6 +58,7 @@ export function createPlayer(char: CharacterDef, spawn: SpawnPoint): Player {
     hearts: char.hearts,
     iframes: 0,
     hurtTimer: 0,
+    noCutT: 0,
     ability: createAbilityState(char),
   }
 }
@@ -113,6 +118,19 @@ export function updatePlayer(
     player.onGround = false
     player.jumpBuffer = 0
     player.coyote = 0
+    // Pulo proprio e sempre cortavel (cancela janela de mola, se houver).
+    player.noCutT = 0
+  }
+
+  // Jump-cut (pulo variavel): soltar 'jump' na subida corta vy para JUMP_CUT_VY.
+  // Aplicado sempre que vy < JUMP_CUT_VY sem 'jump' pressionado — stomp-bounce/
+  // knockback tambem cortam se o jogador nao segurar pulo (Mario classico).
+  // EXCECAO (noCutT > 0): impulso de MOLA da o quique pleno sem segurar pulo —
+  // a janela cobre a subida ate vy chegar naturalmente a JUMP_CUT_VY.
+  if (player.noCutT > 0) {
+    player.noCutT = Math.max(0, player.noCutT - dt)
+  } else if (!input.isDown('jump') && player.vy < JUMP_CUT_VY) {
+    player.vy = JUMP_CUT_VY
   }
 
   // Integrate physics (gravity up to MAX_FALL) and resolve tile collisions.

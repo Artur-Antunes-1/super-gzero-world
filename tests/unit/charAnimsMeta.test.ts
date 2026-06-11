@@ -67,6 +67,25 @@ describe('charAnims x meta.json (artur)', () => {
     expect(cast!.loop).toBe(false)
   })
 
+  it('victory usa o sheet "vitoria" (2f, fps 6, loop) — G3', () => {
+    const v = ARTUR_ANIMS.anims.victory
+    expect(v, 'estado victory ausente em ARTUR_ANIMS.anims').toBeDefined()
+    expect(sheetName(v!.key)).toBe('vitoria')
+    expect(v!.frames).toBe(2)
+    expect(v!.fps).toBe(6)
+    // 2 frames -> loop true (contrato G3: loop so se 2f)
+    expect(v!.loop).toBe(true)
+  })
+
+  it('skid usa o sheet "skid" (1f, fps 12, sem loop) — G3', () => {
+    const s = ARTUR_ANIMS.anims.skid
+    expect(s, 'estado skid ausente em ARTUR_ANIMS.anims').toBeDefined()
+    expect(sheetName(s!.key)).toBe('skid')
+    expect(s!.frames).toBe(1)
+    expect(s!.fps).toBe(12)
+    expect(s!.loop).toBe(false)
+  })
+
   it('escala inteira (contrato §1): drawH = cellH (1x) e corpo ~78px declarado', () => {
     expect(ARTUR_ANIMS.drawH).toBe(ARTUR_ANIMS.cellH)
     expect(ARTUR_ANIMS.bodyHpx).toBe(78)
@@ -77,6 +96,18 @@ describe('charAnims x meta.json (artur)', () => {
     for (const key of Object.keys(ASSET_MANIFEST)) {
       if (!key.startsWith('char.artur.')) continue
       expect(used.has(key), `key '${key}' do manifesto nao e usada por nenhum FrameAnim`).toBe(true)
+    }
+  })
+
+  it('PNG de cada sheet existe e mede frames*cellW x cellH (IHDR)', () => {
+    for (const [name, frames] of Object.entries(meta.anims)) {
+      const file = resolve(process.cwd(), `public/assets/chars/artur/${name}.png`)
+      const buf = readFileSync(file)
+      // IHDR: width/height big-endian nos bytes 16..24
+      const w = buf.readUInt32BE(16)
+      const h = buf.readUInt32BE(20)
+      expect(w, `largura de '${name}.png'`).toBe(frames * meta.cell[0])
+      expect(h, `altura de '${name}.png'`).toBe(meta.cell[1])
     }
   })
 })

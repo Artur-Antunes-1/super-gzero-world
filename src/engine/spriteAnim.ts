@@ -38,12 +38,14 @@ export interface CharAnimSet {
 }
 
 // One-shots sem sheet caem numa animacao "parecida" antes do 'idle' final
-// (contrato 2026-06-09: land->idle, skid->run, cast->idle, victory->jump).
+// (contrato 2026-06-09: land->idle, skid->run, cast->idle, victory->jump;
+// G3: death->hurt — morte reusa o sheet de dano).
 const ONE_SHOT_FALLBACK: Partial<Record<AnimState, AnimState>> = {
   land: 'idle',
   skid: 'run',
   cast: 'idle',
   victory: 'jump',
+  death: 'hurt',
 }
 
 // Cadeia: anims[state] -> anims[fallback do one-shot] -> anims['idle'].

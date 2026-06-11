@@ -11,6 +11,7 @@ import {
   WALK_MAX,
   RUN_MAX,
   JUMP_VEL,
+  JUMP_CUT_VY,
   PLAYER_W,
   PLAYER_H,
   START_LIVES,
@@ -242,6 +243,73 @@ describe('updatePlayer — pulo', () => {
       if (p.vy < 0) jumped = true // upward impulse = buffered jump fired
     }
     expect(jumped).toBe(true)
+  })
+})
+
+// --- Jump-cut (pulo variavel, errata de fisica 2026-06-11) ---
+describe('updatePlayer — jump-cut (JUMP_CUT_VY)', () => {
+  let level: ParsedLevel
+  let input: FakeInput
+  let p: Player
+
+  beforeEach(() => {
+    level = makeFlatLevel()
+    input = new FakeInput()
+    p = createPlayer(CHARACTERS['renan'], level.playerSpawn)
+    steps(p, input, level, 10) // assenta no chao
+    expect(p.onGround).toBe(true)
+  })
+
+  it('soltar jump na subida corta vy para JUMP_CUT_VY (+1 passo de gravidade)', () => {
+    input.set('jump', true)
+    updatePlayer(p, input, level, 1) // pulo dispara
+    input.update()
+    updatePlayer(p, input, level, 1) // ainda segurando: sem corte
+    input.update()
+    expect(p.vy).toBeLessThan(JUMP_CUT_VY) // ascensao rapida preservada
+    input.set('jump', false)
+    updatePlayer(p, input, level, 1) // soltou: corta ANTES do stepBody
+    input.update()
+    const g = GRAVITY * CHARACTERS['renan'].weightMul
+    expect(p.vy).toBeCloseTo(JUMP_CUT_VY + g, 5)
+  })
+
+  it('segurando jump a subida NAO e cortada (vy segue abaixo de JUMP_CUT_VY)', () => {
+    input.set('jump', true)
+    for (let i = 0; i < 5; i++) {
+      updatePlayer(p, input, level, 1)
+      input.update()
+    }
+    const g = GRAVITY * CHARACTERS['renan'].weightMul
+    const expected = JUMP_VEL * CHARACTERS['renan'].jumpVelMul + 5 * g
+    expect(p.vy).toBeCloseTo(expected, 5)
+    expect(p.vy).toBeLessThan(JUMP_CUT_VY)
+  })
+
+  it('corte tambem se aplica a impulsos externos (stomp-bounce) sem jump segurado', () => {
+    // Sem rastrear a origem do impulso, o corte vale SEMPRE (estilo Mario:
+    // segurar pulo mantem o quique do stomp alto; soltar encurta).
+    input.set('jump', true)
+    updatePlayer(p, input, level, 1) // sai do chao
+    input.update()
+    input.set('jump', false)
+    p.vy = -11.5 // simula STOMP_BOUNCE no ar
+    updatePlayer(p, input, level, 1)
+    input.update()
+    const g = GRAVITY * CHARACTERS['renan'].weightMul
+    expect(p.vy).toBeCloseTo(JUMP_CUT_VY + g, 5)
+  })
+
+  it('vy acima de JUMP_CUT_VY (descida/subida lenta) NAO e alterado pelo corte', () => {
+    input.set('jump', true)
+    updatePlayer(p, input, level, 1) // sai do chao
+    input.update()
+    input.set('jump', false)
+    p.vy = 4 // caindo
+    updatePlayer(p, input, level, 1)
+    input.update()
+    const g = GRAVITY * CHARACTERS['renan'].weightMul
+    expect(p.vy).toBeCloseTo(4 + g, 5) // so gravidade; sem corte
   })
 })
 

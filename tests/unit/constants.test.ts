@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   TILE,
   JUMP_VEL,
+  JUMP_CUT_VY,
+  SPRING_VEL,
   HW_TIME_SCALE,
   HW_METER_MAX,
   VIEW_W,
@@ -12,8 +14,17 @@ describe('engine/constants', () => {
     expect(TILE).toBe(48)
   })
 
-  it('JUMP_VEL vale -15.4', () => {
-    expect(JUMP_VEL).toBe(-15.4)
+  // Errata de fisica (2026-06-11, playtest): -15.4 -> -18.0.
+  it('JUMP_VEL vale -18.0', () => {
+    expect(JUMP_VEL).toBe(-18.0)
+  })
+
+  it('JUMP_CUT_VY vale -6 (pulo variavel)', () => {
+    expect(JUMP_CUT_VY).toBe(-6)
+  })
+
+  it('SPRING_VEL vale -22 (mola ~6 tiles)', () => {
+    expect(SPRING_VEL).toBe(-22)
   })
 
   it('HW_TIME_SCALE vale 0.35', () => {

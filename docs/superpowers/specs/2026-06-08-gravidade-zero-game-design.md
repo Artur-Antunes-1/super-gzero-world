@@ -32,6 +32,8 @@ _Data: 2026-06-08 · Status: rascunho para revisao · Projeto interno Gzero (div
 
 > Seção adicionada após a **revisão adversarial**, que encontrou 22 divergências entre seções (os autores em paralelo fixaram valores próprios para os sistemas NOVOS). **Onde qualquer seção (3–15) conflitar com este §0, o §0 prevalece.** Implementação e plano leem os valores daqui. As constantes herdadas da base (TILE=48, GRAVITY=0.8, JUMP_VEL=-15.4, MAX_FALL=17, STAR_TIME=480, TIME_START=250) permanecem como nas §1/§4 (estavam consistentes).
 
+> **Errata de física (2026-06-11, playtest):** JUMP_VEL -15.4→-18.0 (apex 148px/3,1 tiles tornava o level design do §8.3 inalcançável — moedas row 4 exigem ~150px e as do greybox row 3 ~198px); adicionado jump-cut (JUMP_CUT_VY=-6, pulo variável); '^' passa a ser MOLA (§8.3 W1-2), spike sai da legenda até ter dano/arte. Prevalece sobre §1/§4.
+
 ### 0.1 Resolução & render
 - **Buffer interno de render: 960×528** (canônico). TILE=48 → 20×11 tiles visíveis; HUD/UI desenham no mesmo espaço 960×528. A resolução "480×264" da §10 está **revogada** (reescalar a tipografia da §10 para o espaço 960). Escala para tela via CSS com `image-rendering: pixelated`, preservando aspecto 960:528.
 

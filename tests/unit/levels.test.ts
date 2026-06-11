@@ -8,11 +8,12 @@ import {
   parseLevelById,
 } from '../../src/data/levels/index'
 import { W1_1 } from '../../src/data/levels/w1-1'
+import { W1_2 } from '../../src/data/levels/w1-2'
 
 describe('registry de fases (data/levels/index)', () => {
-  it('DEFAULT_LEVEL_ID e "w1-1" e o registry contem w1-1, zona1 e hw-test', () => {
+  it('DEFAULT_LEVEL_ID e "w1-1" e o registry contem w1-1, w1-2, zona1 e hw-test', () => {
     expect(DEFAULT_LEVEL_ID).toBe('w1-1')
-    expect(Object.keys(LEVELS).sort()).toEqual(['hw-test', 'w1-1', 'zona1'])
+    expect(Object.keys(LEVELS).sort()).toEqual(['hw-test', 'w1-1', 'w1-2', 'zona1'])
   })
 
   it('validateLevel passa em TODOS os LEVELS', () => {
@@ -43,6 +44,139 @@ describe('registry de fases (data/levels/index)', () => {
   it('parseLevelById("zona1") devolve a fase greybox de 40 cols', () => {
     const lvl = parseLevelById('zona1')
     expect(lvl.widthTiles).toBe(40)
+  })
+
+  // 2026-06-11: progressao por level.next.
+  it('todo next definido aponta para um id existente no registry', () => {
+    for (const [id, def] of Object.entries(LEVELS)) {
+      if (def.next !== undefined) {
+        expect(LEVELS[def.next], `next de ${id} ('${def.next}') deve existir`).toBeDefined()
+      }
+    }
+  })
+
+  it('w1-1 tem next "w1-2" e o parser copia para o ParsedLevel', () => {
+    expect(W1_1.next).toBe('w1-2')
+    expect(parseLevelById('w1-1').next).toBe('w1-2')
+    // w1-2 (ultima por enquanto), zona1 e hw-test encerram o fluxo (sem next).
+    expect(parseLevelById('w1-2').next).toBeUndefined()
+    expect(parseLevelById('zona1').next).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// G4 (2026-06-11): W1-2 — "Plataformas Flutuantes" (spec §8.3, 156x11).
+// ---------------------------------------------------------------------------
+describe('W1-2 — "Plataformas Flutuantes" (spec §8.3)', () => {
+  it('156 colunas x 11 linhas; toda linha tem exatamente 156 chars', () => {
+    expect(W1_2.rows.length).toBe(11)
+    for (let i = 0; i < W1_2.rows.length; i++) {
+      expect(W1_2.rows[i].length, `row ${i} deve ter 156 chars`).toBe(156)
+    }
+    const lvl = parseLevel(W1_2)
+    expect(lvl.widthTiles).toBe(156)
+    expect(lvl.heightTiles).toBe(11)
+  })
+
+  it('valida no validateLevel (alcancabilidade incluida)', () => {
+    expect(() => validateLevel(W1_2)).not.toThrow()
+  })
+
+  it('spawn na col 2 row 8; portal ">" na col 148 row 8', () => {
+    const lvl = parseLevel(W1_2)
+    expect(lvl.playerSpawn).toEqual({ x: 2 * TILE, y: 8 * TILE })
+    expect(lvl.goal).toEqual({ x: 148 * TILE, y: 8 * TILE })
+  })
+
+  it('checkpoints [60, 110] e timeStart 250', () => {
+    const lvl = parseLevel(W1_2)
+    expect(lvl.checkpoints).toEqual([60, 110])
+    expect(lvl.timeStart).toBe(250)
+  })
+
+  it('3 molas: nicho B (col 30) e torre D (cols 64 e 75)', () => {
+    const lvl = parseLevel(W1_2)
+    // Ordem de scan row-major do parser.
+    expect(lvl.springs).toEqual([
+      { col: 75, row: 6 },
+      { col: 30, row: 8 },
+      { col: 64, row: 8 },
+    ])
+    // Mola e tile empty (nao bloqueia).
+    for (const s of lvl.springs) {
+      expect(lvl.tiles[s.row][s.col]).toBe('empty')
+    }
+  })
+
+  it('4 movers: C horizontal (defaults), E vertical (override) e 2 no arquipelago F', () => {
+    const lvl = parseLevel(W1_2)
+    // Ordem de scan row-major do parser.
+    expect(lvl.movers).toEqual([
+      { col: 134, row: 6, axis: 'x', amplitude: 3, speed: 1.3 },
+      { col: 124, row: 7, axis: 'x', amplitude: 3, speed: 1.3 },
+      { col: 46, row: 8, axis: 'x', amplitude: 3, speed: 1.2 }, // defaults do '~'
+      { col: 100, row: 8, axis: 'y', amplitude: 4, speed: 1.0 }, // poco vertical
+    ])
+  })
+
+  it('qBlocks: item@28(nicho da mola), star@104(poco), coin@18', () => {
+    const lvl = parseLevel(W1_2)
+    expect(lvl.qBlocks).toEqual([
+      { col: 28, row: 3, payload: 'item' },
+      { col: 104, row: 4, payload: 'star' },
+      { col: 18, row: 6, payload: 'coin' },
+    ])
+    for (const q of lvl.qBlocks) {
+      expect(lvl.tiles[q.row][q.col]).toBe('block')
+    }
+  })
+
+  it('1 coracao no alto da torre D (col 84 row 3) e 3 tolos com patrulha', () => {
+    const lvl = parseLevel(W1_2)
+    expect(lvl.hearts).toEqual([{ col: 84, row: 3 }])
+    expect(lvl.foolSpawns).toEqual([
+      { col: 34, row: 8, patrol: [32, 38] },
+      { col: 70, row: 6, patrol: [66, 74] },
+      { col: 80, row: 4, patrol: [78, 86] },
+    ])
+  })
+
+  it('gaps reais: C 46-50, poco E 98-102, arquipelago F 120-143', () => {
+    const lvl = parseLevel(W1_2)
+    const openCols = [
+      [46, 50],
+      [98, 102],
+      [120, 143],
+    ] as const
+    for (const [c0, c1] of openCols) {
+      for (let col = c0; col <= c1; col++) {
+        expect(lvl.tiles[9][col], `row 9 col ${col} aberto`).toBe('empty')
+        expect(lvl.tiles[10][col], `row 10 col ${col} aberto`).toBe('empty')
+      }
+      // Pousos solidos dos dois lados de cada vao.
+      expect(lvl.tiles[9][c0 - 1]).toBe('ground')
+      expect(lvl.tiles[9][c1 + 1]).toBe('ground')
+    }
+  })
+
+  it('trilha generosa de moedas (>= 35) — fase de medidor enchendo', () => {
+    const lvl = parseLevel(W1_2)
+    expect(lvl.coins.length).toBeGreaterThanOrEqual(35)
+  })
+
+  it('piso/plataforma continua sob as patrulhas dos tolos', () => {
+    const lvl = parseLevel(W1_2)
+    const floorOf = [9, 7, 5] // tolo 1 no chao; 2 na torre row 7; 3 na torre row 5
+    lvl.foolSpawns.forEach((f, i) => {
+      const [min, max] = f.patrol!
+      for (let col = min; col <= max; col++) {
+        const t = lvl.tiles[floorOf[i]][col]
+        expect(
+          t === 'ground' || t === 'platform',
+          `row ${floorOf[i]} col ${col} (tolo ${i})`,
+        ).toBe(true)
+      }
+    })
   })
 })
 

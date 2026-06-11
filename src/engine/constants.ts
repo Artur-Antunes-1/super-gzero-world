@@ -16,7 +16,13 @@ export const WALK_MAX = 4.6
 export const RUN_MAX = 7.3
 export const GROUND_DECEL = 0.6
 export const AIR_DECEL = 0.18
-export const JUMP_VEL = -15.4
+// Errata de fisica (2026-06-11, playtest): -15.4 (apex 148px) tornava o level
+// design do §8.3 inalcancavel. -18.0 => apex continuo ~202px (4,2 tiles).
+export const JUMP_VEL = -18.0
+// Jump-cut (pulo variavel): soltar o pulo na subida corta vy para este valor.
+export const JUMP_CUT_VY = -6
+// Mola ('^' na legenda): impulso vertical ~6 tiles.
+export const SPRING_VEL = -22
 export const COYOTE_FRAMES = 7
 export const JUMP_BUFFER_FRAMES = 8
 

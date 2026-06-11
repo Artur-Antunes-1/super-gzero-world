@@ -300,6 +300,32 @@ test('HUMANWARE (hw-test): coletar moedas enche o medidor e H ativa o Modo', asy
 })
 
 // ---------------------------------------------------------------------------
+// W1-2 (G4): smoke da fase nova "Plataformas Flutuantes" (156 cols, molas e
+// plataformas moveis). Entrar, andar ~1s para a direita: X avanca e o estado
+// segue 'playing' (o primeiro Tolo patrulha a col 32+ — fora do alcance de 1s).
+// NAO tentamos vencer a fase aqui (timing de movers nao e para bot de e2e).
+// A PROGRESSAO sem next (win -> select) segue coberta pelo teste da zona1
+// acima; a progressao w1-1 -> w1-2 e coberta nos testes unitarios do game.
+// ---------------------------------------------------------------------------
+test('W1-2 (smoke): entrar com Enter e andar ~1s avanca X mantendo playing', async ({
+  page,
+}) => {
+  await bootToPlaying(page, '/?level=w1-2')
+
+  const x0 = (await page.evaluate(() => (window as any).__GAME().playerX)) as number
+  expect(x0).not.toBeNull()
+
+  // Segura ArrowRight por ~1s.
+  await page.keyboard.down('ArrowRight')
+  await page.waitForTimeout(1000)
+  await page.keyboard.up('ArrowRight')
+
+  const g = await page.evaluate(() => (window as any).__GAME())
+  expect(g.state).toBe('playing')
+  expect(g.playerX).toBeGreaterThan(x0)
+})
+
+// ---------------------------------------------------------------------------
 // RESET POS-WIN (zona1): vencer andando reto (inimigos da zona1 patrulham
 // plataformas altas, fora da rota do chao), esperar o delay anti-skip de
 // 45 frames (~750ms), Enter -> select e Enter de novo -> playing.

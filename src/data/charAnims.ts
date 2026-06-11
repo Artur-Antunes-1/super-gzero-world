@@ -21,8 +21,13 @@ export const ARTUR_ANIMS: CharAnimSet = {
     jump: { key: 'char.artur.pulo', frames: 3, fps: 12, loop: false },
     fall: { key: 'char.artur.queda', frames: 4, fps: 12, loop: false },
     hurt: { key: 'char.artur.danificado', frames: 3, fps: 8, loop: true },
-    // one-shot de habilidade (J); land/skid/victory ficam no fallback procedural.
+    // one-shot de habilidade (J); land fica no fallback procedural.
     cast: { key: 'char.artur.ataque', frames: 4, fps: 12, loop: false },
+    // G3: poses extras extraidas do sheet original de apresentacao.
+    // victory = 2 poses de coleta (braco erguido / sentado), alterna em loop.
+    victory: { key: 'char.artur.vitoria', frames: 2, fps: 6, loop: true },
+    // skid = vista 3/4 frente (1 frame, segura enquanto durar o one-shot).
+    skid: { key: 'char.artur.skid', frames: 1, fps: 12, loop: false },
   },
 }
 

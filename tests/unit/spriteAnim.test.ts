@@ -174,13 +174,15 @@ describe('drawCharFrame', () => {
 })
 
 describe('drawCharFrame — fallbacks de one-shot (ONE_SHOT_FALLBACK)', () => {
-  // SET sem nenhum one-shot: land/cast caem no idle, skid no run, victory no jump
+  // SET sem nenhum one-shot: land/cast caem no idle, skid no run, victory no
+  // jump, death no hurt
   const FB_SET: CharAnimSet = {
     ...SET,
     anims: {
       idle: { key: 'k.idle', frames: 3, fps: 6, loop: true },
       run: { key: 'k.run', frames: 4, fps: 15, loop: true },
       jump: { key: 'k.jump', frames: 3, fps: 12, loop: false },
+      hurt: { key: 'k.hurt', frames: 3, fps: 8, loop: true },
     },
   }
 
@@ -207,6 +209,22 @@ describe('drawCharFrame — fallbacks de one-shot (ONE_SHOT_FALLBACK)', () => {
     const ok = drawCharFrame(makeRenderer(makeCtxStub()), store, FB_SET, 'victory', 0, 0, 0, 1)
     expect(ok).toBe(true)
     expect(get).toHaveBeenCalledWith('k.jump')
+  })
+  it('death -> hurt (contrato: morte reusa o sheet de dano)', () => {
+    const { store, get } = makeStoreSpy()
+    const ok = drawCharFrame(makeRenderer(makeCtxStub()), store, FB_SET, 'death', 0, 0, 0, 1)
+    expect(ok).toBe(true)
+    expect(get).toHaveBeenCalledWith('k.hurt')
+  })
+  it('death sem hurt no set: cai no idle (ultimo fallback)', () => {
+    const { store, get } = makeStoreSpy()
+    const onlyIdle: CharAnimSet = {
+      ...SET,
+      anims: { idle: { key: 'k.idle', frames: 3, fps: 6, loop: true } },
+    }
+    const ok = drawCharFrame(makeRenderer(makeCtxStub()), store, onlyIdle, 'death', 0, 0, 0, 1)
+    expect(ok).toBe(true)
+    expect(get).toHaveBeenCalledWith('k.idle')
   })
   it('skid sem run no set: cai no idle (ultimo fallback)', () => {
     const { store, get } = makeStoreSpy()

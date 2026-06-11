@@ -11,6 +11,8 @@
   "pulo": 3,
   "queda": 4,
   "danificado": 3,
-  "ataque": 4
+  "ataque": 4,
+  "vitoria": 2,
+  "skid": 1
  }
 }
