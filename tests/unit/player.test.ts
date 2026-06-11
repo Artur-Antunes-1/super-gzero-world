@@ -52,7 +52,9 @@ class FakeInput implements Input {
 }
 
 // Build a flat ParsedLevel: ground on the last row, rest empty.
-// Player is spawned on the row just above the ground.
+// Spawn pelos PES com folga de 6px sobre o chao (hitbox honesta 2026-06-11:
+// h=64 > TILE — o y antigo (row acima do chao) enterraria os pes no solo).
+// A folga preserva os testes de gravidade: 1+ frames de queda livre.
 function makeFlatLevel(widthTiles = 40, heightTiles = 11): ParsedLevel {
   const tiles: TileType[][] = []
   for (let ty = 0; ty < heightTiles; ty++) {
@@ -62,7 +64,10 @@ function makeFlatLevel(widthTiles = 40, heightTiles = 11): ParsedLevel {
     }
     tiles.push(row)
   }
-  const spawn: SpawnPoint = { x: 2 * TILE, y: (heightTiles - 2) * TILE }
+  const spawn: SpawnPoint = {
+    x: 2 * TILE,
+    y: (heightTiles - 1) * TILE - PLAYER_H - 6,
+  }
   return {
     widthTiles,
     heightTiles,

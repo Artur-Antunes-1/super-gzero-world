@@ -38,10 +38,14 @@ const level = parseLevelById(levelId ?? DEFAULT_LEVEL_ID)
 // 5. Pinta o fundo enquanto os assets carregam (evita flash branco).
 renderer.clear(COLOR_BG)
 
-// 6. Escala INTEIRA do canvas (pixel-perfect): so o tamanho CSS muda em
-//    multiplos inteiros; o buffer interno 960x528 NAO muda.
+// 6. Escala FRACIONARIA do canvas: passos de 0.5 a partir de 1x para encher
+//    a janela (image-rendering: pixelated segura o meio-passo sem borrar).
+//    Janelas menores que 1x usam a escala crua para caber. Margem de 16px
+//    por lado (innerW-32 / innerH-32) pra respirar. Buffer 960x528 NAO muda.
 function applyScale(): void {
-  const s = Math.max(1, Math.floor(Math.min(window.innerWidth / 960, window.innerHeight / 528)))
+  const raw = Math.min((window.innerWidth - 32) / 960, (window.innerHeight - 32) / 528)
+  // >=1: trava em meios-passos (1, 1.5, 2, ...); <1: cru, com piso anti-degenerado.
+  const s = raw >= 1 ? Math.floor(raw * 2) / 2 : Math.max(0.25, raw)
   canvas.style.width = (960 * s) + 'px'
   canvas.style.height = (528 * s) + 'px'
 }

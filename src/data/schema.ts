@@ -73,6 +73,8 @@ export interface LevelDef {
   timeStart?: number
   // Id da proxima fase (progressao); ausente = fim do fluxo.
   next?: string
+  // T3: tema de fundo (BG_THEMES em data/assets). Ausente = 'sky'.
+  bgTheme?: 'sky' | 'cosmic'
 }
 
 export interface SpawnPoint {
@@ -101,4 +103,7 @@ export interface ParsedLevel {
   movers: { col: number; row: number; axis: 'x' | 'y'; amplitude: number; speed: number }[]
   // Copiado de LevelDef.next (progressao por fase).
   next?: string
+  // T3: tema de fundo copiado de LevelDef.bgTheme (ausente = 'sky').
+  // Opcional ate a fiacao parser/game na frente H3 (parser ainda nao preenche).
+  bgTheme?: 'sky' | 'cosmic'
 }

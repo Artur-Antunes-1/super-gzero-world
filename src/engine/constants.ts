@@ -42,8 +42,11 @@ export const SHAKE_FRAMES = 8 // duracao do screen-shake
 export const SHAKE_PX = 3 // amplitude do shake (px)
 
 // Dimensoes de entidades
-export const PLAYER_W = 34
-export const PLAYER_H = 42
+// Hitbox honesta (decisao pos-playtest 2026-06-11): 1,22x do corpo visual de
+// 78px. Antes 34x42 (1,86x) — o corpo "flutuava" sobre uma hitbox minuscula.
+// ATENCAO: PLAYER_H 64 > TILE 48 — vaos verticais de 1 tile NAO sao passaveis.
+export const PLAYER_W = 38
+export const PLAYER_H = 64
 export const COIN_SIZE = 26
 
 // Sessao / progressao

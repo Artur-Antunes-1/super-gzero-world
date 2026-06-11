@@ -26,7 +26,10 @@ const MOVER_DEFAULTS = { axis: 'x' as const, amplitude: 3, speed: 1.2 }
  *
  * Legenda (C3a):
  * - tiles[row][col] usa CHAR_TO_TILE; demais caracteres viram 'empty'.
- * - 'S' playerSpawn; 'G' e '>' goal — { x: col*TILE, y: row*TILE } (top-left).
+ * - 'S' playerSpawn pelos PES: y = (row+1)*TILE - PLAYER_H (hitbox honesta
+ *   2026-06-11: h=64 > TILE — o top-left enterrava os pes 16px na celula de
+ *   baixo e, sobre piso 'platform' one-way, o corpo ATRAVESSAVA no 1o frame).
+ * - 'G' e '>' goal — { x: col*TILE, y: row*TILE } (top-left).
  * - 'o' moeda; 'H' coracao (tile empty, entrada em hearts).
  * - '?' tile solido 'block' + entrada em qBlocks; payload vem de entities
  *   (type 'block' com mesmo col/row), default 'coin'.
@@ -71,7 +74,8 @@ export function parseLevel(def: LevelDef): ParsedLevel {
 
       switch (ch) {
         case 'S':
-          playerSpawn = { x: px, y: py }
+          // Spawn pelos pes: base do corpo alinhada a base da celula 'S'.
+          playerSpawn = { x: px, y: py + TILE - PLAYER_H }
           break
         case 'G':
         case '>':
@@ -161,8 +165,10 @@ const STANDABLE = new Set(['#', 'B', '?', '='])
 // Subida de pes necessaria para o corpo do jogador sobrepor a celula do item:
 // pes no topo do apoio (srow*TILE); basta o topo do corpo (pes - PLAYER_H)
 // alcancar a base da celula do item ((row+1)*TILE).
-// Ex.: apoio row 9 -> item row 4 = (9-4-1)*48 - 42 = 150px (moedas row 4);
-//      item row 3 = 198px (caso do greybox que motivou a errata).
+// Hitbox honesta 2026-06-11 (PLAYER_H 42 -> 64): as subidas exigidas FICAM
+// MENORES — o validador absorve a mudanca sem tocar nos tilemaps canonicos.
+// Ex.: apoio row 9 -> item row 4 = (9-4-1)*48 - 64 = 128px (moedas row 4);
+//      item row 3 = 176px (caso do greybox que motivou a errata segue > 170).
 function riseNeeded(supportRow: number, itemRow: number): number {
   return Math.max(0, (supportRow - itemRow - 1) * TILE - PLAYER_H)
 }

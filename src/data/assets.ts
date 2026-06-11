@@ -35,7 +35,15 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
 }
 
 /**
- * Camadas de parallax do mundo 1 (ceu claro). 1 camada no M2a;
- * bg.cosmic fica no manifesto para uso futuro.
+ * T3: temas de fundo por fase. Lookup tema -> camadas de parallax.
+ * O game ainda consome SKY_LAYERS direto; a fiacao por LevelDef.bgTheme
+ * entra na frente H3 (ver comentario em schema.ts).
  */
-export const SKY_LAYERS: ParallaxLayer[] = [{ key: 'bg.sky', factor: 0.3 }]
+export const BG_THEMES: Record<'sky' | 'cosmic', ParallaxLayer[]> = {
+  // TODO: mid-islands layer entra quando o asset chegar (factor 0.55).
+  sky: [{ key: 'bg.sky', factor: 0.3 }],
+  cosmic: [{ key: 'bg.cosmic', factor: 0.25 }],
+}
+
+/** Compat M2a: mesmo array do tema 'sky' (game.ts importa este export). */
+export const SKY_LAYERS: ParallaxLayer[] = BG_THEMES.sky

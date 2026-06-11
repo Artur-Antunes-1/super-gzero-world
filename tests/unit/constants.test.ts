@@ -7,6 +7,8 @@ import {
   HW_TIME_SCALE,
   HW_METER_MAX,
   VIEW_W,
+  PLAYER_W,
+  PLAYER_H,
 } from '../../src/engine/constants'
 
 describe('engine/constants', () => {
@@ -25,6 +27,17 @@ describe('engine/constants', () => {
 
   it('SPRING_VEL vale -22 (mola ~6 tiles)', () => {
     expect(SPRING_VEL).toBe(-22)
+  })
+
+  // Hitbox honesta (pos-playtest 2026-06-11): 1,22x do corpo visual de 78px
+  // (antes 34x42 = 1,86x).
+  it('PLAYER_W vale 38 (hitbox honesta)', () => {
+    expect(PLAYER_W).toBe(38)
+  })
+
+  it('PLAYER_H vale 64 e e MAIOR que TILE (vaos de 1 tile nao sao passaveis)', () => {
+    expect(PLAYER_H).toBe(64)
+    expect(PLAYER_H).toBeGreaterThan(TILE)
   })
 
   it('HW_TIME_SCALE vale 0.35', () => {

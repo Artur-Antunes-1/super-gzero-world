@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseLevel, validateLevel } from '../../src/game/levelParser'
-import { TILE, TIME_START } from '../../src/engine/constants'
+import { TILE, TIME_START, PLAYER_H } from '../../src/engine/constants'
 import type { LevelDef } from '../../src/data/schema'
 
 // ---------------------------------------------------------------------------
@@ -56,9 +56,11 @@ describe('parseLevel', () => {
     expect(lvl.tiles[0][0]).toBe('empty') // .
   })
 
-  it('posiciona o playerSpawn na celula S em px', () => {
+  // Hitbox honesta (2026-06-11): spawn pelos PES — base do corpo na base da
+  // celula 'S' (h=64 > TILE; top-left enterraria os pes na celula de baixo).
+  it('posiciona o playerSpawn pelos pes da celula S', () => {
     const lvl = parseLevel(def)
-    expect(lvl.playerSpawn).toEqual({ x: 0 * TILE, y: 1 * TILE })
+    expect(lvl.playerSpawn).toEqual({ x: 0 * TILE, y: 2 * TILE - PLAYER_H })
   })
 
   it('posiciona o goal na celula G em px', () => {
@@ -287,12 +289,12 @@ describe('validateLevel', () => {
 // validateLevel — ALCANCABILIDADE (2026-06-11): cada moeda/qblock/heart precisa
 // de apoio (topo de solido/platform com celula acima livre) em ±2 colunas com
 // subida <= 170px; mola em ±3 colunas sobe o limite para 300px.
-// Subida = (rowApoio - rowItem - 1)*48 - PLAYER_H(42).
+// Subida = (rowApoio - rowItem - 1)*48 - PLAYER_H(64; hitbox honesta).
 // ---------------------------------------------------------------------------
 describe('validateLevel — alcancabilidade', () => {
   const base = { world: 9, zone: 9 }
 
-  it('moeda a 150px do chao (row 4 sobre piso row 9) passa', () => {
+  it('moeda a 128px do chao (row 4 sobre piso row 9) passa', () => {
     const d: LevelDef = {
       id: 'coin-150',
       ...base,
@@ -301,7 +303,7 @@ describe('validateLevel — alcancabilidade', () => {
         '........', // 1
         '........', // 2
         '........', // 3
-        '...o....', // 4: moeda col 3 -> subida (9-4-1)*48-42 = 150 <= 170
+        '...o....', // 4: moeda col 3 -> subida (9-4-1)*48-64 = 128 <= 170
         '........', // 5
         '........', // 6
         '........', // 7
@@ -312,12 +314,12 @@ describe('validateLevel — alcancabilidade', () => {
     expect(() => validateLevel(d)).not.toThrow()
   })
 
-  it('moeda alta demais (294px) SEM mola lanca com col/row no erro', () => {
+  it('moeda alta demais (272px) SEM mola lanca com col/row no erro', () => {
     const d: LevelDef = {
       id: 'coin-294',
       ...base,
       rows: [
-        '...o....', // 0: moeda col 3 -> subida (8-0-1)*48-42 = 294 > 170
+        '...o....', // 0: moeda col 3 -> subida (8-0-1)*48-64 = 272 > 170
         '........', // 1
         '........', // 2
         '........', // 3
@@ -338,7 +340,7 @@ describe('validateLevel — alcancabilidade', () => {
       id: 'coin-294-mola',
       ...base,
       rows: [
-        '...o....', // 0: moeda col 3; subida 294 <= 300 (mola col 4)
+        '...o....', // 0: moeda col 3; subida 272 <= 300 (mola col 4)
         '........', // 1
         '........', // 2
         '........', // 3
@@ -398,7 +400,7 @@ describe('validateLevel — alcancabilidade', () => {
         '........', // 0
         '...o....', // 1: moeda col 3
         '........', // 2
-        '.....=..', // 3: platform col 5 (|5-3| = 2) -> subida (3-1-1)*48-42 = 6
+        '.....=..', // 3: platform col 5 (|5-3| = 2) -> subida max(0,(3-1-1)*48-64) = 0
         '........', // 4
         '........', // 5
         '........', // 6
@@ -451,8 +453,9 @@ describe('world1-zona1 (fase greybox — Errata E3+E4)', () => {
     expect(gCount).toBe(1)
 
     const lvl = parseLevel(world1Zona1)
-    // Errata E3+E4: spawn col 2, row 8; goal col 36, row 8
-    expect(lvl.playerSpawn).toEqual({ x: 2 * TILE, y: 8 * TILE })
+    // Errata E3+E4: spawn col 2, row 8; goal col 36, row 8.
+    // Hitbox honesta (2026-06-11): spawn pelos pes (base da celula 'S').
+    expect(lvl.playerSpawn).toEqual({ x: 2 * TILE, y: 9 * TILE - PLAYER_H })
     expect(lvl.goal).toEqual({ x: 36 * TILE, y: 8 * TILE })
   })
 

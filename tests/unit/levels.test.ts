@@ -1,6 +1,7 @@
 // tests/unit/levels.test.ts — registry de fases + sanidade da W1-1 (C3a).
 import { describe, it, expect } from 'vitest'
-import { TILE } from '../../src/engine/constants'
+import { TILE, PLAYER_W, PLAYER_H } from '../../src/engine/constants'
+import { stepBody, type Body } from '../../src/engine/physics'
 import { validateLevel, parseLevel } from '../../src/game/levelParser'
 import {
   LEVELS,
@@ -82,9 +83,10 @@ describe('W1-2 — "Plataformas Flutuantes" (spec §8.3)', () => {
     expect(() => validateLevel(W1_2)).not.toThrow()
   })
 
-  it('spawn na col 2 row 8; portal ">" na col 148 row 8', () => {
+  it('spawn na col 2 row 8 (pelos pes); portal ">" na col 148 row 8', () => {
     const lvl = parseLevel(W1_2)
-    expect(lvl.playerSpawn).toEqual({ x: 2 * TILE, y: 8 * TILE })
+    // Hitbox honesta (2026-06-11): spawn pelos pes — base na base da celula 'S'.
+    expect(lvl.playerSpawn).toEqual({ x: 2 * TILE, y: 9 * TILE - PLAYER_H })
     expect(lvl.goal).toEqual({ x: 148 * TILE, y: 8 * TILE })
   })
 
@@ -191,9 +193,10 @@ describe('W1-1 — "O Primeiro Passo Leve" (transcricao do spec)', () => {
     expect(lvl.heightTiles).toBe(11)
   })
 
-  it('spawn adicionado na col 2 row 8; goal ">" na col 136 row 8', () => {
+  it('spawn adicionado na col 2 row 8 (pelos pes); goal ">" na col 136 row 8', () => {
     const lvl = parseLevel(W1_1)
-    expect(lvl.playerSpawn).toEqual({ x: 2 * TILE, y: 8 * TILE })
+    // Hitbox honesta (2026-06-11): spawn pelos pes — base na base da celula 'S'.
+    expect(lvl.playerSpawn).toEqual({ x: 2 * TILE, y: 9 * TILE - PLAYER_H })
     expect(lvl.goal).toEqual({ x: 136 * TILE, y: 8 * TILE })
   })
 
@@ -257,5 +260,36 @@ describe('W1-1 — "O Primeiro Passo Leve" (transcricao do spec)', () => {
         expect(lvl.tiles[9][col], `row 9 col ${col}`).toBe('platform')
       }
     }
+  })
+
+  // Hitbox honesta (2026-06-11): com h=64 o vao de 1 tile (48px) sob o 'B' da
+  // col 86 (row 7, piso na row 9) DEIXOU de ser passavel por baixo — o corpo
+  // colide de pe na row 8. O caminho canonico vira pular POR CIMA do bloco
+  // (apex ~4,2 tiles, trivial). Antes (h=42) dava para passar andando.
+  it('hitbox honesta: NAO passa por baixo do B na col 86 (vao de 1 tile)', () => {
+    const lvl = parseLevel(W1_1)
+    // Geometria do mapa: B na row 7 col 86; row 8 livre; piso one-way na row 9.
+    expect(lvl.tiles[7][86]).toBe('brick')
+    expect(lvl.tiles[8][86]).toBe('empty')
+    expect(lvl.tiles[9][86]).toBe('platform')
+    // Pre-condicao da mudanca: o corpo (64) nao cabe no vao de 1 tile (48).
+    expect(PLAYER_H).toBeGreaterThan(TILE)
+    // Player de pe no piso (pes na row 9), andando para a direita rumo ao B.
+    const body: Body = {
+      x: 84 * TILE,
+      y: 9 * TILE - PLAYER_H,
+      w: PLAYER_W,
+      h: PLAYER_H,
+      vx: 0,
+      vy: 0,
+      onGround: true,
+    }
+    for (let i = 0; i < 60; i++) {
+      body.vx = 4 // re-aplica: a colisao zera vx
+      stepBody(body, lvl, 1)
+    }
+    // Travado na parede esquerda do B: borda direita encosta em 86*TILE.
+    expect(body.x).toBe(86 * TILE - PLAYER_W)
+    expect(body.y).toBe(9 * TILE - PLAYER_H) // segue de pe no piso
   })
 })

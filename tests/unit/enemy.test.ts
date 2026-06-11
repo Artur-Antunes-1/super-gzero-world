@@ -95,8 +95,8 @@ describe('spawnEnemies', () => {
     expect(es[1].patrolMax).toBeUndefined()
     for (const e of es) {
       expect(e.kind).toBe('tolo')
-      expect(e.w).toBe(38)
-      expect(e.h).toBe(34)
+      expect(e.w).toBe(42)
+      expect(e.h).toBe(46)
       expect(e.dir).toBe(-1)
       expect(e.alive).toBe(true)
       expect(e.frozen).toBe(false)
@@ -112,8 +112,8 @@ describe('spawnEnemies', () => {
     expect(es).toHaveLength(2)
     for (const e of es) {
       expect(e.kind).toBe('tolo')
-      expect(e.w).toBe(38)
-      expect(e.h).toBe(34)
+      expect(e.w).toBe(42)
+      expect(e.h).toBe(46)
       expect(e.dir).toBe(-1)
       expect(e.alive).toBe(true)
       expect(e.frozen).toBe(false)
@@ -142,7 +142,7 @@ describe('updateEnemy patrulha', () => {
     // Chao continuo (linha 1). Inimigo sobre a celula (col 2), dir=-1 (esquerda).
     const level = makeLevel(['........', '########'])
     const e: Enemy = {
-      x: 2 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 2 * TILE, y: TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: -1, alive: true, frozen: false,
     }
     const x0 = e.x
@@ -158,7 +158,7 @@ describe('updateEnemy patrulha', () => {
     const level = makeLevel(['..B.....', '..B.....', '########'])
     const e: Enemy = {
       // borda direita encostando na parede (x+w bem proximo de 2*TILE)
-      x: 2 * TILE - 38 - 0.5, y: 2 * TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 2 * TILE - 42 - 0.5, y: 2 * TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: 1, alive: true, frozen: false,
     }
     updateEnemy(e, level, 1)
@@ -171,7 +171,7 @@ describe('updateEnemy patrulha', () => {
     // Inimigo na col 2 indo a direita (dir=1): a celula diante (col 3) nao tem chao abaixo -> inverte.
     const level = makeLevel(['........', '###.....'])
     const e: Enemy = {
-      x: 2 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 2 * TILE, y: TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: 1, alive: true, frozen: false,
     }
     updateEnemy(e, level, 1)
@@ -186,7 +186,7 @@ describe('updateEnemy patrulha', () => {
     // de borda invertia dir a cada frame (platform nao era "chao").
     const level = makeLevel(['........', '========'])
     const e: Enemy = {
-      x: 4 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 4 * TILE, y: TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: -1, alive: true, frozen: false,
     }
     const x0 = e.x
@@ -203,7 +203,7 @@ describe('updateEnemy patrulha', () => {
     // Plataforma so nas colunas 0..2; col 3+ e vazio.
     const level = makeLevel(['........', '===.....'])
     const e: Enemy = {
-      x: 2 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 2 * TILE, y: TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: 1, alive: true, frozen: false,
     }
     updateEnemy(e, level, 1)
@@ -213,7 +213,7 @@ describe('updateEnemy patrulha', () => {
   it('inverte no limite esquerdo de patrulha (patrolMin)', () => {
     const level = makeLevel(['..........', '##########'])
     const e: Enemy = {
-      x: 2 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 2 * TILE, y: TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: -1, alive: true, frozen: false,
       patrolMin: 2 * TILE, patrolMax: 6 * TILE,
     }
@@ -226,7 +226,7 @@ describe('updateEnemy patrulha', () => {
   it('inverte no limite direito de patrulha (patrolMax)', () => {
     const level = makeLevel(['..........', '##########'])
     const e: Enemy = {
-      x: 6 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 6 * TILE, y: TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: 1, alive: true, frozen: false,
       patrolMin: 2 * TILE, patrolMax: 6 * TILE,
     }
@@ -239,7 +239,7 @@ describe('updateEnemy patrulha', () => {
   it('dentro dos limites de patrulha, mantem a direcao', () => {
     const level = makeLevel(['..........', '##########'])
     const e: Enemy = {
-      x: 4 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 4 * TILE, y: TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: 1, alive: true, frozen: false,
       patrolMin: 2 * TILE, patrolMax: 6 * TILE,
     }
@@ -251,7 +251,7 @@ describe('updateEnemy patrulha', () => {
   it('nao move quando alive=false', () => {
     const level = makeLevel(['........', '########'])
     const e: Enemy = {
-      x: 2 * TILE, y: TILE - 34, w: 38, h: 34, vx: 9, vy: 9,
+      x: 2 * TILE, y: TILE - 46, w: 42, h: 46, vx: 9, vy: 9,
       onGround: true, kind: 'tolo', dir: -1, alive: false, frozen: false,
     }
     const x0 = e.x, y0 = e.y
@@ -263,7 +263,7 @@ describe('updateEnemy patrulha', () => {
   it('nao move quando frozen=true (Modo Humanware)', () => {
     const level = makeLevel(['........', '########'])
     const e: Enemy = {
-      x: 2 * TILE, y: TILE - 34, w: 38, h: 34, vx: 0, vy: 0,
+      x: 2 * TILE, y: TILE - 46, w: 42, h: 46, vx: 0, vy: 0,
       onGround: true, kind: 'tolo', dir: -1, alive: true, frozen: true,
     }
     const x0 = e.x, y0 = e.y
@@ -277,12 +277,12 @@ describe('isStomp', () => {
   it('true quando o player cai (vy>0) sobre o topo do tolo', () => {
     const player: Player = createPlayer(CHAR, { x: 0, y: 0 })
     const e: Enemy = {
-      x: 100, y: 200, w: 38, h: 34, vx: 0, vy: 0,
+      x: 100, y: 200, w: 42, h: 46, vx: 0, vy: 0,
       onGround: false, kind: 'tolo', dir: -1, alive: true, frozen: false,
     }
     // Player descendo, pe acima da metade do tolo, sobreposto em X/Y.
     player.x = 100
-    player.y = 200 - player.h + 4 // pe em ~204, abaixo do topo 200 mas acima de 200+17
+    player.y = 200 - player.h + 4 // pe em ~204, abaixo do topo 200 mas acima de 200+23 (h/2)
     player.vy = 6
     expect(isStomp(player, e)).toBe(true)
   })
@@ -290,7 +290,7 @@ describe('isStomp', () => {
   it('false em colisao lateral (player subindo / pe baixo demais)', () => {
     const player: Player = createPlayer(CHAR, { x: 0, y: 0 })
     const e: Enemy = {
-      x: 100, y: 200, w: 38, h: 34, vx: 0, vy: 0,
+      x: 100, y: 200, w: 42, h: 46, vx: 0, vy: 0,
       onGround: false, kind: 'tolo', dir: -1, alive: true, frozen: false,
     }
     // Player na mesma altura, vy<=0 (nao descendo) -> nao e stomp.
@@ -306,10 +306,11 @@ describe('isStomp', () => {
 // ---------------------------------------------------------------------------
 
 describe('ENEMY_DEFS', () => {
-  it('tolo: dimensoes/velocidade atuais (fisica identica) e behavior patrol', () => {
+  // Hitbox honesta (pos-playtest 2026-06-11): 42x46 = 1,22x do sprite de 56px.
+  it('tolo: hitbox honesta 42x46, speed e behavior patrol', () => {
     const def = ENEMY_DEFS.tolo
-    expect(def.w).toBe(38)
-    expect(def.h).toBe(34)
+    expect(def.w).toBe(42)
+    expect(def.h).toBe(46)
     expect(def.speed).toBe(ENEMY_SPEED)
     expect(def.behavior).toBe('patrol')
   })
@@ -391,7 +392,7 @@ function makeStore(keys: string[]): AssetStore {
 
 function makeTolo(over: Partial<Enemy> = {}): Enemy {
   return {
-    x: 96, y: 200, w: 38, h: 34, vx: 0, vy: 0,
+    x: 96, y: 200, w: 42, h: 46, vx: 0, vy: 0,
     onGround: true, kind: 'tolo', dir: -1, alive: true, frozen: false,
     ...over,
   }

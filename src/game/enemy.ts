@@ -33,7 +33,8 @@ export interface Enemy extends Body {
 }
 
 // D3: definicoes data-driven por tipo de inimigo (padrao de CHARACTERS).
-// Valores identicos aos hardcoded anteriores — zero mudanca de gameplay.
+// Hitbox honesta (pos-playtest 2026-06-11): 42x46 = 1,22x do sprite de 56px
+// (antes 38x34). h=46 < TILE: o tolo segue cabendo na celula do spawn.
 // color = COLOR_VIOLET (token de perigo; magenta fica para objetivo/marca).
 export interface EnemyDef {
   w: number
@@ -45,8 +46,8 @@ export interface EnemyDef {
 
 export const ENEMY_DEFS: Record<'tolo', EnemyDef> = {
   tolo: {
-    w: 38,
-    h: 34,
+    w: 42,
+    h: 46,
     speed: ENEMY_SPEED,
     color: COLOR_VIOLET,
     behavior: 'patrol',

@@ -15,6 +15,7 @@ import {
   TIME_START,
   STOMP_BOUNCE,
   SPRING_VEL,
+  PLAYER_H,
   COLOR_MAGENTA,
   COLOR_LIME,
   COLOR_OBJETIVO,
@@ -28,6 +29,9 @@ import {
   SHAKE_FRAMES,
   SHAKE_PX,
 } from '../../src/engine/constants'
+
+// Hitbox honesta (2026-06-11): dimensoes do tolo vem do def (42x46).
+import { ENEMY_DEFS } from '../../src/game/enemy'
 
 // (M2a Task 6) — imports adicionais
 import type { AssetStore, ImageAsset } from '../../src/engine/assets'
@@ -327,15 +331,15 @@ describe('createGame — playing', () => {
   })
 
   it('stomp mata o inimigo, da bounce e aplica STOMP_BOUNCE', () => {
-    // Inimigo na coluna 6, sobre o chao (row 8 = topo do chao). w=38,h=34.
-    const level = makeLevel([{ x: 6 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    // Inimigo na coluna 6, sobre o chao (row 8 = topo do chao). w/h do ENEMY_DEFS.
+    const level = makeLevel([{ x: 6 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     const p = game.player!
     // Posiciona o player acima do inimigo, caindo (vy>0), com overlap horizontal.
     const enemyX = 6 * TILE
     p.x = enemyX
-    p.y = 8 * TILE + (TILE - 34) - p.h + 4 // bottom do player perto do topo do inimigo
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h) - p.h + 4 // bottom do player perto do topo do inimigo
     p.vy = 5
     game.update(1)
     expect(game.state.get()).toBe('playing')
@@ -344,7 +348,7 @@ describe('createGame — playing', () => {
 
   it('dano sem hearts/lives entra no DYING e leva a "over" apos 36 frames (G4)', () => {
     // Inimigo colado ao player; player sem i-frames; reduz lives/hearts ao minimo.
-    const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     drainHitstop(game) // hit incidental no select arma hitstop
@@ -356,7 +360,7 @@ describe('createGame — playing', () => {
     p.vy = 0
     // Coloca o inimigo em overlap lateral com o player (mesma faixa vertical, lado).
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34) // alinhado verticalmente ao inimigo => overlap, nao stomp
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h) // alinhado verticalmente ao inimigo => overlap, nao stomp
     game.update(1)
     // G4: frame do hit letal NAO encerra — subestado DYING segura 36 frames.
     expect(game.state.get()).toBe('playing')
@@ -369,7 +373,7 @@ describe('createGame — playing', () => {
 
   it('ao perder vida com lives>0 o player volta ao spawn (E2)', () => {
     // Inimigo junto ao spawn; player com 2 lives, 1 heart, sem i-frames.
-    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     drainHitstop(game) // hit incidental no select arma hitstop
@@ -379,7 +383,7 @@ describe('createGame — playing', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     // Depois do hit com perda de vida, deve continuar playing e player no spawn
     expect(game.state.get()).toBe('playing')
@@ -388,7 +392,7 @@ describe('createGame — playing', () => {
   })
 
   it('dano com hearts restantes nao vai a "over" nem respawna (apenas perde coracao)', () => {
-    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     drainHitstop(game) // hit incidental no select arma hitstop
@@ -398,7 +402,7 @@ describe('createGame — playing', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     expect(game.state.get()).toBe('playing')
     // Hearts reduced but no respawn (player position unchanged from where it was, NOT spawn)
@@ -423,7 +427,7 @@ describe('createGame — Humanware congela inimigos', () => {
     }))
     const enemyStartX = 20 * TILE
     const level = makeLevel(
-      [{ x: enemyStartX, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [{ x: enemyStartX, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }],
       coins,
     )
     const game = createGame(renderer, input, level)
@@ -543,13 +547,13 @@ describe('createGame — reset', () => {
   it('confirm em "over" (apos o delay de 45f) volta para "select"', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
-    const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     drainHitstop(game) // hit incidental no select arma hitstop
     const p = game.player!
     p.lives = 1; p.hearts = 1; p.iframes = 0; p.vy = 0
-    p.x = 2 * TILE; p.y = 8 * TILE + (TILE - 34)
+    p.x = 2 * TILE; p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     drainDying(game) // G4: hit letal passa pelo DYING antes do over
     expect(game.state.get()).toBe('over')
@@ -595,14 +599,14 @@ describe("createGame — reset limpa estado M2a (particulas/animacao/hwWasActive
   it("apos reset (over -> select -> nova rodada) render e drawParticles chamados sem crash", () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
-    const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: "fool" }])
+    const level = makeLevel([{ x: 2 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: "fool" }])
     const game = createGame(renderer, input, level, makeStore())
 
     selectFirst(game, input)
     drainHitstop(game) // hit incidental no select arma hitstop
     const p = game.player!
     p.lives = 1; p.hearts = 1; p.iframes = 0; p.vy = 0
-    p.x = 2 * TILE; p.y = 8 * TILE + (TILE - 34)
+    p.x = 2 * TILE; p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     drainDying(game) // G4: hit letal passa pelo DYING antes do over
     expect(game.state.get()).toBe("over")
@@ -628,10 +632,11 @@ describe("createGame — reset limpa estado M2a (particulas/animacao/hwWasActive
 
 // Builder: bloco temporario aparece em level.tiles e e restaurado apos o TTL.
 describe('createGame — builder tile restore', () => {
-  // Calculo da celula-alvo:
-  //   spawn: x=2*TILE(96), y=8*TILE(384); PLAYER_W=34, PLAYER_H=42, facing=1 (direita)
-  //   col = floor((96+34)/48) = floor(130/48) = 2
-  //   row = floor((384+42-1)/48) = floor(425/48) = 8
+  // Calculo da celula-alvo (hitbox honesta 38x64, 2026-06-11):
+  //   spawn x=2*TILE(96); apos assentar no chao (row 9): y = 9*TILE-64 = 368;
+  //   facing=1 (direita)
+  //   col = floor((96+38)/48) = floor(134/48) = 2
+  //   row = floor((368+64-1)/48) = floor(431/48) = 8
   // Row 8 e 'empty' em makeLevel (chao comeca na row 9) — apto para receber o bloco.
   const BUILDER_COL = 2
   const BUILDER_ROW = 8
@@ -928,7 +933,7 @@ describe('createGame — M2 fase B: hitstop', () => {
   it('dano "hit" congela o mundo por HITSTOP_FRAMES updates e depois expira', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
-    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     drainHitstop(game) // hit incidental no select arma hitstop
@@ -938,7 +943,7 @@ describe('createGame — M2 fase B: hitstop', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1) // frame do dano -> hitstop armado
     expect(game.state.get()).toBe('playing')
     expect(p.hearts).toBe(2) // o hit conectou
@@ -967,7 +972,7 @@ describe('createGame — M2 fase B: screen-shake', () => {
   it('apos "hit", beginWorld recebe cam+offset deterministico; expira e volta a (0,0)', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
-    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     drainHitstop(game) // hit incidental no select arma hitstop
@@ -977,7 +982,7 @@ describe('createGame — M2 fase B: screen-shake', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1) // hit -> shakeT = SHAKE_FRAMES (cam fica em (0,0) perto do spawn)
     // G4: com o jump-cut (G1), o arco do knockback mudou e o player caia em cima
     // do tolo (stomp incidental re-armava shakeT=4). Mata o tolo: o teste mede
@@ -1002,7 +1007,7 @@ describe('createGame — M2 fase B: screen-shake', () => {
     const renderer = makeRenderer()
     const input = new FakeInput()
     // Inimigo LONGE do spawn (a nova rodada nao pode tomar dano de novo).
-    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     const p = game.player!
@@ -1011,7 +1016,7 @@ describe('createGame — M2 fase B: screen-shake', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 20 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1) // hit -> shakeT/hitstop armados
     for (let i = 0; i < HITSTOP_FRAMES; i++) game.update(1) // consome hitstop
     // Vai ao goal com shake ainda ativo -> win.
@@ -1307,7 +1312,7 @@ describe('createGame — checkpoints (C3b)', () => {
     const input = new FakeInput()
     // Inimigo na col 12 (depois do checkpoint na col 10), longe do spawn.
     const level = makeLevel(
-      [{ x: 12 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [{ x: 12 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }],
       [],
       { checkpoints: [10] },
     )
@@ -1321,7 +1326,7 @@ describe('createGame — checkpoints (C3b)', () => {
     // Teleporta para o inimigo: o MESMO update cruza o checkpoint (1b) e toma o
     // hit com perda de vida (passo 6) -> respawn no checkpoint, nao no spawn.
     p.x = 12 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     expect(game.state.get()).toBe('playing')
     expect(p.x).toBe(10 * TILE)
@@ -1333,7 +1338,7 @@ describe('createGame — checkpoints (C3b)', () => {
     const input = new FakeInput()
     // Inimigo junto ao spawn (para o hit da rodada 2); checkpoint na col 10.
     const level = makeLevel(
-      [{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [{ x: 2 * TILE + 4, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }],
       [],
       { checkpoints: [10] },
     )
@@ -1363,7 +1368,7 @@ describe('createGame — checkpoints (C3b)', () => {
     p2.iframes = 0
     p2.vy = 0
     p2.x = 2 * TILE
-    p2.y = 8 * TILE + (TILE - 34)
+    p2.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     expect(game.state.get()).toBe('playing')
     expect(p2.x).toBe(level.playerSpawn.x)
@@ -1541,13 +1546,13 @@ describe('createGame — eventos de SFX (D4)', () => {
   })
 
   it("stomp empilha 'stomp'", () => {
-    const level = makeLevel([{ x: 6 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 6 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     game.events.length = 0
     const p = game.player!
     p.x = 6 * TILE
-    p.y = 8 * TILE + (TILE - 34) - p.h + 4
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h) - p.h + 4
     p.vy = 5
     game.update(1)
     expect(game.events).toContain('stomp')
@@ -1601,7 +1606,7 @@ describe('createGame — eventos de SFX (D4)', () => {
   })
 
   it("dano conectado empilha 'hurt'; uso de habilidade empilha 'cast'", () => {
-    const level = makeLevel([{ x: 12 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 12 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectArtur(game, input)
     const p = game.player!
@@ -1619,7 +1624,7 @@ describe('createGame — eventos de SFX (D4)', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 12 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     expect(game.events).toContain('hurt')
   })
@@ -1827,13 +1832,13 @@ describe('createGame — particulas de evento (D4)', () => {
   })
 
   it('stomp: burst de 12 PERIGO no inimigo (world)', () => {
-    const level = makeLevel([{ x: 6 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 6 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     vi.mocked(particles.emitBurst).mockClear()
     const p = game.player!
     p.x = 6 * TILE
-    p.y = 8 * TILE + (TILE - 34) - p.h + 4
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h) - p.h + 4
     p.vy = 5
     game.update(1)
     const call = vi
@@ -1985,7 +1990,7 @@ describe('createGame — E1: pause', () => {
   })
 
   it('ESC alterna playing->paused e congela TUDO (inimigo e player imoveis)', () => {
-    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     expect(game.state.get()).toBe('playing')
@@ -2005,7 +2010,7 @@ describe('createGame — E1: pause', () => {
   })
 
   it('ESC de novo volta ao playing (mundo anda); confirm tambem despausa', () => {
-    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }])
+    const level = makeLevel([{ x: 20 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
 
@@ -2079,7 +2084,7 @@ describe('createGame — E1: resultado win (painel + score + delay)', () => {
   // Leva o jogo ao win com 2 moedas coletadas e 1 stomp (stats conhecidos).
   function winWithStats(): ReturnType<typeof createGame> {
     const level = makeLevel(
-      [{ x: 20 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [{ x: 20 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }],
       [
         { x: 4 * TILE, y: 8 * TILE },
         { x: 5 * TILE, y: 8 * TILE },
@@ -2204,16 +2209,18 @@ describe('createGame — E1: resultado over (painel + score parcial + delay)', (
   // Coleta 1 moeda e morre no tolo (score parcial conhecido = 100, sem bonus).
   function loseWithStats(): ReturnType<typeof createGame> {
     const level = makeLevel(
-      [{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [{ x: 2 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }],
       [{ x: 6 * TILE, y: 8 * TILE }],
     )
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
     drainHitstop(game) // hit incidental no select arma hitstop
     const p = game.player!
-    // Moeda longe do tolo.
+    // Moeda longe do tolo. Em PE no chao (9*TILE - p.h): com h=64, y=8*TILE
+    // enterraria os pes na row 9 e o sweep X empurraria o player para fora
+    // da coluna da moeda (snap em 6*TILE - w) antes da coleta.
     p.x = 6 * TILE
-    p.y = 8 * TILE
+    p.y = 9 * TILE - p.h
     p.vy = 0
     game.update(1)
     // Morte: 1 vida, 1 coracao, sem i-frames, overlap lateral no tolo.
@@ -2222,7 +2229,7 @@ describe('createGame — E1: resultado over (painel + score parcial + delay)', (
     p.iframes = 0
     p.vy = 0
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     drainDying(game) // G4: hit letal passa pelo DYING antes do over
     expect(game.state.get()).toBe('over')
@@ -2260,8 +2267,8 @@ describe('createGame — E1: resultado over (painel + score parcial + delay)', (
   it('stompCount conta stomps da rodada (TOLOS x2 no painel do win)', () => {
     // 2 tolos afastados; stompa os dois e vence.
     const level = makeLevel([
-      { x: 18 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
-      { x: 24 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+      { x: 18 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' },
+      { x: 24 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' },
     ])
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
@@ -2542,8 +2549,8 @@ describe('createGame — DYING (G4)', () => {
 
   // Mata o player no tolo da col 2 (1 vida, 1 coracao) e retorna o game.
   function lethalHit(level = makeLevel([
-    { x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
-    { x: 30 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+    { x: 2 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' },
+    { x: 30 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' },
   ])): ReturnType<typeof createGame> {
     const game = createGame(renderer, input, level)
     selectFirst(game, input)
@@ -2554,7 +2561,7 @@ describe('createGame — DYING (G4)', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1) // frame do hit letal -> entra no DYING
     return game
   }
@@ -2601,8 +2608,8 @@ describe('createGame — DYING (G4)', () => {
 
   it('alpha do sprite cai 1.0 -> 0.4 ao longo do dying (0.7 na metade)', () => {
     const level = makeLevel([
-      { x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
-      { x: 30 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' },
+      { x: 2 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' },
+      { x: 30 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' },
     ])
     const game = createGame(renderer, input, level, makeStore(['char.renan']))
     selectFirst(game, input)
@@ -2613,7 +2620,7 @@ describe('createGame — DYING (G4)', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1) // dyingT = 36
     for (let i = 0; i < 18; i++) game.update(1) // dyingT = 18 (metade)
     let alphaAtDraw = -1
@@ -2693,10 +2700,10 @@ describe('createGame — progressao por level.next (G4)', () => {
     expect(game.state.get()).toBe('playing')
     expect(game.player).not.toBeNull()
     expect(game.player!.char.id).toBe('artur')
-    // Spawn da W1-2: col 2 row 8 (1 frame de gravidade ja correu no confirm).
+    // Spawn da W1-2 pelos PES (hitbox honesta 2026-06-11): base do corpo na
+    // base da celula 'S' (row 8) = topo do chao da row 9 — ja assentado.
     expect(game.player!.x).toBe(2 * TILE)
-    expect(game.player!.y).toBeGreaterThanOrEqual(8 * TILE)
-    expect(game.player!.y).toBeLessThan(8 * TILE + 2)
+    expect(game.player!.y).toBe(9 * TILE - PLAYER_H)
     // A zona nova roda sem crash (update + render).
     expect(() => {
       for (let i = 0; i < 10; i++) game.update(1)
@@ -2718,7 +2725,7 @@ describe('createGame — progressao por level.next (G4)', () => {
 
   it('over com next NAO progride: Enter volta ao select', () => {
     const level = makeLevel(
-      [{ x: 2 * TILE, y: 8 * TILE + (TILE - 34), kind: 'fool' }],
+      [{ x: 2 * TILE, y: 8 * TILE + (TILE - ENEMY_DEFS.tolo.h), kind: 'fool' }],
       [],
       { next: 'w1-2' },
     )
@@ -2731,7 +2738,7 @@ describe('createGame — progressao por level.next (G4)', () => {
     p.iframes = 0
     p.vy = 0
     p.x = 2 * TILE
-    p.y = 8 * TILE + (TILE - 34)
+    p.y = 8 * TILE + (TILE - ENEMY_DEFS.tolo.h)
     game.update(1)
     drainDying(game)
     expect(game.state.get()).toBe('over')
