@@ -20,16 +20,24 @@ import {
   COLOR_TEXT,
 } from '../engine/constants'
 
+// U2 (2026-06-11): variantes do Tolo.
+// - tolo: patrulha padrao (violeta).
+// - tolo_veloz: patrulha rapida (laranja-avermelhado quente).
+// - tolo_atirador: patrulha lenta e atira chaves (ciano-azulado).
+export type EnemyKind = 'tolo' | 'tolo_veloz' | 'tolo_atirador'
+
 // Inimigo "Tolo": patrulha horizontal sobre o chao, inverte em parede/borda,
 // pode ser pisado (stomp) ou congelado pelo Modo Humanware.
 export interface Enemy extends Body {
-  kind: 'tolo'
+  kind: EnemyKind
   dir: 1 | -1
   alive: boolean
   frozen: boolean
   // Limites de patrulha em px (col*TILE), aplicados ao x (borda esquerda).
   patrolMin?: number
   patrolMax?: number
+  // Acumulador de tiro (frames) — so o tolo_atirador usa.
+  shootT?: number
 }
 
 // D3: definicoes data-driven por tipo de inimigo (padrao de CHARACTERS).
@@ -44,7 +52,7 @@ export interface EnemyDef {
   behavior: 'patrol'
 }
 
-export const ENEMY_DEFS: Record<'tolo', EnemyDef> = {
+export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
   tolo: {
     w: 42,
     h: 46,
@@ -52,12 +60,44 @@ export const ENEMY_DEFS: Record<'tolo', EnemyDef> = {
     color: COLOR_VIOLET,
     behavior: 'patrol',
   },
+  // Variante rapida: laranja-avermelhado quente (sheet tintado walk-veloz).
+  tolo_veloz: {
+    w: 42,
+    h: 46,
+    speed: 2.3,
+    color: '#e8731a',
+    behavior: 'patrol',
+  },
+  // Variante atiradora: ciano-azulado (sheet walk-atirador); patrulha lenta.
+  tolo_atirador: {
+    w: 42,
+    h: 46,
+    speed: 0.9,
+    color: '#1a9ec9',
+    behavior: 'patrol',
+  },
 }
 
-// Campos canonicos comuns a todo tolo recem-criado (dimensoes do def).
-function baseTolo(x: number, y: number): Enemy {
-  const def = ENEMY_DEFS.tolo
-  return {
+// Sheets por kind. As entries das variantes no MANIFESTO sao do dono de
+// data/assets.ts (U1/U4 liga); enquanto nao existirem, drawEnemy cai no
+// fallback por cor do def. Arquivos: public/assets/chars/tolo/walk*.png.
+export const ENEMY_SHEET_KEYS: Record<EnemyKind, string> = {
+  tolo: 'char.tolo',
+  tolo_veloz: 'char.tolo.veloz',
+  tolo_atirador: 'char.tolo.atirador',
+}
+
+// Anim por kind: mesma grade do tolo (8 frames 92x92 -> 56px), so muda o sheet.
+const ENEMY_ANIMS: Record<EnemyKind, typeof OBJECT_ANIMS.tolo> = {
+  tolo: OBJECT_ANIMS.tolo,
+  tolo_veloz: { ...OBJECT_ANIMS.tolo, key: ENEMY_SHEET_KEYS.tolo_veloz },
+  tolo_atirador: { ...OBJECT_ANIMS.tolo, key: ENEMY_SHEET_KEYS.tolo_atirador },
+}
+
+// Campos canonicos comuns a todo tolo recem-criado (dimensoes do def da kind).
+function baseTolo(x: number, y: number, kind: EnemyKind = 'tolo'): Enemy {
+  const def = ENEMY_DEFS[kind]
+  const e: Enemy = {
     x,
     y,
     w: def.w,
@@ -65,21 +105,32 @@ function baseTolo(x: number, y: number): Enemy {
     vx: 0,
     vy: 0,
     onGround: false,
-    kind: 'tolo',
+    kind,
     dir: -1,
     alive: true,
     frozen: false,
   }
+  if (kind === 'tolo_atirador') e.shootT = 0
+  return e
+}
+
+// FoolSpawn defensivo: U3 esta adicionando kind?: EnemyKind ao ParsedLevel
+// agora — lemos com ?? 'tolo' para funcionar com ou sem o campo.
+type FoolSpawnIn = {
+  col: number
+  row: number
+  patrol?: [number, number]
+  kind?: EnemyKind
 }
 
 // Cria os inimigos a partir de level.foolSpawns (C3a; patrol em cols -> px).
 // Compat: se foolSpawns ausente/vazio, cai no campo legacy level.enemies
 // (fool|enemy -> kind 'tolo'). Dimensoes vem de ENEMY_DEFS; dir=-1.
 export function spawnEnemies(level: ParsedLevel): Enemy[] {
-  const spawns = level.foolSpawns
+  const spawns = level.foolSpawns as FoolSpawnIn[] | undefined
   if (spawns && spawns.length > 0) {
     return spawns.map((s) => {
-      const e = baseTolo(s.col * TILE, s.row * TILE)
+      const e = baseTolo(s.col * TILE, s.row * TILE, s.kind ?? 'tolo')
       if (s.patrol) {
         e.patrolMin = s.patrol[0] * TILE
         e.patrolMax = s.patrol[1] * TILE
@@ -140,7 +191,78 @@ export function isStomp(player: Player, e: Enemy): boolean {
   return overlapX && overlapY
 }
 
-// Desenha o tolo. Com store + sheet 'char.tolo' carregado: frame do sheet
+// ---------------------------------------------------------------------------
+// Projeteis do tolo_atirador (CONTRATO U2).
+// ---------------------------------------------------------------------------
+
+// Intervalo entre tiros (frames) e tamanho/velocidade do projetil.
+export const SHOOT_INTERVAL = 110
+export const PROJECTILE_SIZE = 12
+// Spec dizia 8.5 px/frame — altissimo (atravessa a tela em ~2s e e quase
+// indesviavel). Ajuste de jogabilidade: 4.5 px/frame.
+export const PROJECTILE_SPEED = 4.5
+
+export interface Projectile {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  w: number
+  h: number
+  alive: boolean
+}
+
+// Tiro do tolo_atirador: shootT acumula dt; a cada SHOOT_INTERVAL frames cria
+// um projetil 12x12 saindo do "peito" na direcao e.dir (vx = 4.5*dir, vy 0).
+// NAO atira quando frozen (Modo Humanware) nem morto; outras kinds ignoram.
+export function updateEnemyShooting(
+  e: Enemy,
+  dt: number,
+  projectiles: Projectile[],
+): void {
+  if (e.kind !== 'tolo_atirador' || !e.alive || e.frozen) return
+  e.shootT = (e.shootT ?? 0) + dt
+  while (e.shootT >= SHOOT_INTERVAL) {
+    e.shootT -= SHOOT_INTERVAL
+    // "Peito": frente do corpo na direcao do facing, ~35% da altura.
+    const py = e.y + e.h * 0.35 - PROJECTILE_SIZE / 2
+    const px = e.dir > 0 ? e.x + e.w : e.x - PROJECTILE_SIZE
+    projectiles.push({
+      x: px,
+      y: py,
+      vx: PROJECTILE_SPEED * e.dir,
+      vy: 0,
+      w: PROJECTILE_SIZE,
+      h: PROJECTILE_SIZE,
+      alive: true,
+    })
+  }
+}
+
+// Projetil voa reto (sem gravidade); morre ao entrar em celula solida
+// (isFullSolid/tileAt de physics) ou ao sair do mapa.
+export function updateProjectile(
+  p: Projectile,
+  level: ParsedLevel,
+  dt: number,
+): void {
+  if (!p.alive) return
+  p.x += p.vx * dt
+  p.y += p.vy * dt
+  // Fora do mapa: descarta.
+  if (p.x + p.w < 0 || p.x > level.widthPx || p.y + p.h < 0 || p.y > level.heightPx) {
+    p.alive = false
+    return
+  }
+  // Celula solida no centro do projetil: descarta.
+  const col = Math.floor((p.x + p.w / 2) / TILE)
+  const row = Math.floor((p.y + p.h / 2) / TILE)
+  if (isFullSolid(tileAt(level, col, row))) {
+    p.alive = false
+  }
+}
+
+// Desenha o tolo. Com store + sheet da kind carregado: frame do sheet
 // (OBJECT_ANIMS.tolo) via frameIndex(clock global), ancorado nos PES (base da
 // hitbox), flip horizontal por e.dir (como drawCharFrame faz com facing).
 // frozen: alpha 0.7 + veu azulado (ciano 0.25) + frame congelado (clock=0).
@@ -155,7 +277,8 @@ export function drawEnemy(
   const def = ENEMY_DEFS[e.kind]
 
   if (store) {
-    const anim = OBJECT_ANIMS.tolo
+    // Sheet pela kind (ENEMY_SHEET_KEYS); ausente -> fallback por cor abaixo.
+    const anim = ENEMY_ANIMS[e.kind]
     const sheet = store.get(anim.key)
     if (sheet) {
       // frozen: SEM avanco de frame — clock congelado em 0.

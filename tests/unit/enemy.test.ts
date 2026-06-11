@@ -19,16 +19,32 @@ import {
   updateEnemy,
   isStomp,
   drawEnemy,
+  updateEnemyShooting,
+  updateProjectile,
   ENEMY_DEFS,
+  ENEMY_SHEET_KEYS,
+  SHOOT_INTERVAL,
+  PROJECTILE_SPEED,
+  PROJECTILE_SIZE,
   type Enemy,
+  type EnemyKind,
+  type Projectile,
 } from '../../src/game/enemy'
 import { createPlayer, type Player } from '../../src/game/player'
+
+// FoolSpawn defensivo (kind chega via U3; enemy.ts le com ?? 'tolo').
+type FoolSpawnT = {
+  col: number
+  row: number
+  patrol?: [number, number]
+  kind?: EnemyKind
+}
 
 // Constroi um ParsedLevel a partir de um mapa ASCII (mesmo padrao do physics.test.ts).
 function makeLevel(
   rows: string[],
   enemies: ParsedLevel['enemies'] = [],
-  foolSpawns: ParsedLevel['foolSpawns'] = [],
+  foolSpawns: FoolSpawnT[] = [],
 ): ParsedLevel {
   const heightTiles = rows.length
   const widthTiles = Math.max(...rows.map((r) => r.length))
@@ -60,7 +76,9 @@ function makeLevel(
     hearts: [],
     checkpoints: [],
     timeStart: TIME_START,
-    foolSpawns,
+    foolSpawns: foolSpawns as ParsedLevel['foolSpawns'],
+    springs: [],
+    movers: [],
   }
 }
 
@@ -509,5 +527,230 @@ describe('drawEnemy fallback (sem store)', () => {
     const { r, rects } = makeFakeRenderer()
     drawEnemy(r, makeTolo({ alive: false }))
     expect(rects).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// U2 (2026-06-11): variantes do Tolo + projeteis do atirador.
+// ---------------------------------------------------------------------------
+
+describe('ENEMY_DEFS variantes', () => {
+  it('tolo_veloz: 42x46, speed 2.3, laranja quente, patrol', () => {
+    const def = ENEMY_DEFS.tolo_veloz
+    expect(def.w).toBe(42)
+    expect(def.h).toBe(46)
+    expect(def.speed).toBe(2.3)
+    expect(def.color).toBe('#e8731a')
+    expect(def.behavior).toBe('patrol')
+  })
+
+  it('tolo_atirador: 42x46, speed 0.9, ciano, patrol', () => {
+    const def = ENEMY_DEFS.tolo_atirador
+    expect(def.w).toBe(42)
+    expect(def.h).toBe(46)
+    expect(def.speed).toBe(0.9)
+    expect(def.color).toBe('#1a9ec9')
+    expect(def.behavior).toBe('patrol')
+  })
+
+  it('ENEMY_SHEET_KEYS mapeia as 3 kinds para os sheets', () => {
+    expect(ENEMY_SHEET_KEYS.tolo).toBe('char.tolo')
+    expect(ENEMY_SHEET_KEYS.tolo_veloz).toBe('char.tolo.veloz')
+    expect(ENEMY_SHEET_KEYS.tolo_atirador).toBe('char.tolo.atirador')
+  })
+})
+
+describe('spawnEnemies com kind', () => {
+  it('foolSpawn.kind define a kind do inimigo (dimensoes do def)', () => {
+    const level = makeLevel(['....', '####'], [], [
+      { col: 0, row: 0, kind: 'tolo_veloz' },
+      { col: 1, row: 0, kind: 'tolo_atirador' },
+      { col: 2, row: 0, kind: 'tolo' },
+    ])
+    const es = spawnEnemies(level)
+    expect(es.map((e) => e.kind)).toEqual(['tolo_veloz', 'tolo_atirador', 'tolo'])
+    for (const e of es) {
+      expect(e.w).toBe(ENEMY_DEFS[e.kind].w)
+      expect(e.h).toBe(ENEMY_DEFS[e.kind].h)
+    }
+  })
+
+  it('sem kind no spawn: default tolo', () => {
+    const level = makeLevel(['....', '####'], [], [{ col: 1, row: 0 }])
+    const es = spawnEnemies(level)
+    expect(es[0].kind).toBe('tolo')
+  })
+
+  it('atirador nasce com shootT=0; demais sem shootT', () => {
+    const level = makeLevel(['....', '####'], [], [
+      { col: 0, row: 0, kind: 'tolo_atirador' },
+      { col: 1, row: 0, kind: 'tolo_veloz' },
+    ])
+    const es = spawnEnemies(level)
+    expect(es[0].shootT).toBe(0)
+    expect(es[1].shootT).toBeUndefined()
+  })
+})
+
+describe('updateEnemy: veloz patrulha mais rapido', () => {
+  it('veloz anda 2.3 px/frame contra ENEMY_SPEED do tolo comum', () => {
+    const level = makeLevel(['........', '########'])
+    const veloz = makeTolo({ kind: 'tolo_veloz', x: 4 * TILE, y: TILE - 46 })
+    const comum = makeTolo({ kind: 'tolo', x: 4 * TILE, y: TILE - 46 })
+    updateEnemy(veloz, level, 1)
+    updateEnemy(comum, level, 1)
+    expect(4 * TILE - veloz.x).toBeCloseTo(2.3, 5)
+    expect(4 * TILE - comum.x).toBeCloseTo(ENEMY_SPEED, 5)
+    expect(4 * TILE - veloz.x).toBeGreaterThan(4 * TILE - comum.x)
+  })
+})
+
+function makeAtirador(over: Partial<Enemy> = {}): Enemy {
+  return makeTolo({ kind: 'tolo_atirador', shootT: 0, ...over })
+}
+
+describe('updateEnemyShooting', () => {
+  it('atirador cria projetil ao completar SHOOT_INTERVAL frames', () => {
+    const e = makeAtirador({ dir: -1 })
+    const ps: Projectile[] = []
+    // 1 frame antes do intervalo: nada.
+    updateEnemyShooting(e, SHOOT_INTERVAL - 1, ps)
+    expect(ps).toHaveLength(0)
+    // Completa o intervalo: 1 projetil.
+    updateEnemyShooting(e, 1, ps)
+    expect(ps).toHaveLength(1)
+    const p = ps[0]
+    expect(p.alive).toBe(true)
+    expect(p.w).toBe(PROJECTILE_SIZE)
+    expect(p.h).toBe(PROJECTILE_SIZE)
+    // dir=-1: sai pela frente esquerda, vx negativo, voa reto (vy 0).
+    expect(p.vx).toBeCloseTo(-PROJECTILE_SPEED, 5)
+    expect(p.vy).toBe(0)
+    expect(p.x).toBeCloseTo(e.x - PROJECTILE_SIZE, 5)
+    // "Peito": ~35% da altura, centrado no projetil.
+    expect(p.y).toBeCloseTo(e.y + e.h * 0.35 - PROJECTILE_SIZE / 2, 5)
+  })
+
+  it('dir=1: projetil sai pela direita com vx positivo', () => {
+    const e = makeAtirador({ dir: 1 })
+    const ps: Projectile[] = []
+    updateEnemyShooting(e, SHOOT_INTERVAL, ps)
+    expect(ps).toHaveLength(1)
+    expect(ps[0].vx).toBeCloseTo(PROJECTILE_SPEED, 5)
+    expect(ps[0].x).toBeCloseTo(e.x + e.w, 5)
+  })
+
+  it('intervalo se mantem: 2*SHOOT_INTERVAL frames -> 2 projeteis', () => {
+    const e = makeAtirador()
+    const ps: Projectile[] = []
+    for (let i = 0; i < 2 * SHOOT_INTERVAL; i++) updateEnemyShooting(e, 1, ps)
+    expect(ps).toHaveLength(2)
+  })
+
+  it('NAO atira quando frozen (Modo Humanware)', () => {
+    const e = makeAtirador({ frozen: true })
+    const ps: Projectile[] = []
+    updateEnemyShooting(e, 5 * SHOOT_INTERVAL, ps)
+    expect(ps).toHaveLength(0)
+  })
+
+  it('NAO atira quando morto', () => {
+    const e = makeAtirador({ alive: false })
+    const ps: Projectile[] = []
+    updateEnemyShooting(e, 5 * SHOOT_INTERVAL, ps)
+    expect(ps).toHaveLength(0)
+  })
+
+  it('kinds nao-atiradoras nunca atiram', () => {
+    const ps: Projectile[] = []
+    updateEnemyShooting(makeTolo({ kind: 'tolo' }), 5 * SHOOT_INTERVAL, ps)
+    updateEnemyShooting(makeTolo({ kind: 'tolo_veloz' }), 5 * SHOOT_INTERVAL, ps)
+    expect(ps).toHaveLength(0)
+  })
+})
+
+describe('updateProjectile', () => {
+  function makeProj(over: Partial<Projectile> = {}): Projectile {
+    return {
+      x: 4 * TILE, y: TILE / 2, vx: PROJECTILE_SPEED, vy: 0,
+      w: PROJECTILE_SIZE, h: PROJECTILE_SIZE, alive: true,
+      ...over,
+    }
+  }
+
+  it('voa reto: x += vx*dt, y inalterado com vy=0', () => {
+    const level = makeLevel(['........', '########'])
+    const p = makeProj({ vx: -PROJECTILE_SPEED })
+    const x0 = p.x, y0 = p.y
+    updateProjectile(p, level, 2)
+    expect(p.x).toBeCloseTo(x0 - PROJECTILE_SPEED * 2, 5)
+    expect(p.y).toBe(y0)
+    expect(p.alive).toBe(true)
+  })
+
+  it('morre ao entrar em celula solida (brick)', () => {
+    // Parede de brick na coluna 2, linha 0.
+    const level = makeLevel(['..B.....', '########'])
+    // Centro do projetil entrando na celula (2,0) apos o passo.
+    const p = makeProj({ x: 3 * TILE + 2, y: 10, vx: -PROJECTILE_SPEED })
+    for (let i = 0; i < 20 && p.alive; i++) updateProjectile(p, level, 1)
+    expect(p.alive).toBe(false)
+    // Morreu DENTRO da regiao da parede (nao atravessou).
+    expect(p.x + p.w / 2).toBeLessThan(3 * TILE)
+  })
+
+  it('morre ao sair do mapa pela esquerda', () => {
+    const level = makeLevel(['........', '########'])
+    const p = makeProj({ x: 2, vx: -PROJECTILE_SPEED })
+    for (let i = 0; i < 10 && p.alive; i++) updateProjectile(p, level, 1)
+    expect(p.alive).toBe(false)
+  })
+
+  it('morre ao sair do mapa pela direita', () => {
+    const level = makeLevel(['........', '########'])
+    const p = makeProj({ x: level.widthPx - 2, vx: PROJECTILE_SPEED })
+    for (let i = 0; i < 10 && p.alive; i++) updateProjectile(p, level, 1)
+    expect(p.alive).toBe(false)
+  })
+
+  it('projetil morto nao se move', () => {
+    const level = makeLevel(['........', '########'])
+    const p = makeProj({ alive: false })
+    const x0 = p.x
+    updateProjectile(p, level, 5)
+    expect(p.x).toBe(x0)
+  })
+})
+
+describe('drawEnemy variantes (sheet por kind + fallback por cor)', () => {
+  it('veloz usa o sheet char.tolo.veloz quando carregado', () => {
+    const { r, sprites, rects } = makeFakeRenderer()
+    const e = makeTolo({ kind: 'tolo_veloz' })
+    drawEnemy(r, e, makeStore([ENEMY_SHEET_KEYS.tolo_veloz]), 0)
+    expect(sprites).toHaveLength(1)
+    expect(rects).toHaveLength(0)
+  })
+
+  it('atirador usa o sheet char.tolo.atirador quando carregado', () => {
+    const { r, sprites } = makeFakeRenderer()
+    const e = makeTolo({ kind: 'tolo_atirador' })
+    drawEnemy(r, e, makeStore([ENEMY_SHEET_KEYS.tolo_atirador]), 0)
+    expect(sprites).toHaveLength(1)
+  })
+
+  it('variante sem sheet no store: fallback por cor do def (nao usa char.tolo)', () => {
+    const { r, sprites, rects } = makeFakeRenderer()
+    const e = makeTolo({ kind: 'tolo_veloz' })
+    // Store so tem o sheet do tolo comum — a variante cai no fallback de cor.
+    drawEnemy(r, e, makeStore(['char.tolo']), 0)
+    expect(sprites).toHaveLength(0)
+    expect(rects.length).toBeGreaterThan(0)
+    expect(rects[0].color).toBe('#e8731a')
+  })
+
+  it('fallback do atirador usa a cor ciano do def', () => {
+    const { r, rects } = makeFakeRenderer()
+    drawEnemy(r, makeTolo({ kind: 'tolo_atirador' }))
+    expect(rects[0].color).toBe('#1a9ec9')
   })
 })

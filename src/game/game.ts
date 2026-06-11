@@ -35,9 +35,12 @@ import {
 import {
   spawnEnemies,
   updateEnemy,
+  updateEnemyShooting,
+  updateProjectile,
   isStomp,
   drawEnemy,
   type Enemy,
+  type Projectile,
 } from './enemy'
 import {
   createHumanware,
@@ -94,7 +97,8 @@ import {
 import { drawParallax } from '../engine/parallax'
 import { drawAnimatedSprite } from '../engine/spriteDraw'
 import { drawCharFrame, drawContactShadow, frameIndex } from '../engine/spriteAnim'
-import { SKY_LAYERS } from '../data/assets'
+// U4: temas de fundo data-driven por level.bgTheme (BG_THEMES.sky === SKY_LAYERS).
+import { BG_THEMES } from '../data/assets'
 import { CHAR_ANIMS } from '../data/charAnims'
 
 // --- D4: animacoes de objetos (moeda/portal) — contrato D1 ---
@@ -154,6 +158,23 @@ const SPRING_SQUASH_FRAMES = 10
 const MOVER_W = TILE * 2
 const MOVER_H = 12
 const MOVER_FALLBACK_COLOR = '#0b5e75' // ciano-escuro (sem atlas)
+
+// U4: espinho — hazard de CONTATO na metade INFERIOR da celula (sprite 48x24).
+const SPIKE_H = 24
+// U4 (spec §8.3, pseudo-codigo do gauntlet): Modo Humanware turbina o pulo em
+// +18% — aplicado AQUI no game (p.vy *= 1.18 no frame do pulo), sem tocar
+// player.ts (o jumpVelBonus do spec vira multiplicador pos-updatePlayer).
+const HW_JUMP_BOOST = 1.18
+// U4: lifecard — cartao dourado 24x32; colisao em caixa FIXA (pulso so visual).
+const LIFECARD_W = 24
+const LIFECARD_H = 32
+const LIFECARD_GOLD = '#f6c945'
+const HW_GAIN_LIFECARD = 500
+const SCORE_LIFECARD = 5000
+// U4: frase de marca da Gzero — saiu da vitoria de zona na Fase E1 e volta
+// SOMENTE na vitoria SEM level.next (fim do fluxo; spec §9.7/§15).
+const BRAND_PHRASE_1 = '"Você também acredita que podemos'
+const BRAND_PHRASE_2 = 'mudar o mundo? Bora juntos."'
 
 // D4: coracao pixel desenhado por codigo (2 "lobos" no topo + corpo + ponta
 // que estreita — quadrados/linhas via fillRect), centrado em (cx, cy), lado s.
@@ -288,6 +309,40 @@ export function createGame(
     }))
   }
 
+  // U4: lifecards — caixa fixa 24x32 centrada na celula (como os heart-orbs).
+  interface LifecardEnt {
+    x: number
+    y: number
+    active: boolean
+  }
+  function spawnLifecards(): LifecardEnt[] {
+    return (level.lifecards ?? []).map((l) => ({
+      x: l.col * TILE + (TILE - LIFECARD_W) / 2,
+      y: l.row * TILE + (TILE - LIFECARD_H) / 2,
+      active: true,
+    }))
+  }
+
+  // U4: bandeiras de checkpoint — base no CHAO da coluna (primeira celula
+  // solida/platform varrendo de cima para baixo).
+  interface FlagEnt {
+    col: number
+    baseY: number
+  }
+  function computeFlags(): FlagEnt[] {
+    return (level.checkpoints ?? []).map((ccol) => {
+      let baseY = level.heightPx
+      for (let row = 0; row < level.heightTiles; row++) {
+        const t = level.tiles[row]?.[ccol]
+        if (t === 'ground' || t === 'brick' || t === 'block' || t === 'platform') {
+          baseY = row * TILE
+          break
+        }
+      }
+      return { col: ccol, baseY }
+    })
+  }
+
   // Mutaveis: recriados no reset.
   let player: Player | null = null
   let hw: HumanwareState = createHumanware()
@@ -297,6 +352,10 @@ export function createGame(
   let coins: CoinEntity[] = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
   let coinCount = 0
   let heartEnts: HeartEnt[] = spawnHearts()
+  // U4: lifecards + bandeiras de checkpoint + projeteis do tolo_atirador.
+  let lifecardEnts: LifecardEnt[] = spawnLifecards()
+  let flagEnts: FlagEnt[] = computeFlags()
+  let projectiles: Projectile[] = []
   // C3b: checkpoint (px) — respawn volta aqui em vez do spawn.
   let lastCheckpointX = level.playerSpawn.x
   // C3b/D4: relogio GLOBAL de frames (anima objetos e pulso dos heart-orbs).
@@ -317,6 +376,10 @@ export function createGame(
     enemies = spawnEnemies(level)
     coins = level.coins.map((c) => ({ x: c.x, y: c.y, active: true }))
     heartEnts = spawnHearts()
+    // U4: lifecards/bandeiras re-derivados do level; projeteis zerados.
+    lifecardEnts = spawnLifecards()
+    flagEnts = computeFlags()
+    projectiles = []
     lastCheckpointX = level.playerSpawn.x
     springEnts = (level.springs ?? []).map((s) => ({
       col: s.col,
@@ -361,6 +424,8 @@ export function createGame(
   let uiClock = 0
   // E1: tolos stompados na rodada (painel de resultado + score).
   let stompCount = 0
+  // U4: bonus de score acumulado por lifecards coletadas na rodada (+5000 cada).
+  let lifecardBonus = 0
   // E1: frames decorridos no estado win/over (delay anti-skip do Enter).
   let resultTimer = 0
 
@@ -448,10 +513,43 @@ export function createGame(
     ps.ambientAcc = 0
     // E1: zera stats do resultado e o delay anti-skip.
     stompCount = 0
+    lifecardBonus = 0
     resultTimer = 0
     // E1: cursor do select volta ao inicial canonico (contrato E2).
     sel.index = SELECT_START
     state.set('select')
+  }
+
+  // U4: dano CONECTADO de uma fonte em fromX (tolo, espinho ou projetil) —
+  // caminho UNICO de dano (i-frames respeitados dentro do damagePlayer).
+  // Retorna true se o hit foi LETAL (entrou no DYING; caller deve dar return).
+  function applyHit(p: Player, fromX: number): boolean {
+    const livesBefore = p.lives
+    const result = damagePlayer(p, fromX)
+    if (result === 'death') {
+      // G4: DYING — corpo presente ~36f (fisica congelada, mundo segue);
+      // o 'over' (evento + estado) so dispara quando dyingT expira.
+      dyingT = DYING_FRAMES
+      p.vx = 0
+      p.vy = 0
+      p.hurtTimer = 0 // 'hurt' cancelaria o one-shot de morte
+      triggerOneShot(playerAnim, 'death', DYING_FRAMES)
+      pushEvent('hurt') // o hit letal ainda soa como dano
+      return true
+    }
+    if (result === 'hit') {
+      // M2 fase B: dano que conecta congela o mundo e chacoalha a camera.
+      pushEvent('hurt')
+      hitstop = HITSTOP_FRAMES
+      shakeT = SHAKE_FRAMES
+      // C3b: respawn no ultimo checkpoint cruzado (y do spawn original).
+      if (p.lives < livesBefore) {
+        respawnPlayer(p, { x: lastCheckpointX, y: level.playerSpawn.y })
+        // FINAL (revisão): corta a camera pro respawn (sem sweep).
+        snapCamera(cam, p, level)
+      }
+    }
+    return false
   }
 
   // G4: PROGRESSAO — carrega a fase `id` mantendo o MESMO personagem, sem
@@ -467,6 +565,7 @@ export function createGame(
     time = level.timeStart ?? TIME_START
     coinCount = 0
     stompCount = 0
+    lifecardBonus = 0
     resultTimer = 0
     // Estado M2a/M2b zerado: pose de vitoria nao vaza pra zona nova.
     hwWasActive = false
@@ -509,6 +608,7 @@ export function createGame(
         initLevelState()
         // E1: stats da rodada nova.
         stompCount = 0
+        lifecardBonus = 0
         resultTimer = 0
         // FINAL (revisão): camera corta direto pro spawn (sem sweep da rodada
         // anterior — cam/lookX persistiam entre rodadas).
@@ -606,6 +706,8 @@ export function createGame(
       // 1a) D4: pulo real disparou dentro do updatePlayer (buffer consumido,
       // saiu do chao subindo) -> SFX 'jump' + poeira nos pes.
       if (wasJumpable && hadJumpIntent && p.jumpBuffer === 0 && !p.onGround && p.vy < 0) {
+        // U4 (§8.3): pulo TURBINADO — Modo Humanware ativo da +18% no impulso.
+        if (isActive(hw)) p.vy *= HW_JUMP_BOOST
         pushEvent('jump')
         emitBurst(ps, p.x + p.w / 2, p.y + p.h, 3, [DUST_COLOR], 'world')
       }
@@ -717,6 +819,34 @@ export function createGame(
         triggerOneShot(playerAnim, 'skid', SKID_FRAMES)
       }
 
+      // 1g) U4: ESPINHOS — hazard de contato na metade INFERIOR da celula
+      // 'spike' (sprite 48x24). damagePlayer respeita os i-frames; knockback
+      // pela direcao (centro da celula como fonte); letal -> DYING.
+      {
+        const c0 = Math.max(0, Math.floor(p.x / TILE))
+        const c1 = Math.min(level.widthTiles - 1, Math.floor((p.x + p.w) / TILE))
+        const r0 = Math.max(0, Math.floor(p.y / TILE))
+        const r1 = Math.min(level.heightTiles - 1, Math.floor((p.y + p.h) / TILE))
+        let spiked = false
+        for (let row = r0; row <= r1 && !spiked; row++) {
+          for (let col = c0; col <= c1; col++) {
+            if (level.tiles[row][col] !== 'spike') continue
+            const sx = col * TILE
+            const sy = row * TILE + TILE - SPIKE_H
+            if (
+              p.x < sx + TILE &&
+              p.x + p.w > sx &&
+              p.y < sy + SPIKE_H &&
+              p.y + p.h > sy
+            ) {
+              if (applyHit(p, sx + TILE / 2)) return
+              spiked = true // 1 tentativa por frame (i-frames cobrem o resto)
+              break
+            }
+          }
+        }
+      }
+
       // 2) Habilidade: tempo do player (dt, escala 1).
       // M2 fase B (CAST): detecta ativacao REAL comparando antes/depois — dash liga
       // `active`; salto gasta `airJumps`; escudo/builder/emc2 ARMAM `cooldown`
@@ -772,6 +902,36 @@ export function createGame(
         updateEnemy(e, level, dt * ws)
       }
 
+      // 5b) U4: tiros do tolo_atirador + voo dos projeteis (contrato U2).
+      // O Modo Humanware CONGELA os projeteis (nao atualiza nada); fora dele
+      // seguem o worldScale dos inimigos (dt*ws).
+      if (!modeActive) {
+        for (const e of enemies) {
+          if (e.alive) updateEnemyShooting(e, dt * ws, projectiles)
+        }
+        for (const proj of projectiles) {
+          updateProjectile(proj, level, dt * ws)
+        }
+      }
+      // Colisao projetil x player: AABB; o projetil MORRE no contato (mesmo
+      // com i-frames ativos — a ferramenta nao atravessa o corpo).
+      for (const proj of projectiles) {
+        if (!proj.alive) continue
+        if (
+          p.x < proj.x + proj.w &&
+          p.x + p.w > proj.x &&
+          p.y < proj.y + proj.h &&
+          p.y + p.h > proj.y
+        ) {
+          proj.alive = false
+          if (applyHit(p, proj.x + proj.w / 2)) return
+        }
+      }
+      // Compacta a lista (projeteis mortos em solido/fora do mapa/no hit).
+      if (projectiles.some((proj) => !proj.alive)) {
+        projectiles = projectiles.filter((proj) => proj.alive)
+      }
+
       // 6) Colisao player x inimigos.
       for (const e of enemies) {
         if (!e.alive) continue
@@ -787,31 +947,9 @@ export function createGame(
         } else if (abilityKillsEnemy(p) && overlap(p, e)) {
           e.alive = false
         } else if (overlap(p, e)) {
-          // E2: captura livesBefore; se result==='hit' && lives<livesBefore => respawnPlayer
-          const livesBefore = p.lives
-          const result = damagePlayer(p, e.x)
-          if (result === 'death') {
-            // G4: DYING — corpo presente ~36f (fisica congelada, mundo segue);
-            // o 'over' (evento + estado) so dispara quando dyingT expira.
-            dyingT = DYING_FRAMES
-            p.vx = 0
-            p.vy = 0
-            p.hurtTimer = 0 // 'hurt' cancelaria o one-shot de morte
-            triggerOneShot(playerAnim, 'death', DYING_FRAMES)
-            pushEvent('hurt') // o hit letal ainda soa como dano
-            return
-          } else if (result === 'hit') {
-            // M2 fase B: dano que conecta congela o mundo e chacoalha a camera.
-            pushEvent('hurt') // D4: dano CONECTADO
-            hitstop = HITSTOP_FRAMES
-            shakeT = SHAKE_FRAMES
-            // C3b: respawn no ultimo checkpoint cruzado (y do spawn original).
-            if (p.lives < livesBefore) {
-              respawnPlayer(p, { x: lastCheckpointX, y: level.playerSpawn.y })
-              // FINAL (revisão): corta a camera pro respawn (sem sweep).
-              snapCamera(cam, p, level)
-            }
-          }
+          // U4: caminho UNICO de dano (applyHit) — mesmo fluxo do espinho e
+          // do projetil (DYING no letal; hitstop/shake/respawn no 'hit').
+          if (applyHit(p, e.x)) return
         }
       }
 
@@ -851,6 +989,31 @@ export function createGame(
             hEnt.y + HEART_SIZE / 2,
             8,
             [COLOR_OBJETIVO],
+            'world',
+          )
+        }
+      }
+
+      // 7c) U4: LIFECARD — +500 no medidor, +5000 no score (lifecardBonus) e
+      // burst EPICO de 24 particulas OBJETIVO+COLETAVEL; SFX 'heart'.
+      for (const lc of lifecardEnts) {
+        if (!lc.active) continue
+        if (
+          p.x < lc.x + LIFECARD_W &&
+          pr > lc.x &&
+          p.y < lc.y + LIFECARD_H &&
+          pb > lc.y
+        ) {
+          lc.active = false
+          addMeter(hw, HW_GAIN_LIFECARD)
+          lifecardBonus += SCORE_LIFECARD
+          pushEvent('heart')
+          emitBurst(
+            ps,
+            lc.x + LIFECARD_W / 2,
+            lc.y + LIFECARD_H / 2,
+            24,
+            [COLOR_OBJETIVO, COLOR_COLETAVEL],
             'world',
           )
         }
@@ -909,8 +1072,29 @@ export function createGame(
 
     // E1: TITLE — wordmark + particulas ambiente em screen space; SEM HUD.
     if (state.is('title')) {
-      drawParticles(renderer, ps)
       const ctx = renderer.ctx
+      // U4: arte curada do title (bg.title 960x528) atras do wordmark, com
+      // veu escuro alpha 0.25 por cima para manter a legibilidade do texto.
+      const bgTitle = store ? store.get('bg.title') : null
+      if (bgTitle) {
+        renderer.drawSprite(
+          bgTitle.src,
+          0,
+          0,
+          bgTitle.w,
+          bgTitle.h,
+          0,
+          0,
+          VIEW_W,
+          VIEW_H,
+        )
+        ctx.save()
+        ctx.globalAlpha = 0.25
+        ctx.fillStyle = '#000'
+        ctx.fillRect(0, 0, VIEW_W, VIEW_H)
+        ctx.restore()
+      }
+      drawParticles(renderer, ps)
       ctx.save()
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -938,9 +1122,10 @@ export function createGame(
       return
     }
 
-    // M2a: parallax do ceu em SCREEN SPACE, por cima do COLOR_BG, antes do mundo.
-    // store pode ser undefined (testes/loading) — drawParallax pula layers sem asset.
-    if (store) drawParallax(renderer, SKY_LAYERS, store, cam)
+    // M2a: parallax em SCREEN SPACE, por cima do COLOR_BG, antes do mundo.
+    // U4: camadas do TEMA do level (BG_THEMES[level.bgTheme]; default 'sky' —
+    // mesma referencia do SKY_LAYERS legado). store pode ser undefined.
+    if (store) drawParallax(renderer, BG_THEMES[level.bgTheme ?? 'sky'], store, cam)
 
     // M2 fase B: screen-shake deterministico enquanto shakeT>0 (offset na camera).
     // FINAL (revisão): sem shake no pause — shakeT nao decai em 'paused' e o
@@ -953,6 +1138,26 @@ export function createGame(
     }
     renderer.beginWorld(cam.x + shakeDx, cam.y + shakeDy)
 
+    // U4: DECOR data-driven (props 'prop.arvore'/'prop.cristal') ATRAS dos
+    // tiles — base no chao da celula, centrado na coluna; sem colisao.
+    if (store) {
+      for (const d of level.decor ?? []) {
+        const img = store.get(d.key)
+        if (!img) continue
+        renderer.drawSprite(
+          img.src,
+          0,
+          0,
+          img.w,
+          img.h,
+          d.col * TILE + TILE / 2 - img.w / 2,
+          (d.row + 1) * TILE - img.h,
+          img.w,
+          img.h,
+        )
+      }
+    }
+
     // Tiles visiveis.
     const startCol = Math.max(0, Math.floor(cam.x / TILE))
     const endCol = Math.min(level.widthTiles - 1, Math.ceil((cam.x + VIEW_W) / TILE))
@@ -962,6 +1167,39 @@ export function createGame(
       for (let col = startCol; col <= endCol; col++) {
         const t = level.tiles[row][col]
         if (t === 'empty') continue
+        // U4: ESPINHO — sprite 48x24 apoiado na metade de BAIXO da celula;
+        // fallback = 3 triangulos em COLOR_PERIGO. Nao passa pelo atlas.
+        if (t === 'spike') {
+          const spikeImg = store ? store.get('tile.spike') : null
+          const spikeY = row * TILE + TILE - SPIKE_H
+          if (spikeImg) {
+            renderer.drawSprite(
+              spikeImg.src,
+              0,
+              0,
+              spikeImg.w,
+              spikeImg.h,
+              col * TILE,
+              spikeY,
+              TILE,
+              SPIKE_H,
+            )
+          } else {
+            const ctx = renderer.ctx
+            ctx.save()
+            ctx.fillStyle = COLOR_PERIGO
+            ctx.beginPath()
+            for (let i = 0; i < 3; i++) {
+              const bx = col * TILE + i * 16
+              ctx.moveTo(bx, row * TILE + TILE)
+              ctx.lineTo(bx + 8, spikeY)
+              ctx.lineTo(bx + 16, row * TILE + TILE)
+            }
+            ctx.fill()
+            ctx.restore()
+          }
+          continue
+        }
         // C3b: arte via atlas (autotiling); fallback = rect com tileColor.
         const atlas = TILE_ATLASES[t]
         const variant = variants[row * level.widthTiles + col]
@@ -1054,6 +1292,41 @@ export function createGame(
       }
     }
 
+    // U4: BANDEIRAS de checkpoint — flag 48x96 (2 frames @3fps pelo clock)
+    // com base no chao da coluna; fallback mastro+bandeirola. Checkpoint JA
+    // CRUZADO (lastCheckpointX avancou ate ele) ganha tint magenta alpha 0.3.
+    const flagAnim = OBJECT_ANIMS.flag
+    const flagSheet = store ? store.get(flagAnim.key) : null
+    for (const f of flagEnts) {
+      const fx = f.col * TILE
+      const fy = f.baseY - flagAnim.drawH
+      if (flagSheet) {
+        const fIdx = frameIndex(flagAnim, clock)
+        renderer.drawSprite(
+          flagSheet.src,
+          fIdx * flagAnim.cellW,
+          0,
+          flagAnim.cellW,
+          flagAnim.cellH,
+          fx,
+          fy,
+          flagAnim.drawW,
+          flagAnim.drawH,
+        )
+      } else {
+        renderer.drawRect(fx + 22, fy, 4, flagAnim.drawH, COLOR_TEXT)
+        renderer.drawRect(fx + 26, fy + 10, 18, 12, COLOR_TECH)
+      }
+      if (fx <= lastCheckpointX && fx > level.playerSpawn.x) {
+        const ctx = renderer.ctx
+        ctx.save()
+        ctx.globalAlpha = 0.3
+        ctx.fillStyle = COLOR_OBJETIVO
+        ctx.fillRect(fx, fy, flagAnim.drawW, flagAnim.drawH)
+        ctx.restore()
+      }
+    }
+
     // Goal: portal animado (96x96, base no chao do tile, centrado na col);
     // fallback = rect magenta (token OBJETIVO) de antes.
     const portalAnim = OBJECT_ANIMS.portal
@@ -1114,10 +1387,47 @@ export function createGame(
       drawHeartPixel(renderer, hEnt.x + HEART_SIZE / 2, hEnt.y + HEART_SIZE / 2, s)
     }
 
+    // U4: LIFECARDS — cartao dourado 24x32 pulsando com brilho (clock).
+    for (const lc of lifecardEnts) {
+      if (!lc.active) continue
+      const ctx = renderer.ctx
+      const pulse = Math.sin(clock * 0.1) * 2
+      const lw = LIFECARD_W + pulse
+      const lh = LIFECARD_H + pulse
+      const lcx = lc.x + LIFECARD_W / 2
+      const lcy = lc.y + LIFECARD_H / 2
+      ctx.save()
+      ctx.fillStyle = LIFECARD_GOLD
+      ctx.globalAlpha = 0.25 // brilho externo
+      ctx.fillRect(lcx - lw / 2 - 4, lcy - lh / 2 - 4, lw + 8, lh + 8)
+      ctx.globalAlpha = 1
+      ctx.fillRect(lcx - lw / 2, lcy - lh / 2, lw, lh) // corpo do cartao
+      ctx.fillStyle = COLOR_BG
+      ctx.fillRect(lcx - lw / 2 + 3, lcy - lh / 2 + 3, lw - 6, lh - 6) // moldura
+      ctx.fillStyle = LIFECARD_GOLD
+      ctx.fillRect(lcx - 4, lcy - 6, 8, 12) // "retrato" central
+      ctx.restore()
+    }
+
     // Inimigos (D3: sheet do Tolo animado pelo clock global; fallback rects).
     for (const e of enemies) {
       if (!e.alive) continue
       drawEnemy(renderer, e, store, clock)
+    }
+
+    // U4: PROJETEIS — "ferramenta" 12x12 em COLOR_PERIGO girando pelo clock.
+    for (const proj of projectiles) {
+      if (!proj.alive) continue
+      const ctx = renderer.ctx
+      ctx.save()
+      ctx.translate(proj.x + proj.w / 2, proj.y + proj.h / 2)
+      ctx.rotate(clock * 0.3)
+      ctx.fillStyle = COLOR_PERIGO
+      ctx.fillRect(-proj.w / 2, -proj.h / 2, proj.w, proj.h)
+      // "boca" da chave: entalhe escuro no topo.
+      ctx.fillStyle = COLOR_INK
+      ctx.fillRect(-2, -proj.h / 2, 4, 5)
+      ctx.restore()
     }
 
     // FX da habilidade + player.
@@ -1286,9 +1596,9 @@ export function createGame(
       ctx.restore()
     }
 
-    // E1: painel de RESULTADO (win/over). A frase de marca que vivia aqui SAIU
-    // da vitoria de zona — reservada para o final do jogo (spec §9.7,
-    // Consciencia Unificada).
+    // E1: painel de RESULTADO (win/over). A frase de marca SAIU da vitoria de
+    // zona comum — U4: ela volta APENAS na vitoria sem level.next (fim do
+    // fluxo; spec §9.7, Consciencia Unificada).
     if (state.is('win') || state.is('over')) {
       const ctx = renderer.ctx
       const won = state.is('win')
@@ -1319,8 +1629,10 @@ export function createGame(
       ctx.fillText(won ? 'ZONA CONCLUÍDA' : 'GAME OVER', VIEW_W / 2, py + 52)
 
       // Stats + SCORE canonico (moeda 100 · stomp 200 · fase 1000 · 50/s).
+      // U4: lifecardBonus (+5000 por lifecard) entra no score dos dois paineis.
       const timeLeft = Math.ceil(time)
-      const baseScore = coinCount * SCORE_COIN + stompCount * SCORE_STOMP
+      const baseScore =
+        coinCount * SCORE_COIN + stompCount * SCORE_STOMP + lifecardBonus
       const lines = won
         ? [
             `MOEDAS x${coinCount}`,
@@ -1335,6 +1647,15 @@ export function createGame(
       for (const line of lines) {
         ctx.fillText(line, VIEW_W / 2, ly)
         ly += 32
+      }
+
+      // U4: vitoria SEM next = fim do fluxo — frase de marca da Gzero
+      // (reservada na Fase E1 para o final; spec §9.7/§15).
+      if (won && level.next === undefined) {
+        ctx.font = 'italic bold 15px monospace'
+        ctx.fillStyle = COLOR_OBJETIVO
+        ctx.fillText(BRAND_PHRASE_1, VIEW_W / 2, py + ph - 88)
+        ctx.fillText(BRAND_PHRASE_2, VIEW_W / 2, py + ph - 66)
       }
 
       // Enter so APARECE (e so funciona, ver update) apos o delay anti-skip.

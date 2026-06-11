@@ -260,11 +260,32 @@ export function drawSelect(
     }
 
     // Barras de stats horizontais (120px): VEL = media walk/run; PULO = jumpVelMul.
+    // U4: barras deslocadas para a esquerda — abre espaco para o retrato curado
+    // no canto direito do painel.
     const barW = 120
     const barH = 10
-    const barX = dpX + dpW - barW - 32
+    const barX = dpX + dpW - barW - 160
     drawStatBar(ctx, 'VEL', normMul((det.walkMul + det.runMul) / 2), barX, dpY + 18, barW, barH)
     drawStatBar(ctx, 'PULO', normMul(det.jumpVelMul), barX, dpY + 44, barW, barH)
+
+    // U4: retrato curado do Artur (96x96, 'ui.retrato.artur') a direita do
+    // painel de detalhe — base alinhada a base do painel (o topo "salta" 16px).
+    if (det.id === 'artur' && store) {
+      const retrato = store.get('ui.retrato.artur')
+      if (retrato) {
+        ctx.drawImage(
+          retrato.src,
+          0,
+          0,
+          retrato.w,
+          retrato.h,
+          dpX + dpW - 120,
+          dpY + dpH - 96,
+          96,
+          96,
+        )
+      }
+    }
   }
 
   ctx.restore()

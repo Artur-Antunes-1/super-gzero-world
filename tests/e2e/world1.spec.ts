@@ -326,6 +326,30 @@ test('W1-2 (smoke): entrar com Enter e andar ~1s avanca X mantendo playing', asy
 })
 
 // ---------------------------------------------------------------------------
+// W1-3 (U4): smoke da fase nova "O Coração Acende" (168 cols, gauntlet com
+// variantes do Tolo, espinhos e lifecard). Entrar, andar ~1s para a direita:
+// X avanca e o estado segue 'playing' (o primeiro Tolo patrulha as cols 16+,
+// fora do alcance de 1s de caminhada a partir do spawn na col 2).
+// ---------------------------------------------------------------------------
+test('W1-3 (smoke): entrar com Enter e andar ~1s avanca X mantendo playing', async ({
+  page,
+}) => {
+  await bootToPlaying(page, '/?level=w1-3')
+
+  const x0 = (await page.evaluate(() => (window as any).__GAME().playerX)) as number
+  expect(x0).not.toBeNull()
+
+  // Segura ArrowRight por ~1s.
+  await page.keyboard.down('ArrowRight')
+  await page.waitForTimeout(1000)
+  await page.keyboard.up('ArrowRight')
+
+  const g = await page.evaluate(() => (window as any).__GAME())
+  expect(g.state).toBe('playing')
+  expect(g.playerX).toBeGreaterThan(x0)
+})
+
+// ---------------------------------------------------------------------------
 // RESET POS-WIN (zona1): vencer andando reto (inimigos da zona1 patrulham
 // plataformas altas, fora da rota do chao), esperar o delay anti-skip de
 // 45 frames (~750ms), Enter -> select e Enter de novo -> playing.

@@ -52,8 +52,10 @@ export interface CharacterDef {
 // patrol em colunas (convertido p/ px no spawn); payload so para 'block'.
 // 'spring' e 'mover' (2026-06-11): axis/amplitude/speed so para 'mover'
 // (amplitude em TILES, speed em px/frame); sobrescrevem defaults do '~'.
+// 'fool_veloz'/'fool_atirador' (U3): variantes do Tolo — viram foolSpawns
+// com kind 'tolo_veloz'/'tolo_atirador' no parser.
 export interface EntitySpawn {
-  type: 'fool' | 'block' | 'heart' | 'spring' | 'mover'
+  type: 'fool' | 'fool_veloz' | 'fool_atirador' | 'block' | 'heart' | 'spring' | 'mover'
   col: number
   row: number
   patrol?: [number, number]
@@ -75,6 +77,9 @@ export interface LevelDef {
   next?: string
   // T3: tema de fundo (BG_THEMES em data/assets). Ausente = 'sky'.
   bgTheme?: 'sky' | 'cosmic'
+  // U3: props decorativos data-driven (key do manifest, ex. 'prop.arvore');
+  // o game desenha atras dos tiles. Sem colisao, sem gameplay.
+  decor?: { col: number; row: number; key: string }[]
 }
 
 export interface SpawnPoint {
@@ -97,13 +102,22 @@ export interface ParsedLevel {
   hearts: { col: number; row: number }[]
   checkpoints: number[]
   timeStart: number
-  foolSpawns: { col: number; row: number; patrol?: [number, number] }[]
+  // U3: kind sempre preenchido pelo parser (legado 'fool'/'F' = 'tolo').
+  foolSpawns: {
+    col: number
+    row: number
+    patrol?: [number, number]
+    kind?: 'tolo' | 'tolo_veloz' | 'tolo_atirador'
+  }[]
   // 2026-06-11: '^' = MOLA (tile empty); '~' = plataforma movel (tile empty).
   springs: { col: number; row: number }[]
   movers: { col: number; row: number; axis: 'x' | 'y'; amplitude: number; speed: number }[]
+  // U3: 'L' = lifecard spawn (tile empty; +500 medidor +5000 score no game).
+  lifecards: { col: number; row: number }[]
+  // U3: props decorativos copiados de LevelDef.decor (default []).
+  decor: { col: number; row: number; key: string }[]
   // Copiado de LevelDef.next (progressao por fase).
   next?: string
-  // T3: tema de fundo copiado de LevelDef.bgTheme (ausente = 'sky').
-  // Opcional ate a fiacao parser/game na frente H3 (parser ainda nao preenche).
-  bgTheme?: 'sky' | 'cosmic'
+  // U3: tema de fundo SEMPRE preenchido pelo parser (def.bgTheme ?? 'sky').
+  bgTheme: 'sky' | 'cosmic'
 }

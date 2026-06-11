@@ -10,11 +10,18 @@ import {
 } from '../../src/data/levels/index'
 import { W1_1 } from '../../src/data/levels/w1-1'
 import { W1_2 } from '../../src/data/levels/w1-2'
+import { W1_3 } from '../../src/data/levels/w1-3'
 
 describe('registry de fases (data/levels/index)', () => {
-  it('DEFAULT_LEVEL_ID e "w1-1" e o registry contem w1-1, w1-2, zona1 e hw-test', () => {
+  it('DEFAULT_LEVEL_ID e "w1-1" e o registry contem w1-1..w1-3, zona1 e hw-test', () => {
     expect(DEFAULT_LEVEL_ID).toBe('w1-1')
-    expect(Object.keys(LEVELS).sort()).toEqual(['hw-test', 'w1-1', 'w1-2', 'zona1'])
+    expect(Object.keys(LEVELS).sort()).toEqual([
+      'hw-test',
+      'w1-1',
+      'w1-2',
+      'w1-3',
+      'zona1',
+    ])
   })
 
   it('validateLevel passa em TODOS os LEVELS', () => {
@@ -56,12 +63,148 @@ describe('registry de fases (data/levels/index)', () => {
     }
   })
 
-  it('w1-1 tem next "w1-2" e o parser copia para o ParsedLevel', () => {
+  it('chain w1-1 -> w1-2 -> w1-3 (U4); w1-3 encerra o fluxo (sem next)', () => {
     expect(W1_1.next).toBe('w1-2')
     expect(parseLevelById('w1-1').next).toBe('w1-2')
-    // w1-2 (ultima por enquanto), zona1 e hw-test encerram o fluxo (sem next).
-    expect(parseLevelById('w1-2').next).toBeUndefined()
+    // U4: a w1-2 agora encadeia na w1-3 nova.
+    expect(W1_2.next).toBe('w1-3')
+    expect(parseLevelById('w1-2').next).toBe('w1-3')
+    // w1-3 (ultima do W1), zona1 e hw-test encerram o fluxo (sem next).
+    expect(parseLevelById('w1-3').next).toBeUndefined()
     expect(parseLevelById('zona1').next).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// U4 (2026-06-11): W1-3 — "O Coração Acende" (spec §8.3, 168x11, difficulty 4).
+// ---------------------------------------------------------------------------
+describe('W1-3 — "O Coração Acende" (spec §8.3)', () => {
+  it('168 colunas x 11 linhas; toda linha tem exatamente 168 chars', () => {
+    expect(W1_3.rows.length).toBe(11)
+    for (let i = 0; i < W1_3.rows.length; i++) {
+      expect(W1_3.rows[i].length, `row ${i} deve ter 168 chars`).toBe(168)
+    }
+    const lvl = parseLevel(W1_3)
+    expect(lvl.widthTiles).toBe(168)
+    expect(lvl.heightTiles).toBe(11)
+  })
+
+  it('valida no validateLevel (alcancabilidade incluida)', () => {
+    expect(() => validateLevel(W1_3)).not.toThrow()
+  })
+
+  it('spawn na col 2 row 8 (pelos pes); portal ">" na col 160 row 6 (piso elevado)', () => {
+    const lvl = parseLevel(W1_3)
+    expect(lvl.playerSpawn).toEqual({ x: 2 * TILE, y: 9 * TILE - PLAYER_H })
+    expect(lvl.goal).toEqual({ x: 160 * TILE, y: 6 * TILE })
+  })
+
+  it('checkpoints [48, 96, 140], timeStart 250 e bgTheme "sky"', () => {
+    const lvl = parseLevel(W1_3)
+    expect(lvl.checkpoints).toEqual([48, 96, 140])
+    expect(lvl.timeStart).toBe(250)
+    expect(lvl.bgTheme).toBe('sky')
+  })
+
+  it('lifecard "L" na col 150 row 2 (desafio opcional E)', () => {
+    const lvl = parseLevel(W1_3)
+    expect(lvl.lifecards).toEqual([{ col: 150, row: 2 }])
+  })
+
+  it("espinhos 'x' no chao do gauntlet (117-119 e 134-135, row 8)", () => {
+    const lvl = parseLevel(W1_3)
+    for (const col of [117, 118, 119, 134, 135]) {
+      expect(lvl.tiles[8][col], `col ${col} row 8`).toBe('spike')
+    }
+  })
+
+  it('13 tolos: 7 comuns (A+C), 3 velozes e 3 atiradores no gauntlet', () => {
+    const lvl = parseLevel(W1_3)
+    expect(lvl.foolSpawns).toHaveLength(13)
+    const kinds = lvl.foolSpawns.map((f) => f.kind)
+    expect(kinds.filter((k) => k === 'tolo')).toHaveLength(7)
+    expect(kinds.filter((k) => k === 'tolo_veloz')).toHaveLength(3)
+    expect(kinds.filter((k) => k === 'tolo_atirador')).toHaveLength(3)
+    // Gauntlet D: todas as variantes vivem nas cols 96-140.
+    for (const f of lvl.foolSpawns) {
+      if (f.kind !== 'tolo') {
+        expect(f.col).toBeGreaterThanOrEqual(96)
+        expect(f.col).toBeLessThanOrEqual(140)
+      }
+    }
+  })
+
+  it('2 molas (A col 13, B col 40) e 2 movers de gap com speed 1.5 (spec D)', () => {
+    const lvl = parseLevel(W1_3)
+    expect(lvl.springs).toEqual([
+      { col: 13, row: 8 },
+      { col: 40, row: 8 },
+    ])
+    expect(lvl.movers).toEqual([
+      { col: 110, row: 8, axis: 'x', amplitude: 3, speed: 1.5 },
+      { col: 128, row: 8, axis: 'x', amplitude: 3, speed: 1.5 },
+    ])
+  })
+
+  it("qBlock star@36 (sala-bonus SIMPLIFICADA) e 2 coracoes (cols 20 e 78)", () => {
+    const lvl = parseLevel(W1_3)
+    expect(lvl.qBlocks).toEqual([{ col: 36, row: 6, payload: 'star' }])
+    expect(lvl.hearts).toEqual([
+      { col: 20, row: 6 },
+      { col: 78, row: 6 },
+    ])
+  })
+
+  it('gaps reais do gauntlet: 108-112 e 126-130 com pousos solidos dos lados', () => {
+    const lvl = parseLevel(W1_3)
+    for (const [c0, c1] of [
+      [108, 112],
+      [126, 130],
+    ] as const) {
+      for (let col = c0; col <= c1; col++) {
+        expect(lvl.tiles[9][col], `row 9 col ${col} aberto`).toBe('empty')
+        expect(lvl.tiles[10][col], `row 10 col ${col} aberto`).toBe('empty')
+      }
+      expect(lvl.tiles[9][c0 - 1]).toBe('ground')
+      expect(lvl.tiles[9][c1 + 1]).toBe('ground')
+    }
+  })
+
+  it('decor copiado: 3 arvores + 2 cristais (data-driven, sem colisao)', () => {
+    const lvl = parseLevel(W1_3)
+    expect(lvl.decor).toHaveLength(5)
+    expect(lvl.decor.filter((d) => d.key === 'prop.arvore')).toHaveLength(3)
+    expect(lvl.decor.filter((d) => d.key === 'prop.cristal')).toHaveLength(2)
+    // Copia rasa: mutar o parse nao vaza para o def.
+    expect(lvl.decor).not.toBe(W1_3.decor)
+  })
+
+  it('trilha generosa de moedas (>= 40) — fase de medidor + bonus', () => {
+    const lvl = parseLevel(W1_3)
+    expect(lvl.coins.length).toBeGreaterThanOrEqual(40)
+  })
+
+  it('piso/plataforma continua sob TODAS as patrulhas (tolos nao caem)', () => {
+    const lvl = parseLevel(W1_3)
+    for (const f of lvl.foolSpawns) {
+      const floorRow = f.row + 1
+      const [min, max] = f.patrol!
+      for (let col = min; col <= max; col++) {
+        const t = lvl.tiles[floorRow][col]
+        expect(
+          t === 'ground' || t === 'platform',
+          `row ${floorRow} col ${col} (tolo ${f.kind} @${f.col})`,
+        ).toBe(true)
+      }
+    }
+  })
+
+  it('piso ELEVADO da secao F (rows 7-8 solidos nas cols 156-167)', () => {
+    const lvl = parseLevel(W1_3)
+    for (let col = 156; col <= 167; col++) {
+      expect(lvl.tiles[7][col]).toBe('ground')
+      expect(lvl.tiles[8][col]).toBe('ground')
+    }
   })
 })
 
@@ -136,10 +279,11 @@ describe('W1-2 — "Plataformas Flutuantes" (spec §8.3)', () => {
   it('1 coracao no alto da torre D (col 84 row 3) e 3 tolos com patrulha', () => {
     const lvl = parseLevel(W1_2)
     expect(lvl.hearts).toEqual([{ col: 84, row: 3 }])
+    // U3/U4: o parser agora SEMPRE preenche kind ('fool' legado = 'tolo').
     expect(lvl.foolSpawns).toEqual([
-      { col: 34, row: 8, patrol: [32, 38] },
-      { col: 70, row: 6, patrol: [66, 74] },
-      { col: 80, row: 4, patrol: [78, 86] },
+      { col: 34, row: 8, patrol: [32, 38], kind: 'tolo' },
+      { col: 70, row: 6, patrol: [66, 74], kind: 'tolo' },
+      { col: 80, row: 4, patrol: [78, 86], kind: 'tolo' },
     ])
   })
 
@@ -202,10 +346,11 @@ describe('W1-1 — "O Primeiro Passo Leve" (transcricao do spec)', () => {
 
   it('3 tolos via entities, com patrulhas do spec; "g" do mapa ignorado', () => {
     const lvl = parseLevel(W1_1)
+    // U3/U4: o parser agora SEMPRE preenche kind ('fool' legado = 'tolo').
     expect(lvl.foolSpawns).toEqual([
-      { col: 24, row: 8, patrol: [24, 30] },
-      { col: 78, row: 8, patrol: [78, 84] },
-      { col: 88, row: 8, patrol: [88, 94] },
+      { col: 24, row: 8, patrol: [24, 30], kind: 'tolo' },
+      { col: 78, row: 8, patrol: [78, 84], kind: 'tolo' },
+      { col: 88, row: 8, patrol: [88, 94], kind: 'tolo' },
     ])
     // Nenhum espelho legacy: o mapa nao usa 'F'.
     expect(lvl.enemies).toEqual([])

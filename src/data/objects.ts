@@ -26,12 +26,14 @@ export interface ObjectAnim {
  * - moeda: hitbox 26px; desenha 32 centrado (spin de 6 frames).
  * - portal: apoiado no chao, ~2 tiles de altura (96px).
  * - tolo/toloIdle: inimigo Tolo (andar 8 frames / respirar 4 frames).
+ * - flag: bandeira de checkpoint (2 frames, tremula devagar a 3fps).
  */
 export const OBJECT_ANIMS: {
   moeda: ObjectAnim
   portal: ObjectAnim
   tolo: ObjectAnim
   toloIdle: ObjectAnim
+  flag: ObjectAnim
 } = {
   moeda: {
     key: 'obj.moeda',
@@ -72,5 +74,15 @@ export const OBJECT_ANIMS: {
     cellH: 92,
     drawW: 56,
     drawH: 56,
+  },
+  flag: {
+    key: 'obj.flag',
+    frames: 2,
+    fps: 3,
+    loop: true,
+    cellW: 48,
+    cellH: 96,
+    drawW: 48,
+    drawH: 96,
   },
 }

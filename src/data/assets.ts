@@ -24,6 +24,9 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   'char.artur.skid': { url: '/assets/chars/artur/skid.png' },
   'bg.sky': { url: '/assets/bg/sky.png' },
   'bg.cosmic': { url: '/assets/bg/cosmic.png' },
+  // U1: arte curada (Higgsfield) — title screen + camada mid do parallax.
+  'bg.title': { url: '/assets/bg/title.png' },
+  'bg.mid': { url: '/assets/bg/mid.png' },
   // C2: atlases de tiles Wang (PixelLab) ja transparentes -> sem chromaKey.
   'tiles.terra': { url: '/assets/tiles/terra.png' },
   'tiles.tijolo': { url: '/assets/tiles/tijolo.png' },
@@ -32,6 +35,15 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   'obj.portal': { url: '/assets/objects/portal.png' },
   'char.tolo': { url: '/assets/chars/tolo/walk.png' },
   'char.tolo.idle': { url: '/assets/chars/tolo/idle.png' },
+  // U4 (pedido do U2): sheets das variantes do Tolo (PNGs com alpha).
+  'char.tolo.veloz': { url: '/assets/chars/tolo/walk-veloz.png' },
+  'char.tolo.atirador': { url: '/assets/chars/tolo/walk-atirador.png' },
+  // U1: bandeira de checkpoint (sheet 2 frames 48x96), espinho, props e retrato.
+  'obj.flag': { url: '/assets/objects/flag.png' },
+  'tile.spike': { url: '/assets/tiles/spike.png' },
+  'prop.arvore': { url: '/assets/props/arvore.png' },
+  'prop.cristal': { url: '/assets/props/cristal.png' },
+  'ui.retrato.artur': { url: '/assets/ui/retrato-artur.png' },
 }
 
 /**
@@ -40,8 +52,11 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
  * entra na frente H3 (ver comentario em schema.ts).
  */
 export const BG_THEMES: Record<'sky' | 'cosmic', ParallaxLayer[]> = {
-  // TODO: mid-islands layer entra quando o asset chegar (factor 0.55).
-  sky: [{ key: 'bg.sky', factor: 0.3 }],
+  // U1: camada mid (ilhas flutuantes) por cima do ceu — ordem back-to-front.
+  sky: [
+    { key: 'bg.sky', factor: 0.3 },
+    { key: 'bg.mid', factor: 0.55 },
+  ],
   cosmic: [{ key: 'bg.cosmic', factor: 0.25 }],
 }
 

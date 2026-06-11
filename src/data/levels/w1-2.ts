@@ -126,5 +126,6 @@ export const W1_2: LevelDef = {
   entities: W1_2_ENTITIES,
   checkpoints: [60, 110],
   timeStart: 250,
-  // Ultima fase do fluxo por enquanto (W1-3 ainda nao existe): sem next.
+  // U4: progressao — apos a W1-2, segue para a W1-3 ("O Coração Acende").
+  next: 'w1-3',
 }

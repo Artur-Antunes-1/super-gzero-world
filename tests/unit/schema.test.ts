@@ -81,6 +81,16 @@ describe('schema', () => {
       goal: { x: 48, y: 0 },
       coins: [{ x: 48, y: 48 }],
       enemies: [{ x: 0, y: 0, kind: 'g' }],
+      qBlocks: [],
+      hearts: [],
+      checkpoints: [],
+      timeStart: 250,
+      foolSpawns: [],
+      springs: [],
+      movers: [],
+      lifecards: [],
+      decor: [],
+      bgTheme: 'sky',
     }
     expect(parsed.widthTiles).toBe(2)
     expect(parsed.tiles[1][0]).toBe('ground')
@@ -140,11 +150,71 @@ describe('schema', () => {
       foolSpawns: [],
       springs: [{ col: 1, row: 0 }],
       movers: [{ col: 0, row: 0, axis: 'x', amplitude: 3, speed: 1.2 }],
+      lifecards: [],
+      decor: [],
+      bgTheme: 'sky',
       next: 'zona1',
     }
     expect(parsed.springs).toEqual([{ col: 1, row: 0 }])
     expect(parsed.movers[0].axis).toBe('x')
     expect(parsed.next).toBe('zona1')
+  })
+
+  // --- 2026-06-11 (U3): kinds de inimigo, lifecard, decor, bgTheme sempre ---
+
+  it('EntitySpawn aceita type "fool_veloz" e "fool_atirador"', () => {
+    const veloz: EntitySpawn = { type: 'fool_veloz', col: 4, row: 7, patrol: [3, 6] }
+    const atirador: EntitySpawn = { type: 'fool_atirador', col: 9, row: 7 }
+    expect(veloz.type).toBe('fool_veloz')
+    expect(atirador.type).toBe('fool_atirador')
+  })
+
+  it('LevelDef aceita decor opcional (col/row/key)', () => {
+    const level: LevelDef = {
+      id: 'decorado',
+      world: 1,
+      zone: 1,
+      rows: ['S.G', '###'],
+      decor: [{ col: 1, row: 0, key: 'prop.arvore' }],
+    }
+    expect(level.decor).toEqual([{ col: 1, row: 0, key: 'prop.arvore' }])
+    const semDecor: LevelDef = { id: 'cru', world: 1, zone: 2, rows: ['S.G', '###'] }
+    expect(semDecor.decor).toBeUndefined()
+  })
+
+  it('ParsedLevel: foolSpawns aceita kind; lifecards/decor/bgTheme obrigatorios', () => {
+    const parsed: ParsedLevel = {
+      widthTiles: 2,
+      heightTiles: 2,
+      widthPx: 96,
+      heightPx: 96,
+      tiles: [
+        ['empty', 'empty'],
+        ['ground', 'ground'],
+      ],
+      playerSpawn: { x: 0, y: 0 },
+      goal: { x: 48, y: 0 },
+      coins: [],
+      enemies: [],
+      qBlocks: [],
+      hearts: [],
+      checkpoints: [],
+      timeStart: 250,
+      foolSpawns: [
+        { col: 1, row: 0, kind: 'tolo' },
+        { col: 1, row: 1, kind: 'tolo_veloz' },
+        { col: 0, row: 1, kind: 'tolo_atirador', patrol: [0, 1] },
+      ],
+      springs: [],
+      movers: [],
+      lifecards: [{ col: 0, row: 0 }],
+      decor: [{ col: 1, row: 1, key: 'prop.cristal' }],
+      bgTheme: 'cosmic',
+    }
+    expect(parsed.foolSpawns[1].kind).toBe('tolo_veloz')
+    expect(parsed.lifecards).toEqual([{ col: 0, row: 0 }])
+    expect(parsed.decor[0].key).toBe('prop.cristal')
+    expect(parsed.bgTheme).toBe('cosmic')
   })
 
   it('AbilityParams aceita os campos canonicos do CONTRATO', () => {

@@ -16,9 +16,9 @@ function pngSize(relUrl: string): { w: number; h: number } {
 }
 
 describe('OBJECT_ANIMS', () => {
-  it('tem exatamente as 4 animacoes do contrato', () => {
+  it('tem exatamente as 5 animacoes do contrato', () => {
     expect(Object.keys(OBJECT_ANIMS).sort()).toEqual(
-      ['moeda', 'portal', 'tolo', 'toloIdle'].sort(),
+      ['moeda', 'portal', 'tolo', 'toloIdle', 'flag'].sort(),
     )
   })
 
@@ -79,6 +79,19 @@ describe('OBJECT_ANIMS', () => {
       cellH: 92,
       drawW: 56,
       drawH: 56,
+    })
+  })
+
+  it('flag: 2 frames 48x96 a 3fps loop, desenha 48x96 (U1)', () => {
+    expect(OBJECT_ANIMS.flag).toEqual({
+      key: 'obj.flag',
+      frames: 2,
+      fps: 3,
+      loop: true,
+      cellW: 48,
+      cellH: 96,
+      drawW: 48,
+      drawH: 96,
     })
   })
 

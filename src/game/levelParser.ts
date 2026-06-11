@@ -1,5 +1,6 @@
 import { TILE, TIME_START, PLAYER_H } from '../engine/constants'
 import type {
+  EntitySpawn,
   LevelDef,
   ParsedLevel,
   SpawnPoint,
@@ -7,15 +8,18 @@ import type {
 } from '../data/schema'
 
 // Mapeia cada caractere da legenda ASCII canonica (CONTRATO) para o TileType
-// solido correspondente. Caracteres ausentes deste mapa viram 'empty' (incluindo
-// S, G, >, o, g, H, F, '.' e espaco, que sao tratados como camadas separadas).
+// correspondente. Caracteres ausentes deste mapa viram 'empty' (incluindo
+// S, G, >, o, g, H, L, F, '.' e espaco, que sao tratados como camadas separadas).
 // 2026-06-11: '^' DEIXOU de ser spike e virou MOLA (camada springs, tile empty).
-// O TileType 'spike' permanece no schema SEM produtor (volta quando tiver dano/arte).
+// U3 2026-06-11: 'x' = spike VOLTA a ter produtor (agora com dano/arte).
+// Spike e tile NAO-solido: isFullSolid (physics.ts) retorna false de proposito —
+// e hazard de CONTATO no game, nao bloqueia movimento nem serve de apoio.
 const CHAR_TO_TILE: Record<string, TileType> = {
   '#': 'ground',
   B: 'brick',
   '=': 'platform',
   '?': 'block',
+  x: 'spike',
 }
 
 // Defaults da plataforma movel '~' (entities type 'mover' sobrescrevem).
@@ -34,12 +38,17 @@ const MOVER_DEFAULTS = { axis: 'x' as const, amplitude: 3, speed: 1.2 }
  * - '?' tile solido 'block' + entrada em qBlocks; payload vem de entities
  *   (type 'block' com mesmo col/row), default 'coin'.
  * - 'g' = empty IGNORADO (marcador visual; Tolos vem de entities).
- * - 'F' legacy: foolSpawn sem patrol (+ espelho em enemies p/ compat).
- * - foolSpawns = entities tipo 'fool' (com patrol) + legacy 'F'.
+ * - 'F' legacy: foolSpawn sem patrol, kind 'tolo' (+ espelho em enemies p/ compat).
+ * - foolSpawns = entities 'fool'/'fool_veloz'/'fool_atirador' (com patrol e
+ *   kind 'tolo'/'tolo_veloz'/'tolo_atirador') + legacy 'F' (kind 'tolo').
  * - '^' MOLA: tile empty + entrada em springs (2026-06-11; era spike).
+ * - 'x' ESPINHO (U3): tile 'spike' NAO-solido — hazard de contato no game.
+ * - 'L' LIFECARD (U3): tile empty + entrada em lifecards (col/row).
  * - '~' plataforma MOVEL: tile empty + entrada em movers; defaults axis 'x',
  *   amplitude 3 (tiles), speed 1.2 (px/frame); entity 'mover' no mesmo
  *   col/row sobrescreve.
+ * - decor copiado do LevelDef (default []); so visual, sem colisao.
+ * - bgTheme SEMPRE preenchido: def.bgTheme ?? 'sky'.
  * - checkpoints/timeStart/next copiados do LevelDef (timeStart default TIME_START).
  */
 export function parseLevel(def: LevelDef): ParsedLevel {
@@ -57,10 +66,20 @@ export function parseLevel(def: LevelDef): ParsedLevel {
   const hearts: ParsedLevel['hearts'] = []
   const springs: ParsedLevel['springs'] = []
   const movers: ParsedLevel['movers'] = []
-  // entities tipo 'fool' primeiro (com patrol); legacy 'F' anexado no scan.
+  const lifecards: ParsedLevel['lifecards'] = []
+  // entities tipo fool* primeiro (com patrol + kind); legacy 'F' anexado no scan.
+  // U3: kind sempre preenchido — 'fool' legado = 'tolo'.
+  const FOOL_KIND = {
+    fool: 'tolo',
+    fool_veloz: 'tolo_veloz',
+    fool_atirador: 'tolo_atirador',
+  } as const
   const foolSpawns: ParsedLevel['foolSpawns'] = entities
-    .filter((e) => e.type === 'fool')
-    .map((e) => ({ col: e.col, row: e.row, patrol: e.patrol }))
+    .filter(
+      (e): e is EntitySpawn & { type: keyof typeof FOOL_KIND } =>
+        e.type === 'fool' || e.type === 'fool_veloz' || e.type === 'fool_atirador',
+    )
+    .map((e) => ({ col: e.col, row: e.row, patrol: e.patrol, kind: FOOL_KIND[e.type] }))
   let playerSpawn: SpawnPoint = { x: 0, y: 0 }
   let goal: SpawnPoint = { x: 0, y: 0 }
 
@@ -96,13 +115,17 @@ export function parseLevel(def: LevelDef): ParsedLevel {
           break
         }
         case 'F':
-          // Legacy: foolSpawn sem patrol + espelho em enemies (compat).
-          foolSpawns.push({ col, row })
+          // Legacy: foolSpawn sem patrol (kind 'tolo') + espelho em enemies (compat).
+          foolSpawns.push({ col, row, kind: 'tolo' })
           enemies.push({ x: px, y: py, kind: 'fool' })
           break
         case '^':
           // Mola: tile empty + entrada em springs.
           springs.push({ col, row })
+          break
+        case 'L':
+          // U3: lifecard — tile empty + entrada em lifecards.
+          lifecards.push({ col, row })
           break
         case '~': {
           // Plataforma movel: defaults sobrescritos por entity 'mover' no col/row.
@@ -145,7 +168,12 @@ export function parseLevel(def: LevelDef): ParsedLevel {
     foolSpawns,
     springs,
     movers,
+    lifecards,
+    // U3: copia rasa (parser nao compartilha referencia com o def).
+    decor: [...(def.decor ?? [])],
     next: def.next,
+    // U3: bgTheme sempre preenchido (default 'sky').
+    bgTheme: def.bgTheme ?? 'sky',
   }
 }
 
@@ -178,8 +206,9 @@ function riseNeeded(supportRow: number, itemRow: number): number {
  * - faltar spawn 'S' ou goal ('G'/'>');
  * - larguras de linha inconsistentes;
  * - checkpoint fora de [0, cols);
- * - moeda/qblock/heart inalcancavel (sem apoio em ±2 colunas com subida
- *   <= REACH_MAX; com mola em ±3 colunas o limite sobe para REACH_SPRING).
+ * - moeda/qblock/heart/lifecard inalcancavel (sem apoio em ±2 colunas com
+ *   subida <= REACH_MAX; com mola em ±3 colunas o limite sobe para REACH_SPRING).
+ * Spike ('x') NAO entra na checagem: e hazard, nao coletavel. Decor ignorado.
  */
 export function validateLevel(def: LevelDef): void {
   const rows = def.rows
@@ -210,7 +239,8 @@ export function validateLevel(def: LevelDef): void {
     }
   }
 
-  // Alcancabilidade de moedas ('o'), qblocks ('?') e hearts ('H').
+  // Alcancabilidade de moedas ('o'), qblocks ('?'), hearts ('H') e
+  // lifecards ('L'). Spike ('x') fica FORA: hazard, nao coletavel.
   const springCols: number[] = []
   for (const line of rows) {
     for (let col = 0; col < line.length; col++) {
@@ -221,7 +251,7 @@ export function validateLevel(def: LevelDef): void {
   for (let row = 0; row < rows.length; row++) {
     for (let col = 0; col < cols; col++) {
       const ch = rows[row][col]
-      if (ch !== 'o' && ch !== '?' && ch !== 'H') continue
+      if (ch !== 'o' && ch !== '?' && ch !== 'H' && ch !== 'L') continue
 
       const hasSpring = springCols.some((sc) => Math.abs(sc - col) <= SPRING_WINDOW_COLS)
       const limit = hasSpring ? REACH_SPRING : REACH_MAX

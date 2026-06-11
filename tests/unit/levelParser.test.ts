@@ -87,6 +87,13 @@ describe('parseLevel', () => {
     expect(lvl.movers).toEqual([])
     expect(lvl.next).toBeUndefined()
   })
+
+  it('defaults U3: lifecards=[], decor=[], bgTheme="sky" quando o def nao define', () => {
+    const lvl = parseLevel(def)
+    expect(lvl.lifecards).toEqual([])
+    expect(lvl.decor).toEqual([])
+    expect(lvl.bgTheme).toBe('sky')
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -198,7 +205,7 @@ describe('parseLevel — legenda nova (C3a)', () => {
     expect(lvl.foolSpawns).toEqual([])
   })
 
-  it('foolSpawns = entities fool (com patrol) + legacy F (sem patrol)', () => {
+  it('foolSpawns = entities fool (com patrol) + legacy F (sem patrol), kind "tolo"', () => {
     const d: LevelDef = {
       id: 'test-fools',
       world: 9,
@@ -207,9 +214,10 @@ describe('parseLevel — legenda nova (C3a)', () => {
       entities: [{ type: 'fool', col: 5, row: 1, patrol: [4, 6] }],
     }
     const lvl = parseLevel(d)
+    // U3 2026-06-11: kind sempre preenchido; fool legado = 'tolo'.
     expect(lvl.foolSpawns).toEqual([
-      { col: 5, row: 1, patrol: [4, 6] }, // entity primeiro
-      { col: 3, row: 1 }, // legacy 'F' sem patrol
+      { col: 5, row: 1, patrol: [4, 6], kind: 'tolo' }, // entity primeiro
+      { col: 3, row: 1, kind: 'tolo' }, // legacy 'F' sem patrol
     ])
     // Espelho legacy: 'F' continua em enemies (compat).
     expect(lvl.enemies).toEqual([{ x: 3 * TILE, y: 1 * TILE, kind: 'fool' }])
@@ -227,6 +235,80 @@ describe('parseLevel — legenda nova (C3a)', () => {
     const lvl = parseLevel(d)
     expect(lvl.checkpoints).toEqual([4])
     expect(lvl.timeStart).toBe(99)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// U3 (2026-06-11): 'x' spike, 'L' lifecard, kinds de inimigo, decor e bgTheme.
+// ---------------------------------------------------------------------------
+describe('parseLevel — espinho, lifecard, kinds, decor e bgTheme (U3)', () => {
+  const base = { world: 9, zone: 9 }
+
+  it('"x" vira tile "spike" (volta a ter produtor na legenda)', () => {
+    const d: LevelDef = {
+      id: 'test-spike',
+      ...base,
+      rows: ['........', 'S..x..G.', '########'],
+    }
+    const lvl = parseLevel(d)
+    // Spike e tile NAO-solido: isFullSolid retorna false para 'spike'
+    // (physics.ts exclui de proposito) — vira hazard de CONTATO no game,
+    // nao bloqueia movimento nem serve de apoio.
+    expect(lvl.tiles[1][3]).toBe('spike')
+  })
+
+  it('"L" vira tile empty + entrada em lifecards (col/row)', () => {
+    const d: LevelDef = {
+      id: 'test-lifecard',
+      ...base,
+      rows: ['..L.....', 'S.....G.', '########'],
+    }
+    const lvl = parseLevel(d)
+    expect(lvl.tiles[0][2]).toBe('empty')
+    expect(lvl.lifecards).toEqual([{ col: 2, row: 0 }])
+  })
+
+  it('entities fool_veloz/fool_atirador viram foolSpawns com kind', () => {
+    const d: LevelDef = {
+      id: 'test-kinds',
+      ...base,
+      rows: ['........', 'S.....G.', '########'],
+      entities: [
+        { type: 'fool_veloz', col: 3, row: 1, patrol: [2, 5] },
+        { type: 'fool_atirador', col: 5, row: 1 },
+      ],
+    }
+    const lvl = parseLevel(d)
+    expect(lvl.foolSpawns).toEqual([
+      { col: 3, row: 1, patrol: [2, 5], kind: 'tolo_veloz' },
+      { col: 5, row: 1, patrol: undefined, kind: 'tolo_atirador' },
+    ])
+  })
+
+  it('decor e copiado do def (copia rasa, nao a mesma referencia)', () => {
+    const decor = [
+      { col: 4, row: 7, key: 'prop.arvore' },
+      { col: 9, row: 6, key: 'prop.cristal' },
+    ]
+    const d: LevelDef = {
+      id: 'test-decor',
+      ...base,
+      rows: ['........', 'S.....G.', '########'],
+      decor,
+    }
+    const lvl = parseLevel(d)
+    expect(lvl.decor).toEqual(decor)
+    expect(lvl.decor).not.toBe(decor) // copia defensiva do array
+  })
+
+  it('bgTheme = def.bgTheme quando definido', () => {
+    const d: LevelDef = {
+      id: 'test-bg-cosmic',
+      ...base,
+      rows: ['S.....G.', '########'],
+      bgTheme: 'cosmic',
+    }
+    expect(parseLevel(d).bgTheme).toBe('cosmic')
   })
 })
 
@@ -419,6 +501,87 @@ describe('validateLevel — alcancabilidade', () => {
     }
     expect(() => validateLevel(d)).not.toThrow()
   })
+
+  // --- U3 (2026-06-11): lifecard entra na checagem; spike NAO entra ---
+
+  it('lifecard alcancavel (128px sobre o piso) passa', () => {
+    const d: LevelDef = {
+      id: 'lifecard-ok',
+      ...base,
+      rows: [
+        '........', // 0
+        '........', // 1
+        '........', // 2
+        '........', // 3
+        '...L....', // 4: lifecard col 3 -> subida (9-4-1)*48-64 = 128 <= 170
+        '........', // 5
+        '........', // 6
+        '........', // 7
+        'S.....G.', // 8
+        '########', // 9
+      ],
+    }
+    expect(() => validateLevel(d)).not.toThrow()
+  })
+
+  it('lifecard alto demais (272px) SEM mola lanca com col/row no erro', () => {
+    const d: LevelDef = {
+      id: 'lifecard-alto',
+      ...base,
+      rows: [
+        '...L....', // 0: lifecard col 3 -> subida (8-0-1)*48-64 = 272 > 170
+        '........', // 1
+        '........', // 2
+        '........', // 3
+        '........', // 4
+        '........', // 5
+        '........', // 6
+        'S.....G.', // 7
+        '########', // 8
+      ],
+    }
+    expect(() => validateLevel(d)).toThrow(/inalcancavel/)
+    expect(() => validateLevel(d)).toThrow(/'L'/)
+    expect(() => validateLevel(d)).toThrow(/col 3/)
+  })
+
+  it('o MESMO lifecard alto passa com mola em ±3 colunas (limite 300px)', () => {
+    const d: LevelDef = {
+      id: 'lifecard-alto-mola',
+      ...base,
+      rows: [
+        '...L....', // 0: lifecard col 3; subida 272 <= 300 (mola col 4)
+        '........', // 1
+        '........', // 2
+        '........', // 3
+        '........', // 4
+        '........', // 5
+        '........', // 6
+        'S...^.G.', // 7: mola col 4 (|4-3| = 1 <= 3)
+        '########', // 8
+      ],
+    }
+    expect(() => validateLevel(d)).not.toThrow()
+  })
+
+  it('spike NAO entra na alcancabilidade (hazard, nao coletavel)', () => {
+    const d: LevelDef = {
+      id: 'spike-alto',
+      ...base,
+      rows: [
+        '...x....', // 0: spike "flutuante" altissimo — validador deve IGNORAR
+        '........', // 1
+        '........', // 2
+        '........', // 3
+        '........', // 4
+        '........', // 5
+        '........', // 6
+        'S.....G.', // 7
+        '########', // 8
+      ],
+    }
+    expect(() => validateLevel(d)).not.toThrow()
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -476,10 +639,10 @@ describe('world1-zona1 (fase greybox — Errata E3+E4)', () => {
     expect(fools.length).toBe(2)
     // Nenhum inimigo 'enemy' (so 'fool' nesta fase).
     expect(lvl.enemies.every((e) => e.kind === 'fool')).toBe(true)
-    // foolSpawns espelha os F legacy (sem patrol).
+    // foolSpawns espelha os F legacy (sem patrol; kind default 'tolo').
     expect(lvl.foolSpawns).toEqual([
-      { col: 14, row: 4 },
-      { col: 24, row: 4 },
+      { col: 14, row: 4, kind: 'tolo' },
+      { col: 24, row: 4, kind: 'tolo' },
     ])
     // Os tolos estao na row 4 (acima das plataformas na row 5), sobre chao continuo.
     for (const f of fools) {

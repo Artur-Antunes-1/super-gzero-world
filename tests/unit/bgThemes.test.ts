@@ -8,8 +8,16 @@ describe('BG_THEMES', () => {
     expect(Object.keys(BG_THEMES).sort()).toEqual(['cosmic', 'sky'])
   })
 
-  it('sky = 1 camada bg.sky com factor 0.3', () => {
-    expect(BG_THEMES.sky).toEqual([{ key: 'bg.sky', factor: 0.3 }])
+  it('sky = 2 camadas back-to-front: ceu (0.3) e ilhas mid (0.55)', () => {
+    expect(BG_THEMES.sky).toEqual([
+      { key: 'bg.sky', factor: 0.3 },
+      { key: 'bg.mid', factor: 0.55 },
+    ])
+  })
+
+  it('sky tem a camada bg.mid DEPOIS da bg.sky (desenha por cima)', () => {
+    const keys = BG_THEMES.sky.map((l) => l.key)
+    expect(keys.indexOf('bg.mid')).toBeGreaterThan(keys.indexOf('bg.sky'))
   })
 
   it('cosmic = 1 camada bg.cosmic com factor 0.25', () => {

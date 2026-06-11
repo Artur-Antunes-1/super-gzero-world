@@ -439,3 +439,56 @@ describe('drawSelect — painel de detalhe do selecionado', () => {
     expect(fake.texts).not.toContain('VEL')
   })
 })
+
+// ---------------------------------------------------------------------------
+// U4: retrato curado do Artur ('ui.retrato.artur', 96x96) no painel de detalhe
+// quando o personagem SELECIONADO e o artur.
+// ---------------------------------------------------------------------------
+describe('drawSelect — retrato do Artur no painel de detalhe (U4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // Geometria do painel de detalhe: dpX=80, dpW=800, dpY=420, dpH=80.
+  const RETRATO_DX = 80 + 800 - 120 // 760
+  const RETRATO_DY = 420 + 80 - 96 // 404 (base alinhada a base do painel)
+
+  it('selecionado = artur (cursor inicial) + store com a key: drawImage 96x96', () => {
+    const fake = makeFakeRenderer()
+    const store = makeStore(['ui.retrato.artur'])
+    drawSelect(fake.renderer, createSelect(), CHARS5, store)
+    expect(fake.images.length).toBe(1)
+    const [, sx, sy, , , dx, dy, dw, dh] = fake.images[0] as [
+      unknown, number, number, number, number, number, number, number, number,
+    ]
+    expect(sx).toBe(0)
+    expect(sy).toBe(0)
+    expect(dx).toBe(RETRATO_DX)
+    expect(dy).toBe(RETRATO_DY)
+    expect(dw).toBe(96)
+    expect(dh).toBe(96)
+  })
+
+  it('selecionado != artur: retrato NAO aparece (mesmo com a key no store)', () => {
+    const fake = makeFakeRenderer()
+    const store = makeStore(['ui.retrato.artur'])
+    drawSelect(fake.renderer, { index: 0 }, CHARS5, store)
+    expect(fake.images.length).toBe(0)
+  })
+
+  it('sem store: nenhum retrato (e nenhum drawImage)', () => {
+    const fake = makeFakeRenderer()
+    drawSelect(fake.renderer, createSelect(), CHARS5)
+    expect(fake.images.length).toBe(0)
+  })
+
+  it('retrato e idle convivem: store com as duas keys desenha 2 drawImage', () => {
+    const fake = makeFakeRenderer()
+    const store = makeStore([
+      CHAR_ANIMS['artur'].anims.idle!.key,
+      'ui.retrato.artur',
+    ])
+    drawSelect(fake.renderer, createSelect(), CHARS5, store)
+    expect(fake.images.length).toBe(2)
+  })
+})

@@ -16,6 +16,10 @@ import {
   STOMP_BOUNCE,
   SPRING_VEL,
   PLAYER_H,
+  JUMP_VEL,
+  GRAVITY,
+  VIEW_W,
+  VIEW_H,
   COLOR_MAGENTA,
   COLOR_LIME,
   COLOR_OBJETIVO,
@@ -29,6 +33,9 @@ import {
   SHAKE_FRAMES,
   SHAKE_PX,
 } from '../../src/engine/constants'
+
+// U4: temas de fundo data-driven (drawParallax recebe BG_THEMES[bgTheme]).
+import { BG_THEMES } from '../../src/data/assets'
 
 // Hitbox honesta (2026-06-11): dimensoes do tolo vem do def (42x46).
 import { ENEMY_DEFS } from '../../src/game/enemy'
@@ -126,6 +133,10 @@ function makeRenderer(): Renderer {
     beginPath: vi.fn(),
     arc: vi.fn(),
     stroke: vi.fn(),
+    // U4: fallback do espinho desenha triangulos via paths.
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    closePath: vi.fn(),
     // E3: HUD desenha a moeda dourada com ctx.fill().
     fill: vi.fn(),
     imageSmoothingEnabled: false,
@@ -173,6 +184,18 @@ interface LevelExtras {
     speed: number
   }>
   next?: string
+  // U4: espinhos (viram tiles 'spike'), lifecards, decor, bgTheme e variantes
+  // de tolo via foolSpawns (spawnEnemies prefere foolSpawns quando presente).
+  spikes?: Array<{ col: number; row: number }>
+  lifecards?: Array<{ col: number; row: number }>
+  decor?: Array<{ col: number; row: number; key: string }>
+  bgTheme?: 'sky' | 'cosmic'
+  foolSpawns?: Array<{
+    col: number
+    row: number
+    patrol?: [number, number]
+    kind?: 'tolo' | 'tolo_veloz' | 'tolo_atirador'
+  }>
 }
 function makeLevel(
   enemies: Array<{ x: number; y: number; kind: string }> = [],
@@ -186,6 +209,8 @@ function makeLevel(
   )
   // Blocos '?' sao tiles solidos 'block' (legenda nova do parser).
   for (const qb of extras.qBlocks ?? []) tiles[qb.row][qb.col] = 'block'
+  // U4: espinhos sao tiles 'spike' NAO-solidos (hazard de contato no game).
+  for (const s of extras.spikes ?? []) tiles[s.row][s.col] = 'spike'
   return {
     widthTiles,
     heightTiles,
@@ -200,9 +225,12 @@ function makeLevel(
     hearts: extras.hearts ?? [],
     checkpoints: extras.checkpoints ?? [],
     timeStart: extras.timeStart ?? TIME_START,
-    foolSpawns: [],
+    foolSpawns: extras.foolSpawns ?? [],
     springs: extras.springs ?? [],
     movers: extras.movers ?? [],
+    lifecards: extras.lifecards ?? [],
+    decor: extras.decor ?? [],
+    bgTheme: extras.bgTheme,
     next: extras.next,
   } as ParsedLevel
 }
@@ -2297,7 +2325,8 @@ describe('createGame — E1: resultado over (painel + score parcial + delay)', (
 // ---------------------------------------------------------------------------
 describe('createGame — kill-plane (queda no abismo)', () => {
   it('cair abaixo do nivel custa 1 vida e respawna no ultimo checkpoint', () => {
-    const { renderer } = makeRenderer()
+    // U4 fix: era `const { renderer } = makeRenderer()` (renderer undefined).
+    const renderer = makeRenderer()
     const input = new FakeInput()
     const level = makeLevel([], [], { checkpoints: [10] })
     const game = createGame(renderer, input, level)
@@ -2316,7 +2345,8 @@ describe('createGame — kill-plane (queda no abismo)', () => {
   })
 
   it('cair sem vidas restantes vira game over', () => {
-    const { renderer } = makeRenderer()
+    // U4 fix: era `const { renderer } = makeRenderer()` (renderer undefined).
+    const renderer = makeRenderer()
     const input = new FakeInput()
     const game = createGame(renderer, input, makeLevel())
     selectFirst(game, input)
@@ -2760,5 +2790,537 @@ describe('createGame — progressao por level.next (G4)', () => {
     const texts = textsOf(renderer)
     expect(texts).toContain('ENTER PARA PRÓXIMA ZONA')
     expect(texts).not.toContain('ENTER PARA CONTINUAR')
+  })
+})
+
+// ============================================================================
+// (U4) espinhos, bandeiras de checkpoint, projeteis do atirador, pulo
+// turbinado, lifecard, arte nas telas, bg theme data-driven e decor
+// ============================================================================
+
+describe('createGame — espinhos (U4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('pisar na celula do espinho (metade inferior) tira coracao com knockback', () => {
+    const level = makeLevel([], [], { spikes: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    // Em pe sobre a celula do espinho: pes a 432, zona de dano 408-432.
+    p.x = 5 * TILE
+    p.y = 9 * TILE - p.h
+    p.vx = 0
+    p.vy = 0
+    p.iframes = 0
+    game.events.length = 0
+    game.update(1)
+    expect(p.hearts).toBe(2)
+    expect(game.events).toContain('hurt')
+    // Knockback do damagePlayer (vy -8 + gravidade do frame).
+    expect(p.vy).toBeLessThan(0)
+  })
+
+  it('respeita i-frames: com iframes>0 o espinho NAO tira coracao', () => {
+    const level = makeLevel([], [], { spikes: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.x = 5 * TILE
+    p.y = 9 * TILE - p.h
+    p.vx = 0
+    p.vy = 0
+    p.iframes = 50
+    game.events.length = 0
+    game.update(1)
+    expect(p.hearts).toBe(3)
+    expect(game.events).not.toContain('hurt')
+  })
+
+  it('andar ao LADO do espinho (sem overlap com a metade inferior) nao machuca', () => {
+    const level = makeLevel([], [], { spikes: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    // Coluna 7 (2 celulas de distancia), em pe no chao.
+    p.x = 7 * TILE
+    p.y = 9 * TILE - p.h
+    p.vx = 0
+    p.vy = 0
+    p.iframes = 0
+    game.update(1)
+    expect(p.hearts).toBe(3)
+  })
+
+  it('espinho LETAL entra no DYING e vira over (mesmo fluxo do tolo)', () => {
+    const level = makeLevel([], [], { spikes: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.lives = 1
+    p.hearts = 1
+    p.iframes = 0
+    p.x = 5 * TILE
+    p.y = 9 * TILE - p.h
+    p.vx = 0
+    p.vy = 0
+    game.update(1)
+    expect(game.state.get()).toBe('playing') // DYING segura 36 frames
+    drainDying(game)
+    expect(game.state.get()).toBe('over')
+  })
+
+  it('render: com store desenha o sprite tile.spike 48x24 na metade de baixo', () => {
+    const level = makeLevel([], [], { spikes: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level, makeStore(['tile.spike']))
+    selectFirst(game, input)
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    const spike = vi
+      .mocked(renderer.drawSprite)
+      .mock.calls.find((c) => c[7] === TILE && c[8] === 24)
+    expect(spike).toBeDefined()
+    expect(spike![5]).toBe(5 * TILE)
+    expect(spike![6]).toBe(8 * TILE + 24) // metade INFERIOR da celula
+  })
+
+  it('render: sem store cai nos triangulos PERIGO (paths moveTo/lineTo/fill)', () => {
+    const level = makeLevel([], [], { spikes: [{ col: 5, row: 8 }] })
+    const game = createGame(renderer, input, level) // sem store
+    selectFirst(game, input)
+    vi.mocked(renderer.ctx.moveTo).mockClear()
+    vi.mocked(renderer.ctx.fill).mockClear()
+    game.render(0)
+    // 3 triangulos: 3 moveTo na base da celula do espinho.
+    const moves = vi
+      .mocked(renderer.ctx.moveTo)
+      .mock.calls.filter((c) => c[1] === 9 * TILE)
+    expect(moves.length).toBe(3)
+    expect(renderer.ctx.fill).toHaveBeenCalled()
+  })
+})
+
+describe('createGame — bandeiras de checkpoint (U4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('desenha a flag 48x96 com a base no chao da coluna do checkpoint', () => {
+    const level = makeLevel([], [], { checkpoints: [10] })
+    const game = createGame(renderer, input, level, makeStore(['obj.flag']))
+    selectFirst(game, input)
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    const flag = vi
+      .mocked(renderer.drawSprite)
+      .mock.calls.find((c) => c[7] === 48 && c[8] === 96)
+    expect(flag).toBeDefined()
+    expect(flag![5]).toBe(10 * TILE)
+    expect(flag![6]).toBe(9 * TILE - 96) // base no topo do chao (row 9)
+  })
+
+  it('flag anima pelo clock (frame 1 do sheet apos 20 frames; fps 3)', () => {
+    const level = makeLevel([], [], { checkpoints: [10] })
+    const game = createGame(renderer, input, level, makeStore(['obj.flag']))
+    selectFirst(game, input) // clock=1
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    const findFlag = () =>
+      vi.mocked(renderer.drawSprite).mock.calls.find((c) => c[7] === 48 && c[8] === 96)
+    expect(findFlag()![1]).toBe(0) // sx frame 0
+    for (let i = 0; i < 19; i++) game.update(1) // clock=20 -> frame 1
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    expect(findFlag()![1]).toBe(48) // sx frame 1
+  })
+
+  it('flag NAO cruzada sem tint; cruzar ativa o veu magenta alpha 0.3', () => {
+    const level = makeLevel([], [], { checkpoints: [10] })
+    const game = createGame(renderer, input, level, makeStore(['obj.flag']))
+    selectFirst(game, input)
+    const fills = recordFills(renderer)
+
+    // Antes de cruzar: sem tint magenta sobre a flag.
+    fills.length = 0
+    game.render(0)
+    const isTint = (f: { style: unknown; alpha: number; args: unknown[] }): boolean =>
+      f.style === COLOR_OBJETIVO &&
+      f.alpha === 0.3 &&
+      f.args[0] === 10 * TILE &&
+      f.args[1] === 9 * TILE - 96 &&
+      f.args[2] === 48 &&
+      f.args[3] === 96
+    expect(fills.some(isTint)).toBe(false)
+
+    // Cruza o checkpoint (centro do player passa da coluna 10).
+    const p = game.player!
+    p.x = 11 * TILE
+    p.y = 8 * TILE
+    p.vy = 0
+    game.events.length = 0
+    game.update(1)
+    expect(game.events).toContain('checkpoint')
+
+    fills.length = 0
+    game.render(0)
+    expect(fills.some(isTint)).toBe(true)
+  })
+
+  it('sem store: fallback mastro + bandeirola (drawRect TEXT/TECH na coluna)', () => {
+    const level = makeLevel([], [], { checkpoints: [10] })
+    const game = createGame(renderer, input, level) // sem store
+    selectFirst(game, input)
+    vi.mocked(renderer.drawRect).mockClear()
+    game.render(0)
+    const pole = vi
+      .mocked(renderer.drawRect)
+      .mock.calls.find(
+        (c) => c[0] === 10 * TILE + 22 && c[2] === 4 && c[3] === 96,
+      )
+    expect(pole).toBeDefined()
+  })
+})
+
+describe('createGame — projeteis do tolo_atirador (U4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  // Atirador na col 14 (longe do spawn), patrulha curta; player em pe na col 6.
+  function atiradorLevel(): ParsedLevel {
+    return makeLevel([], [], {
+      foolSpawns: [{ col: 14, row: 8, patrol: [13, 15], kind: 'tolo_atirador' }],
+    })
+  }
+
+  // Acha o fillRect do projetil (quadrado 12x12 centrado em -6,-6 pos-translate).
+  const isProjFill = (f: { style: unknown; alpha: number; args: unknown[] }): boolean =>
+    f.style === COLOR_PERIGO &&
+    f.args[0] === -6 &&
+    f.args[1] === -6 &&
+    f.args[2] === 12 &&
+    f.args[3] === 12
+
+  it('projetil voa, e desenhado girando, DOI no player e morre no hit', () => {
+    const level = atiradorLevel()
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.x = 6 * TILE
+    p.y = 9 * TILE - p.h
+    p.vx = 0
+    p.vy = 0
+
+    // Forca o tiro DETERMINISTICO: shootT na vespera do intervalo (110) com
+    // dir=-1 (inicial) — o proximo update dispara rumo ao player.
+    const e = game.enemies[0]
+    expect(e.kind).toBe('tolo_atirador')
+    e.shootT = 109
+    game.update(1) // tiro sai (vx -4.5, ~330px do player)
+
+    // ~20 frames depois: em voo, desenhado como quadrado 12x12 PERIGO girando.
+    for (let i = 0; i < 20; i++) game.update(1)
+    expect(p.hearts).toBe(3) // ainda nao chegou
+    const fills = recordFills(renderer)
+    game.render(0)
+    expect(fills.some(isProjFill)).toBe(true)
+
+    // Segue ate conectar (4.5 px/frame rumo ao player).
+    game.events.length = 0
+    let hit = false
+    for (let i = 0; i < 90 && !hit; i++) {
+      game.update(1)
+      hit = p.hearts < 3
+    }
+    expect(hit).toBe(true)
+    expect(game.events).toContain('hurt')
+
+    // Morreu no hit: nenhum projetil desenhado (2o tiro so ~110f depois do 1o).
+    fills.length = 0
+    game.render(0)
+    expect(fills.some(isProjFill)).toBe(false)
+  })
+
+  it('atirador CONGELADO pelo Modo Humanware nao atira nem move projeteis', () => {
+    const level = atiradorLevel()
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    // Enche o medidor direto (getter expoe o estado VIVO) e ativa o Modo.
+    game.humanware.meter = HW_METER_MAX
+    input.set('humanware', true)
+    game.update(1)
+    input.set('humanware', false)
+    expect(game.enemies[0].frozen).toBe(true)
+
+    // 150 frames no Modo (dura 300): nenhum projetil nasce.
+    for (let i = 0; i < 150; i++) game.update(1)
+    expect(game.enemies[0].frozen).toBe(true)
+    const fills = recordFills(renderer)
+    game.render(0)
+    expect(fills.some(isProjFill)).toBe(false)
+    expect(game.player!.hearts).toBe(3)
+  })
+
+  it('initLevelState zera projeteis: reset pos-over nao vaza projetil em voo', () => {
+    const level = atiradorLevel()
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    // Deixa 1 projetil em voo.
+    for (let i = 0; i < 130; i++) game.update(1)
+    const fills = recordFills(renderer)
+    game.render(0)
+    expect(fills.some(isProjFill)).toBe(true)
+    // Esgota o timer -> over -> select -> nova rodada.
+    const exhaust = Math.ceil(TIME_START / FIXED_DT) + 10
+    game.player!.x = 30 * TILE // longe do atirador
+    for (let i = 0; i < exhaust; i++) game.update(1)
+    expect(game.state.get()).toBe('over')
+    confirmResult(game, input)
+    selectFirst(game, input)
+    fills.length = 0
+    game.render(0)
+    expect(fills.some(isProjFill)).toBe(false)
+  })
+})
+
+describe('createGame — Modo Humanware turbina o pulo (U4, §8.3)', () => {
+  it('pulo no Modo sai +18% (p.vy *= 1.18 no frame do pulo)', () => {
+    const renderer = makeRenderer()
+    const input = new FakeInput()
+    const game = createGame(renderer, input, makeLevel())
+    selectArtur(game, input) // artur: jumpVelMul 1.0, weightMul 1.0
+    for (let i = 0; i < 10; i++) game.update(1) // assenta no chao
+    const p = game.player!
+    expect(p.onGround).toBe(true)
+
+    // SEM Modo: vy pos-frame = JUMP_VEL + GRAVITY (gravidade do mesmo frame).
+    input.set('jump', true)
+    game.update(1)
+    input.set('jump', false)
+    expect(p.vy).toBeCloseTo(JUMP_VEL + GRAVITY, 5)
+
+    // Aterrissa de novo.
+    for (let i = 0; i < 80; i++) game.update(1)
+    expect(p.onGround).toBe(true)
+
+    // COM Modo: mesmo pulo sai 18% mais forte.
+    game.humanware.meter = HW_METER_MAX
+    input.set('humanware', true)
+    game.update(1)
+    input.set('humanware', false)
+    input.set('jump', true)
+    game.update(1)
+    input.set('jump', false)
+    expect(p.vy).toBeCloseTo((JUMP_VEL + GRAVITY) * 1.18, 5)
+  })
+})
+
+describe('createGame — lifecard (U4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('coletar da +500 no medidor, SFX heart, burst epico de 24 e nao re-coleta', () => {
+    const level = makeLevel([], [], { lifecards: [{ col: 5, row: 7 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.events.length = 0
+    vi.mocked(particles.emitBurst).mockClear()
+    const p = game.player!
+    p.x = 5 * TILE
+    p.y = 7 * TILE
+    p.vy = 0
+    game.update(1)
+    expect(game.humanware.meter).toBe(500)
+    expect(game.events).toContain('heart')
+    const burst = vi.mocked(particles.emitBurst).mock.calls.find((c) => c[3] === 24)
+    expect(burst).toBeDefined()
+    expect(burst![4]).toEqual([COLOR_OBJETIVO, COLOR_COLETAVEL])
+    expect(burst![5]).toBe('world')
+    // Nao re-coleta.
+    game.update(1)
+    expect(game.humanware.meter).toBe(500)
+  })
+
+  it('render: cartao dourado pulsando (fillRects #f6c945 na celula)', () => {
+    const level = makeLevel([], [], { lifecards: [{ col: 5, row: 7 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const fills = recordFills(renderer)
+    game.render(0)
+    const gold = fills.filter((f) => f.style === '#f6c945')
+    // Brilho (alpha 0.25) + corpo + retrato central.
+    expect(gold.length).toBeGreaterThanOrEqual(3)
+    expect(gold.some((f) => f.alpha === 0.25)).toBe(true)
+  })
+
+  it('+5000 no SCORE do painel de vitoria (campo lifecardBonus)', () => {
+    const level = makeLevel([], [], { lifecards: [{ col: 5, row: 7 }] })
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const p = game.player!
+    p.x = 5 * TILE
+    p.y = 7 * TILE
+    p.vy = 0
+    game.update(1)
+    expect(game.humanware.meter).toBe(500)
+    // Vence sem moedas/stomps: score = 1000 (fase) + tempo*50 + 5000 (lifecard).
+    p.x = level.goal.x
+    p.y = level.goal.y
+    p.vy = 0
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    const texts = textsOf(renderer)
+    const tempoLine = texts.find((t) => /^TEMPO RESTANTE \d+s$/.test(t))
+    const tempo = Number(/(\d+)/.exec(tempoLine!)![1])
+    const scoreLine = texts.find((t) => /^SCORE \d+$/.test(t))
+    const score = Number(/SCORE (\d+)/.exec(scoreLine!)![1])
+    expect(score).toBe(1000 + tempo * 50 + 5000)
+  })
+})
+
+describe('createGame — arte nas telas + bg theme + decor (U4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  it('title COM store desenha bg.title full-screen + veu escuro 0.25', () => {
+    const game = createGame(renderer, input, makeLevel(), makeStore(['bg.title']))
+    expect(game.state.get()).toBe('title')
+    const fills = recordFills(renderer)
+    game.render(0)
+    const bg = vi
+      .mocked(renderer.drawSprite)
+      .mock.calls.find((c) => c[5] === 0 && c[6] === 0 && c[7] === VIEW_W && c[8] === VIEW_H)
+    expect(bg).toBeDefined()
+    expect(fills.some((f) => f.style === '#000' && f.alpha === 0.25)).toBe(true)
+    // Wordmark continua por cima.
+    expect(textsOf(renderer)).toContain('GRAVIDADE ZERO')
+  })
+
+  it('title SEM a key bg.title: sem drawSprite (so o wordmark de antes)', () => {
+    const game = createGame(renderer, input, makeLevel(), makeStore([]))
+    game.render(0)
+    expect(renderer.drawSprite).not.toHaveBeenCalled()
+  })
+
+  it('drawParallax recebe BG_THEMES.sky por default e BG_THEMES.cosmic por bgTheme', () => {
+    const game = createGame(renderer, input, makeLevel(), makeStore())
+    selectFirst(game, input)
+    game.render(0)
+    expect(vi.mocked(parallax.drawParallax).mock.calls[0][1]).toBe(BG_THEMES.sky)
+
+    vi.clearAllMocks()
+    const renderer2 = makeRenderer()
+    const input2 = new FakeInput()
+    const game2 = createGame(
+      renderer2,
+      input2,
+      makeLevel([], [], { bgTheme: 'cosmic' }),
+      makeStore(),
+    )
+    selectFirst(game2, input2)
+    game2.render(0)
+    expect(vi.mocked(parallax.drawParallax).mock.calls[0][1]).toBe(BG_THEMES.cosmic)
+  })
+
+  it('decor desenha o prop com base no chao da celula (atras dos tiles)', () => {
+    const level = makeLevel([], [], { decor: [{ col: 5, row: 8, key: 'prop.arvore' }] })
+    const game = createGame(renderer, input, level, makeStore(['prop.arvore']))
+    selectFirst(game, input)
+    vi.mocked(renderer.drawSprite).mockClear()
+    game.render(0)
+    // fakeAsset 64x96: centrado na col 5 (dx 232), base no chao da row 9 (dy 336).
+    const call = vi
+      .mocked(renderer.drawSprite)
+      .mock.calls.find((c) => c[5] === 232 && c[6] === 336 && c[7] === 64 && c[8] === 96)
+    expect(call).toBeDefined()
+  })
+
+  it('decor com key fora do store: pula sem desenhar nem lancar', () => {
+    const level = makeLevel([], [], { decor: [{ col: 5, row: 8, key: 'prop.cristal' }] })
+    const game = createGame(renderer, input, level, makeStore([]))
+    selectFirst(game, input)
+    vi.mocked(renderer.drawSprite).mockClear()
+    expect(() => game.render(0)).not.toThrow()
+    expect(renderer.drawSprite).not.toHaveBeenCalled()
+  })
+})
+
+describe('createGame — frase de marca no fim do fluxo (U4)', () => {
+  let renderer: Renderer
+  let input: FakeInput
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    renderer = makeRenderer()
+    input = new FakeInput()
+  })
+
+  function winOn(level: ParsedLevel): ReturnType<typeof createGame> {
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    game.player!.x = level.goal.x
+    game.player!.y = level.goal.y
+    game.update(1)
+    expect(game.state.get()).toBe('win')
+    return game
+  }
+
+  it('win SEM next mostra a frase da Gzero no painel', () => {
+    const game = winOn(makeLevel())
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    const texts = textsOf(renderer)
+    expect(texts).toContain('"Você também acredita que podemos')
+    expect(texts).toContain('mudar o mundo? Bora juntos."')
+  })
+
+  it('win COM next NAO mostra a frase (reservada pro final)', () => {
+    const game = winOn(makeLevel([], [], { next: 'w1-2' }))
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    const texts = textsOf(renderer)
+    expect(texts).not.toContain('"Você também acredita que podemos')
+  })
+
+  it('game over NAO mostra a frase', () => {
+    const level = makeLevel()
+    const game = createGame(renderer, input, level)
+    selectFirst(game, input)
+    const exhaust = Math.ceil(TIME_START / FIXED_DT) + 5
+    for (let i = 0; i < exhaust; i++) game.update(1)
+    expect(game.state.get()).toBe('over')
+    vi.mocked(renderer.ctx.fillText).mockClear()
+    game.render(0)
+    expect(textsOf(renderer)).not.toContain('"Você também acredita que podemos')
   })
 })
