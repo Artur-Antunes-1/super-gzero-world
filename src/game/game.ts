@@ -1098,17 +1098,25 @@ export function createGame(
       ctx.save()
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.font = 'bold 56px monospace'
-      ctx.fillStyle = COLOR_TEXT
-      ctx.fillText('GRAVIDADE ZERO', VIEW_W / 2, VIEW_H / 2 - 48)
-      ctx.font = 'bold 20px monospace'
+      const tcx = VIEW_W / 2
+      // Wordmark em Press Start 2P (2 linhas) com sombra magenta da marca.
+      ctx.font = '44px "Press Start 2P", "Pixelify Sans", monospace'
+      const wordmark = (t: string, y: number): void => {
+        ctx.fillStyle = COLOR_OBJETIVO
+        ctx.fillText(t, tcx + 4, y + 4)
+        ctx.fillStyle = COLOR_TEXT
+        ctx.fillText(t, tcx, y)
+      }
+      wordmark('GRAVIDADE', VIEW_H / 2 - 66)
+      wordmark('ZERO', VIEW_H / 2 - 10)
+      ctx.font = '15px "Press Start 2P", "Pixelify Sans", monospace'
       ctx.fillStyle = COLOR_OBJETIVO
-      ctx.fillText('O JOGO', VIEW_W / 2, VIEW_H / 2 + 8)
+      ctx.fillText('O  J O G O', tcx, VIEW_H / 2 + 36)
       // Pisca: visivel quando (floor(uiClock/30)&1)===0.
       if ((Math.floor(uiClock / 30) & 1) === 0) {
-        ctx.font = 'bold 16px monospace'
+        ctx.font = 'bold 20px "Pixelify Sans", monospace'
         ctx.fillStyle = COLOR_LIME
-        ctx.fillText('PRESS ENTER', VIEW_W / 2, VIEW_H / 2 + 88)
+        ctx.fillText('PRESS ENTER', tcx, VIEW_H / 2 + 96)
       }
       ctx.restore()
       void _alpha
@@ -1218,7 +1226,7 @@ export function createGame(
           } else {
             const ctx = renderer.ctx
             ctx.save()
-            ctx.font = 'bold 20px monospace'
+            ctx.font = 'bold 20px "Pixelify Sans", monospace'
             ctx.fillStyle = COLOR_LIME
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
@@ -1576,10 +1584,10 @@ export function createGame(
       ctx.globalAlpha = 1
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.font = 'bold 32px monospace'
+      ctx.font = 'bold 32px "Pixelify Sans", monospace'
       ctx.fillStyle = COLOR_TEXT
       ctx.fillText('PAUSA', VIEW_W / 2, VIEW_H / 2 - 116)
-      ctx.font = 'bold 16px monospace'
+      ctx.font = 'bold 16px "Pixelify Sans", monospace'
       const controls = [
         '←/→  ANDAR',
         'SHIFT  CORRER',
@@ -1624,7 +1632,7 @@ export function createGame(
 
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.font = 'bold 32px monospace'
+      ctx.font = 'bold 32px "Pixelify Sans", monospace'
       ctx.fillStyle = accent
       ctx.fillText(won ? 'ZONA CONCLUÍDA' : 'GAME OVER', VIEW_W / 2, py + 52)
 
@@ -1641,7 +1649,7 @@ export function createGame(
             `SCORE ${baseScore + SCORE_GOAL + timeLeft * SCORE_TIME_PER_SEC}`,
           ]
         : [`MOEDAS x${coinCount}`, `SCORE ${baseScore}`]
-      ctx.font = 'bold 16px monospace'
+      ctx.font = 'bold 16px "Pixelify Sans", monospace'
       ctx.fillStyle = COLOR_TEXT
       let ly = py + 116
       for (const line of lines) {
@@ -1652,7 +1660,7 @@ export function createGame(
       // U4: vitoria SEM next = fim do fluxo — frase de marca da Gzero
       // (reservada na Fase E1 para o final; spec §9.7/§15).
       if (won && level.next === undefined) {
-        ctx.font = 'italic bold 15px monospace'
+        ctx.font = 'italic bold 15px "Pixelify Sans", monospace'
         ctx.fillStyle = COLOR_OBJETIVO
         ctx.fillText(BRAND_PHRASE_1, VIEW_W / 2, py + ph - 88)
         ctx.fillText(BRAND_PHRASE_2, VIEW_W / 2, py + ph - 66)
@@ -1661,7 +1669,7 @@ export function createGame(
       // Enter so APARECE (e so funciona, ver update) apos o delay anti-skip.
       // G4: com level.next na vitoria, o rodape anuncia a PROXIMA ZONA.
       if (resultTimer >= RESULT_DELAY_FRAMES) {
-        ctx.font = 'bold 14px monospace'
+        ctx.font = 'bold 14px "Pixelify Sans", monospace'
         ctx.fillStyle = COLOR_LIME
         ctx.fillText(
           won && level.next !== undefined

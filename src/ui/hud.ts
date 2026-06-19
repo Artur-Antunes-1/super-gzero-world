@@ -51,7 +51,7 @@ function drawHeart(ctx: CanvasRenderingContext2D, hx: number, hy: number): void 
 /**
  * Desenha o HUD em screen space (chamar APOS endWorld).
  *
- * Hierarquia: numeros em monospace bold; rotulos 10px cinza (COLOR_LABEL).
+ * Hierarquia: numeros em "Pixelify Sans", monospace bold; rotulos 10px cinza (COLOR_LABEL).
  * Medidor Humanware: N cheios = floor(hwMeter/HW_METER_MAX * 4) — o 4º so
  * acende com meter >= max (fix do round que mostrava cheio com 875-999).
  */
@@ -68,12 +68,12 @@ export function drawHud(r: Renderer, data: HudData): void {
   // --- VIDAS — esquerda: mini retrato 12px + 'xN' (14px bold) ---
   ctx.fillStyle = COLOR_TEXT
   ctx.fillRect(16, 11, 12, 12) // retrato quadrado
-  ctx.font = 'bold 14px monospace'
+  ctx.font = 'bold 14px "Pixelify Sans", monospace'
   ctx.textAlign = 'left'
   ctx.fillText(`x${Math.max(0, data.lives)}`, 34, 13)
 
   // --- TIME — centro: rotulo 10px cinza + numero 18px bold com aviso ---
-  ctx.font = '10px monospace'
+  ctx.font = '10px "Pixelify Sans", monospace'
   ctx.textAlign = 'center'
   ctx.fillStyle = COLOR_LABEL
   ctx.fillText('TIME', VIEW_W / 2, 4)
@@ -88,7 +88,7 @@ export function drawHud(r: Renderer, data: HudData): void {
   }
   if (timeVisible) {
     const timeStr = String(Math.max(0, Math.ceil(data.time))).padStart(3, '0')
-    ctx.font = 'bold 18px monospace'
+    ctx.font = 'bold 18px "Pixelify Sans", monospace'
     ctx.fillStyle = timeColor
     ctx.fillText(timeStr, VIEW_W / 2, 14)
   }
@@ -98,7 +98,7 @@ export function drawHud(r: Renderer, data: HudData): void {
   ctx.arc(VIEW_W - 56, 18, 5, 0, Math.PI * 2)
   ctx.fillStyle = COIN_GOLD
   ctx.fill()
-  ctx.font = 'bold 18px monospace'
+  ctx.font = 'bold 18px "Pixelify Sans", monospace'
   ctx.textAlign = 'right'
   ctx.fillStyle = COLOR_TEXT
   ctx.fillText(String(Math.max(0, data.coins)).padStart(2, '0'), VIEW_W - 16, 9)
@@ -121,7 +121,7 @@ export function drawHud(r: Renderer, data: HudData): void {
   ctx.globalAlpha = 1
 
   // --- Rotulo do medidor — acima dos segmentos, alinhado a direita ---
-  ctx.font = '10px monospace'
+  ctx.font = '10px "Pixelify Sans", monospace'
   ctx.textAlign = 'right'
   ctx.fillStyle = COLOR_LABEL
   ctx.fillText('HUMANWARE [H]', VIEW_W - 16, METER_LABEL_Y)

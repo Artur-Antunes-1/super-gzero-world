@@ -93,7 +93,7 @@ function drawStatBar(
   w: number,
   h: number,
 ): void {
-  ctx.font = '10px monospace'
+  ctx.font = '10px "Pixelify Sans", monospace'
   ctx.textAlign = 'right'
   ctx.fillStyle = COLOR_TEXT
   ctx.fillText(label, x - 8, y + 1)
@@ -129,13 +129,13 @@ export function drawSelect(
   ctx.textBaseline = 'top'
 
   // Titulo.
-  ctx.font = 'bold 32px monospace'
+  ctx.font = 'bold 32px "Pixelify Sans", monospace'
   ctx.textAlign = 'center'
   ctx.fillStyle = COLOR_TEXT
   ctx.fillText('SELECIONE SEU PERSONAGEM', VIEW_W / 2, 56)
 
   // Dica de controles.
-  ctx.font = 'bold 14px monospace'
+  ctx.font = 'bold 14px "Pixelify Sans", monospace'
   ctx.fillStyle = COLOR_LIME
   ctx.fillText('< >  MOVER     PULO / ENTER  CONFIRMAR', VIEW_W / 2, 100)
 
@@ -212,7 +212,7 @@ export function drawSelect(
       ctx.restore()
       ctx.save()
       ctx.globalAlpha = 0.7
-      ctx.font = '10px monospace'
+      ctx.font = '10px "Pixelify Sans", monospace'
       ctx.textAlign = 'center'
       ctx.fillStyle = COLOR_TEXT
       ctx.fillText('EM BREVE', cx, panelY + 8)
@@ -221,19 +221,19 @@ export function drawSelect(
 
     // Nome.
     ctx.textAlign = 'center'
-    ctx.font = 'bold 18px monospace'
+    ctx.font = 'bold 18px "Pixelify Sans", monospace'
     ctx.fillStyle = selected ? COLOR_TEXT : '#9a96a0'
     ctx.fillText(c.name, cx, boxTop + boxH + 12)
 
     // Nome legivel da habilidade (em vez do abilityId snake_case).
-    ctx.font = 'bold 12px monospace'
+    ctx.font = 'bold 12px "Pixelify Sans", monospace'
     ctx.fillStyle = selected ? COLOR_LIME : '#6f6b75'
     ctx.fillText(c.abilityName, cx, boxTop + boxH + 36)
 
     // Descricao curta da habilidade — SO no card selecionado (nas demais
     // colunas o texto excede a largura do slot e atropela os vizinhos).
     if (selected) {
-      ctx.font = '11px monospace'
+      ctx.font = '11px "Pixelify Sans", monospace'
       ctx.fillStyle = '#c9c5cf'
       ctx.fillText(c.abilityDesc, cx, boxTop + boxH + 52)
     }
@@ -250,7 +250,7 @@ export function drawSelect(
     drawPanel(r, dpX, dpY, dpW, dpH)
 
     // Coracoes (hearts do char) — icones por fillRect em COLOR_OBJETIVO.
-    ctx.font = '10px monospace'
+    ctx.font = '10px "Pixelify Sans", monospace'
     ctx.textAlign = 'left'
     ctx.fillStyle = COLOR_TEXT
     ctx.fillText('VIDA', dpX + 24, dpY + 14)

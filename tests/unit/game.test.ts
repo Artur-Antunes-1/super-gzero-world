@@ -1983,8 +1983,9 @@ describe('createGame — E1: title', () => {
     const game = createGame(renderer, input, makeLevel())
     game.render(0) // uiClock=0 -> (floor(0/30)&1)===0 -> visivel
     let texts = textsOf(renderer)
-    expect(texts).toContain('GRAVIDADE ZERO')
-    expect(texts).toContain('O JOGO')
+    // Wordmark em 2 linhas (Press Start 2P): 'GRAVIDADE' + 'ZERO'.
+    expect(texts).toContain('GRAVIDADE')
+    expect(texts).toContain('ZERO')
     expect(texts).toContain('PRESS ENTER')
     // HUD nao aparece no title.
     expect(texts.some((t) => t.startsWith('TIME'))).toBe(false)
@@ -1996,7 +1997,7 @@ describe('createGame — E1: title', () => {
     vi.mocked(renderer.ctx.fillText).mockClear()
     game.render(0)
     texts = textsOf(renderer)
-    expect(texts).toContain('GRAVIDADE ZERO')
+    expect(texts).toContain('GRAVIDADE')
     expect(texts).not.toContain('PRESS ENTER')
 
     // +30 frames: visivel de novo (floor(60/30)&1 === 0).
@@ -3223,7 +3224,7 @@ describe('createGame — arte nas telas + bg theme + decor (U4)', () => {
     expect(bg).toBeDefined()
     expect(fills.some((f) => f.style === '#000' && f.alpha === 0.25)).toBe(true)
     // Wordmark continua por cima.
-    expect(textsOf(renderer)).toContain('GRAVIDADE ZERO')
+    expect(textsOf(renderer)).toContain('GRAVIDADE')
   })
 
   it('title SEM a key bg.title: sem drawSprite (so o wordmark de antes)', () => {

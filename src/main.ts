@@ -6,7 +6,7 @@ import { parseLevelById, DEFAULT_LEVEL_ID } from './data/levels'
 import { createGame } from './game/game'
 import { loadAssets, type AssetStore } from './engine/assets'
 import { ASSET_MANIFEST } from './data/assets'
-import { COLOR_BG } from './engine/constants'
+import { COLOR_BG, VIEW_W, VIEW_H } from './engine/constants'
 import { createAudio } from './engine/audio'
 
 // 1. Canvas
@@ -38,16 +38,14 @@ const level = parseLevelById(levelId ?? DEFAULT_LEVEL_ID)
 // 5. Pinta o fundo enquanto os assets carregam (evita flash branco).
 renderer.clear(COLOR_BG)
 
-// 6. Escala FRACIONARIA do canvas: passos de 0.5 a partir de 1x para encher
-//    a janela (image-rendering: pixelated segura o meio-passo sem borrar).
-//    Janelas menores que 1x usam a escala crua para caber. Margem de 16px
-//    por lado (innerW-32 / innerH-32) pra respirar. Buffer 960x528 NAO muda.
+// 6. Escala do canvas: PREENCHE a janela mantendo o aspecto 960:528 (letterbox
+//    so no eixo que sobra). Sem snap de 0.5 (antes travava em 1.0 numa janela
+//    1440x900 e o jogo virava uma caixinha perdida). image-rendering: pixelated
+//    segura a escala fracionaria sem borrar. Buffer interno 960x528 NAO muda.
 function applyScale(): void {
-  const raw = Math.min((window.innerWidth - 32) / 960, (window.innerHeight - 32) / 528)
-  // >=1: trava em meios-passos (1, 1.5, 2, ...); <1: cru, com piso anti-degenerado.
-  const s = raw >= 1 ? Math.floor(raw * 2) / 2 : Math.max(0.25, raw)
-  canvas.style.width = (960 * s) + 'px'
-  canvas.style.height = (528 * s) + 'px'
+  const s = Math.min(window.innerWidth / VIEW_W, window.innerHeight / VIEW_H)
+  canvas.style.width = Math.round(VIEW_W * s) + 'px'
+  canvas.style.height = Math.round(VIEW_H * s) + 'px'
 }
 window.addEventListener('resize', applyScale)
 
@@ -80,9 +78,25 @@ function startGame(store: AssetStore): void {
 // 8. Precarrega arte (chroma-key no load), depois cria e inicia o jogo.
 //    loadAssets NUNCA rejeita: falhas isoladas viram warns e o jogo sobe
 //    com store parcial (get() retorna null para o que faltou).
+// Garante que as fontes de jogo estejam prontas ANTES do 1o frame (senao o
+// canvas desenha texto no fallback monospace). Opcional: se falhar, o jogo
+// sobe mesmo assim com o fallback.
+async function loadFonts(): Promise<void> {
+  try {
+    await Promise.all([
+      document.fonts.load('16px "Press Start 2P"'),
+      document.fonts.load('400 16px "Pixelify Sans"'),
+      document.fonts.load('700 16px "Pixelify Sans"'),
+    ])
+    await document.fonts.ready
+  } catch {
+    /* fontes sao opcionais; cai no fallback monospace */
+  }
+}
+
 async function boot(): Promise<void> {
   applyScale()
-  const store = await loadAssets(ASSET_MANIFEST)
+  const [store] = await Promise.all([loadAssets(ASSET_MANIFEST), loadFonts()])
   startGame(store)
 }
 
