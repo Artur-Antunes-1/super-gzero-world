@@ -143,7 +143,8 @@ export const W1_3: LevelDef = {
   entities: W1_3_ENTITIES,
   checkpoints: [48, 96, 140],
   timeStart: 250,
-  bgTheme: 'sky',
+  // Multi-estilo: fase 3 = estilo C (cartoon vibrante).
+  bgTheme: 'cartoon',
   // U4: props decorativos (so visual; o game desenha atras dos tiles).
   decor: [
     { col: 5, row: 8, key: 'prop.arvore' },

@@ -1,5 +1,9 @@
 export const TILE_SIZE = 48
 
+// Tema de fundo / ESTILO da fase. 'sky'/'cosmic' = legado; 'pixel'/'scifi'/
+// 'cartoon' = multi-estilo (1 estilo por fase). Mapeado em BG_THEMES (data/assets).
+export type BgTheme = 'sky' | 'cosmic' | 'pixel' | 'scifi' | 'cartoon'
+
 export type TileType =
   | 'empty'
   | 'ground'
@@ -75,8 +79,8 @@ export interface LevelDef {
   timeStart?: number
   // Id da proxima fase (progressao); ausente = fim do fluxo.
   next?: string
-  // T3: tema de fundo (BG_THEMES em data/assets). Ausente = 'sky'.
-  bgTheme?: 'sky' | 'cosmic'
+  // T3: tema/estilo de fundo (BG_THEMES em data/assets). Ausente = 'sky'.
+  bgTheme?: BgTheme
   // U3: props decorativos data-driven (key do manifest, ex. 'prop.arvore');
   // o game desenha atras dos tiles. Sem colisao, sem gameplay.
   decor?: { col: number; row: number; key: string }[]
@@ -119,5 +123,5 @@ export interface ParsedLevel {
   // Copiado de LevelDef.next (progressao por fase).
   next?: string
   // U3: tema de fundo SEMPRE preenchido pelo parser (def.bgTheme ?? 'sky').
-  bgTheme: 'sky' | 'cosmic'
+  bgTheme: BgTheme
 }

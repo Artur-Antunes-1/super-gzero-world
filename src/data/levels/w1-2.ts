@@ -128,4 +128,6 @@ export const W1_2: LevelDef = {
   timeStart: 250,
   // U4: progressao — apos a W1-2, segue para a W1-3 ("O Coração Acende").
   next: 'w1-3',
+  // Multi-estilo: fase 2 = estilo B (sci-fi neon / Gravidade Zero).
+  bgTheme: 'scifi',
 }

@@ -97,4 +97,6 @@ export const W1_1: LevelDef = {
   timeStart: 250,
   // Progressao (2026-06-11): apos a W1-1, segue para a W1-2 real (spec §8.3).
   next: 'w1-2',
+  // Multi-estilo: fase 1 = estilo A (pixel-art / ceu).
+  bgTheme: 'pixel',
 }

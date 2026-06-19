@@ -99,11 +99,11 @@ describe('W1-3 — "O Coração Acende" (spec §8.3)', () => {
     expect(lvl.goal).toEqual({ x: 160 * TILE, y: 6 * TILE })
   })
 
-  it('checkpoints [48, 96, 140], timeStart 250 e bgTheme "sky"', () => {
+  it('checkpoints [48, 96, 140], timeStart 250 e bgTheme "cartoon"', () => {
     const lvl = parseLevel(W1_3)
     expect(lvl.checkpoints).toEqual([48, 96, 140])
     expect(lvl.timeStart).toBe(250)
-    expect(lvl.bgTheme).toBe('sky')
+    expect(lvl.bgTheme).toBe('cartoon')
   })
 
   it('lifecard "L" na col 150 row 2 (desafio opcional E)', () => {

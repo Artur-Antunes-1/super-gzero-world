@@ -3,6 +3,7 @@
 // Importa tipos de seus modulos donos; NAO os recria.
 import type { AssetEntry } from '../engine/assets'
 import type { ParallaxLayer } from '../engine/parallax'
+import type { BgTheme } from './schema'
 
 /**
  * Manifesto de assets do M2a. Vite serve public/ na raiz, entao
@@ -26,6 +27,10 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   // U1: arte curada (Higgsfield) — title screen + camada mid do parallax.
   'bg.title': { url: '/assets/bg/title.png' },
   'bg.mid': { url: '/assets/bg/mid.png' },
+  // MULTI-ESTILO (Higgsfield gpt_image_2): 1 fundo por estilo, 1 estilo por fase.
+  'bg.lvlA': { url: '/assets/bg/lvl-a.png' }, // estilo A: pixel-art (ceu/ilhas)
+  'bg.lvlB': { url: '/assets/bg/lvl-b.png' }, // estilo B: sci-fi neon (estacao)
+  'bg.lvlC': { url: '/assets/bg/lvl-c.png' }, // estilo C: cartoon vibrante
   // C2: atlases de tiles Wang (PixelLab) ja transparentes -> sem chromaKey.
   'tiles.terra': { url: '/assets/tiles/terra.png' },
   'tiles.tijolo': { url: '/assets/tiles/tijolo.png' },
@@ -50,13 +55,17 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
  * O game ainda consome SKY_LAYERS direto; a fiacao por LevelDef.bgTheme
  * entra na frente H3 (ver comentario em schema.ts).
  */
-export const BG_THEMES: Record<'sky' | 'cosmic', ParallaxLayer[]> = {
+export const BG_THEMES: Record<BgTheme, ParallaxLayer[]> = {
   // U1: camada mid (ilhas flutuantes) por cima do ceu — ordem back-to-front.
   sky: [
     { key: 'bg.sky', factor: 0.3 },
     { key: 'bg.mid', factor: 0.55 },
   ],
   cosmic: [{ key: 'bg.cosmic', factor: 0.25 }],
+  // MULTI-ESTILO: 1 cena por estilo (fundo distante, factor baixo).
+  pixel: [{ key: 'bg.lvlA', factor: 0.2 }],
+  scifi: [{ key: 'bg.lvlB', factor: 0.18 }],
+  cartoon: [{ key: 'bg.lvlC', factor: 0.2 }],
 }
 
 /** Compat M2a: mesmo array do tema 'sky' (game.ts importa este export). */

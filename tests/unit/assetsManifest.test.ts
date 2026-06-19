@@ -37,6 +37,10 @@ describe('ASSET_MANIFEST', () => {
         // U1: arte curada — title, parallax mid, flag, spike, props, retrato
         'bg.title',
         'bg.mid',
+        // multi-estilo: 1 fundo por estilo
+        'bg.lvlA',
+        'bg.lvlB',
+        'bg.lvlC',
         'obj.flag',
         'tile.spike',
         'prop.arvore',
@@ -79,6 +83,9 @@ describe('ASSET_MANIFEST', () => {
     // U1: arte curada
     expect(ASSET_MANIFEST['bg.title'].url).toBe('/assets/bg/title.png')
     expect(ASSET_MANIFEST['bg.mid'].url).toBe('/assets/bg/mid.png')
+    expect(ASSET_MANIFEST['bg.lvlA'].url).toBe('/assets/bg/lvl-a.png')
+    expect(ASSET_MANIFEST['bg.lvlB'].url).toBe('/assets/bg/lvl-b.png')
+    expect(ASSET_MANIFEST['bg.lvlC'].url).toBe('/assets/bg/lvl-c.png')
     expect(ASSET_MANIFEST['obj.flag'].url).toBe('/assets/objects/flag.png')
     expect(ASSET_MANIFEST['tile.spike'].url).toBe('/assets/tiles/spike.png')
     expect(ASSET_MANIFEST['prop.arvore'].url).toBe('/assets/props/arvore.png')
@@ -117,6 +124,9 @@ describe('ASSET_MANIFEST', () => {
       // U1: arte curada ja vem pronta (alpha onde precisa)
       'bg.title',
       'bg.mid',
+      'bg.lvlA',
+      'bg.lvlB',
+      'bg.lvlC',
       'obj.flag',
       'tile.spike',
       'prop.arvore',
@@ -132,6 +142,9 @@ describe('PNGs da arte curada (U1) em public/ — dimensoes do IHDR', () => {
   it.each([
     ['bg.title', 960, 528],
     ['bg.mid', 946, 224],
+    ['bg.lvlA', 960, 528],
+    ['bg.lvlB', 960, 528],
+    ['bg.lvlC', 960, 528],
     ['obj.flag', 96, 96],
     ['tile.spike', 48, 24],
     ['prop.arvore', 64, 96],

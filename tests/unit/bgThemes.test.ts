@@ -4,8 +4,20 @@ import { describe, it, expect } from 'vitest'
 import { ASSET_MANIFEST, BG_THEMES, SKY_LAYERS } from '../../src/data/assets'
 
 describe('BG_THEMES', () => {
-  it('tem exatamente os temas sky e cosmic', () => {
-    expect(Object.keys(BG_THEMES).sort()).toEqual(['cosmic', 'sky'])
+  it('tem os temas legados (sky/cosmic) + multi-estilo (pixel/scifi/cartoon)', () => {
+    expect(Object.keys(BG_THEMES).sort()).toEqual([
+      'cartoon',
+      'cosmic',
+      'pixel',
+      'scifi',
+      'sky',
+    ])
+  })
+
+  it('multi-estilo: cada estilo = 1 camada com seu fundo', () => {
+    expect(BG_THEMES.pixel).toEqual([{ key: 'bg.lvlA', factor: 0.2 }])
+    expect(BG_THEMES.scifi).toEqual([{ key: 'bg.lvlB', factor: 0.18 }])
+    expect(BG_THEMES.cartoon).toEqual([{ key: 'bg.lvlC', factor: 0.2 }])
   })
 
   it('sky = 2 camadas back-to-front: ceu (0.3) e ilhas mid (0.55)', () => {
