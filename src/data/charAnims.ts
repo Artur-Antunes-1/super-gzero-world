@@ -24,8 +24,12 @@ export const ARTUR_ANIMS: CharAnimSet = {
   bodyHpx: 78,
   anims: {
     idle: { key: 'char.artur.idle', frames: 4, fps: 6, loop: true },
-    walk: { key: 'char.artur.corrida', frames: 6, fps: 10, loop: true },
-    run: { key: 'char.artur.corrida', frames: 6, fps: 15, loop: true },
+    // corrida = ciclo de 8 frames com pernas ALTERNADAS: 4 com a perna direita
+    // a frente (reach/push/recoil/pass) + 4 espelhadas (perna esquerda). O sheet
+    // novo so trazia uma perna liderando (frames 4-6 eram quase copias do 1), entao
+    // a metade esquerda foi sintetizada espelhando SO as pernas no quadril.
+    walk: { key: 'char.artur.corrida', frames: 8, fps: 10, loop: true },
+    run: { key: 'char.artur.corrida', frames: 8, fps: 15, loop: true },
     jump: { key: 'char.artur.pulo', frames: 2, fps: 12, loop: false },
     fall: { key: 'char.artur.queda', frames: 2, fps: 12, loop: false },
     hurt: { key: 'char.artur.danificado', frames: 1, fps: 8, loop: true },
