@@ -217,6 +217,10 @@ function selectableChars(): CharacterDef[] {
 const CHAR_ART_KEYS: Record<string, string> = {}
 for (const id of SELECT_ORDER) CHAR_ART_KEYS[id] = 'char.' + id
 
+// DEBUG: ?hitbox na URL liga o contorno das caixas de colisao (dev only).
+const DEBUG_HITBOX =
+  typeof location !== 'undefined' && new URLSearchParams(location.search).has('hitbox')
+
 export interface Game {
   update(dt: number): void
   render(alpha: number): void
@@ -1518,6 +1522,24 @@ export function createGame(
 
     // (A2) particulas em WORLD SPACE (ex.: burst do Humanware), depois do player.
     drawParticlesWorld(renderer, ps)
+
+    // DEBUG (?hitbox): contorna as caixas de colisao por cima dos sprites para
+    // conferir alinhamento hitbox x arte. So liga via URL, nao afeta o jogo.
+    if (DEBUG_HITBOX) {
+      const c = renderer.ctx
+      c.save()
+      c.lineWidth = 1
+      const box = (x: number, y: number, w: number, h: number, col: string): void => {
+        c.strokeStyle = col
+        c.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, w - 1, h - 1)
+      }
+      if (player) box(player.x, player.y, player.w, player.h, '#ff0055')
+      for (const e of enemies) if (e.alive) box(e.x, e.y, e.w, e.h, '#0099ff')
+      const co = (TILE - COIN_SIZE) / 2
+      for (const coin of coins)
+        if (coin.active) box(coin.x + co, coin.y + co, COIN_SIZE, COIN_SIZE, '#cdf140')
+      c.restore()
+    }
 
     renderer.endWorld()
 
