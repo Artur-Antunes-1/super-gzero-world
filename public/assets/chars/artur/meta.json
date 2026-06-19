@@ -7,7 +7,7 @@
  "anchorY": 92,
  "anims": {
   "idle": 4,
-  "corrida": 8,
+  "corrida": 6,
   "pulo": 2,
   "queda": 2,
   "danificado": 1,
