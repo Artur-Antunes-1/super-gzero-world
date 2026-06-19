@@ -18,10 +18,9 @@ export const ASSET_MANIFEST: Record<string, AssetEntry> = {
   'char.artur.pulo': { url: '/assets/chars/artur/pulo.png' },
   'char.artur.queda': { url: '/assets/chars/artur/queda.png' },
   'char.artur.danificado': { url: '/assets/chars/artur/danificado.png' },
-  'char.artur.ataque': { url: '/assets/chars/artur/ataque.png' },
-  // G3: poses extras do sheet original (vitoria = coleta/comemoracao; skid = vista 3/4).
+  // U-HF: pouso dedicado (crouch) do sheet novo. victory = poses de queda.
+  'char.artur.land': { url: '/assets/chars/artur/land.png' },
   'char.artur.vitoria': { url: '/assets/chars/artur/vitoria.png' },
-  'char.artur.skid': { url: '/assets/chars/artur/skid.png' },
   'bg.sky': { url: '/assets/bg/sky.png' },
   'bg.cosmic': { url: '/assets/bg/cosmic.png' },
   // U1: arte curada (Higgsfield) — title screen + camada mid do parallax.

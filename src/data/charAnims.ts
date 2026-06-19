@@ -4,7 +4,15 @@
 // personagens ausentes daqui usam o fallback procedural/placeholder no game.
 import type { CharAnimSet } from '../engine/spriteAnim'
 
-/** Conjunto de animacoes do Artur, extraidas do sheet original dele (celula 96x96). */
+/**
+ * Conjunto de animacoes do Artur (celula 96x96). U-HF (2026-06-19): frames
+ * re-extraidos do NOVO character sheet do Artur (Higgsfield, fundo magenta) —
+ * idle 4 / corrida 6 / pulo 2 / queda 2 / danificado 1 / land 1. As poses de
+ * QUEDA (bracos erguidos) tambem servem de 'victory'. O sheet novo nao traz
+ * pose de ataque nem de freada, entao 'cast' e 'skid' caem no fallback do
+ * engine (cast->idle, skid->run) com o overlay procedural por cima — tudo
+ * sobre a arte NOVA, sem misturar com o sheet antigo.
+ */
 export const ARTUR_ANIMS: CharAnimSet = {
   cellW: 96,
   cellH: 96,
@@ -15,19 +23,16 @@ export const ARTUR_ANIMS: CharAnimSet = {
   drawH: 96,
   bodyHpx: 78,
   anims: {
-    idle: { key: 'char.artur.idle', frames: 3, fps: 6, loop: true },
-    walk: { key: 'char.artur.corrida', frames: 4, fps: 10, loop: true },
-    run: { key: 'char.artur.corrida', frames: 4, fps: 15, loop: true },
-    jump: { key: 'char.artur.pulo', frames: 3, fps: 12, loop: false },
-    fall: { key: 'char.artur.queda', frames: 4, fps: 12, loop: false },
-    hurt: { key: 'char.artur.danificado', frames: 3, fps: 8, loop: true },
-    // one-shot de habilidade (J); land fica no fallback procedural.
-    cast: { key: 'char.artur.ataque', frames: 4, fps: 12, loop: false },
-    // G3: poses extras extraidas do sheet original de apresentacao.
-    // victory = 2 poses de coleta (braco erguido / sentado), alterna em loop.
+    idle: { key: 'char.artur.idle', frames: 4, fps: 6, loop: true },
+    walk: { key: 'char.artur.corrida', frames: 6, fps: 10, loop: true },
+    run: { key: 'char.artur.corrida', frames: 6, fps: 15, loop: true },
+    jump: { key: 'char.artur.pulo', frames: 2, fps: 12, loop: false },
+    fall: { key: 'char.artur.queda', frames: 2, fps: 12, loop: false },
+    hurt: { key: 'char.artur.danificado', frames: 1, fps: 8, loop: true },
+    // U-HF: pouso ganhou frame dedicado (crouch) — one-shot de ~10f no engine.
+    land: { key: 'char.artur.land', frames: 1, fps: 15, loop: false },
+    // victory = poses de QUEDA (bracos erguidos), alterna em loop na tela de win.
     victory: { key: 'char.artur.vitoria', frames: 2, fps: 6, loop: true },
-    // skid = vista 3/4 frente (1 frame, segura enquanto durar o one-shot).
-    skid: { key: 'char.artur.skid', frames: 1, fps: 12, loop: false },
   },
 }
 

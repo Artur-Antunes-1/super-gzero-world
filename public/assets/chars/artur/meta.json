@@ -6,13 +6,12 @@
  "anchorX": 48,
  "anchorY": 92,
  "anims": {
-  "idle": 3,
-  "corrida": 4,
-  "pulo": 3,
-  "queda": 4,
-  "danificado": 3,
-  "ataque": 4,
-  "vitoria": 2,
-  "skid": 1
+  "idle": 4,
+  "corrida": 6,
+  "pulo": 2,
+  "queda": 2,
+  "danificado": 1,
+  "land": 1,
+  "vitoria": 2
  }
 }

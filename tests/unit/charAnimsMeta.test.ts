@@ -59,15 +59,22 @@ describe('charAnims x meta.json (artur)', () => {
     }
   })
 
-  it('cast usa o sheet "ataque" (one-shot 12fps, sem loop) — contrato §2', () => {
-    const cast = ARTUR_ANIMS.anims.cast
-    expect(cast, 'estado cast ausente em ARTUR_ANIMS.anims').toBeDefined()
-    expect(sheetName(cast!.key)).toBe('ataque')
-    expect(cast!.fps).toBe(12)
-    expect(cast!.loop).toBe(false)
+  // U-HF (2026-06-19): o sheet novo do Artur nao traz pose de ataque nem de
+  // freada — 'cast' e 'skid' caem no fallback do engine (cast->idle, skid->run).
+  it('cast e skid NAO tem sheet dedicado (caem no fallback do engine)', () => {
+    expect(ARTUR_ANIMS.anims.cast).toBeUndefined()
+    expect(ARTUR_ANIMS.anims.skid).toBeUndefined()
   })
 
-  it('victory usa o sheet "vitoria" (2f, fps 6, loop) — G3', () => {
+  it('land usa o sheet "land" (1f, sem loop) — U-HF', () => {
+    const l = ARTUR_ANIMS.anims.land
+    expect(l, 'estado land ausente em ARTUR_ANIMS.anims').toBeDefined()
+    expect(sheetName(l!.key)).toBe('land')
+    expect(l!.frames).toBe(1)
+    expect(l!.loop).toBe(false)
+  })
+
+  it('victory usa o sheet "vitoria" (2f, fps 6, loop) — poses de queda', () => {
     const v = ARTUR_ANIMS.anims.victory
     expect(v, 'estado victory ausente em ARTUR_ANIMS.anims').toBeDefined()
     expect(sheetName(v!.key)).toBe('vitoria')
@@ -75,15 +82,6 @@ describe('charAnims x meta.json (artur)', () => {
     expect(v!.fps).toBe(6)
     // 2 frames -> loop true (contrato G3: loop so se 2f)
     expect(v!.loop).toBe(true)
-  })
-
-  it('skid usa o sheet "skid" (1f, fps 12, sem loop) — G3', () => {
-    const s = ARTUR_ANIMS.anims.skid
-    expect(s, 'estado skid ausente em ARTUR_ANIMS.anims').toBeDefined()
-    expect(sheetName(s!.key)).toBe('skid')
-    expect(s!.frames).toBe(1)
-    expect(s!.fps).toBe(12)
-    expect(s!.loop).toBe(false)
   })
 
   it('escala inteira (contrato §1): drawH = cellH (1x) e corpo ~78px declarado', () => {
