@@ -24,10 +24,11 @@ export const ARTUR_ANIMS: CharAnimSet = {
   bodyHpx: 78,
   anims: {
     idle: { key: 'char.artur.idle', frames: 4, fps: 6, loop: true },
-    // corrida = ciclo de 6 frames REGERADO no Higgsfield (gpt_image_2, fidelidade
-    // high, 4k) a partir de um ref do proprio Artur. O sheet original repetia a
-    // mesma perna (frames 4-6 ~ copia do 1) e travava; estes 6 tem pernas de fato
-    // alternadas. Fatiados pelo mesmo pipeline (chroma + escala + ancora 96x96).
+    // corrida = ciclo de 6 frames CURADO pelo Artur: ele escolheu a passada exata
+    // (reach na frente -> stride -> toe-off com a perna de tras esticada) entre
+    // varios sheets gerados no Higgsfield (gpt_image_2, high, 4k, ref do proprio
+    // Artur). Frames recortados dos originais 4k, escala UNICA (cabeca/corpo
+    // identicos em todos) e ancora 96x96 nos pes.
     walk: { key: 'char.artur.corrida', frames: 6, fps: 10, loop: true },
     run: { key: 'char.artur.corrida', frames: 6, fps: 15, loop: true },
     jump: { key: 'char.artur.pulo', frames: 2, fps: 12, loop: false },
